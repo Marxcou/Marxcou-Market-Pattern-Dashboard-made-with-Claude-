@@ -3,15 +3,14 @@ import type { ReactNode } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { api, type Meta } from "../lib/api";
 import { useAuth } from "../lib/auth";
+import { LanguageSwitch, useI18n } from "../lib/i18n";
 
-// Rückfalltext, falls /api/meta nicht erreichbar ist: der Hinweis muss trotzdem sichtbar sein (Grundregel 5).
-export const DISCLAIMER_FALLBACK =
-  "Dieses Dashboard stellt keine Anlageberatung dar. Alle Analysen sind automatisiert, können fehlerhaft sein und dienen ausschließlich der Information.";
-
-export function Disclaimer({ text }: { text?: string }) {
+// Der Hinweis kommt aus dem Wörterbuch der gewählten Sprache und ist damit auch ohne /api/meta sichtbar (Grundregel 5).
+export function Disclaimer() {
+  const { t } = useI18n();
   return (
     <div role="note" data-testid="disclaimer" className="border-y border-amber-700/40 bg-amber-950/40 px-4 py-2 text-xs text-amber-200 sm:text-sm">
-      {text ?? DISCLAIMER_FALLBACK}
+      {t("disclaimer")}
     </div>
   );
 }
@@ -28,17 +27,17 @@ const ICONS = {
   admin: icon("M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 20a6 6 0 0 1 12 0M17 8a2.5 2.5 0 1 1 0 5M17 20a5 5 0 0 0-2-4"),
 };
 
-interface NavItem { to: string; label: string; icon: ReactNode; end?: boolean; extraMatch?: string }
+interface NavItem { to: string; labelKey: string; icon: ReactNode; end?: boolean; extraMatch?: string }
 
 function useNavItems(): NavItem[] {
   const { me } = useAuth();
   const items: NavItem[] = [
-    { to: "/", label: "Watchlist", icon: ICONS.watchlist, end: true, extraMatch: "/instrument" },
-    { to: "/nachrichten", label: "Nachrichten", icon: ICONS.news },
-    { to: "/quellen", label: "Quellen", icon: ICONS.sources },
+    { to: "/", labelKey: "nav.watchlist", icon: ICONS.watchlist, end: true, extraMatch: "/instrument" },
+    { to: "/nachrichten", labelKey: "nav.news", icon: ICONS.news },
+    { to: "/quellen", labelKey: "nav.sources", icon: ICONS.sources },
   ];
-  if (me?.user.role === "admin") items.push({ to: "/admin/benutzer", label: "Benutzer", icon: ICONS.admin });
-  items.push({ to: "/konto", label: "Konto", icon: ICONS.account });
+  if (me?.user.role === "admin") items.push({ to: "/admin/benutzer", labelKey: "nav.users", icon: ICONS.admin });
+  items.push({ to: "/konto", labelKey: "nav.account", icon: ICONS.account });
   return items;
 }
 
@@ -48,18 +47,20 @@ function useMatch(item: NavItem) {
 }
 
 function DesktopLink({ item }: { item: NavItem }) {
+  const { t } = useI18n();
   const active = useMatch(item);
   return (
     <NavLink to={item.to} end={item.end}>
       {({ isActive }) => {
         const on = active(isActive);
-        return <span aria-current={on ? "page" : undefined} className={`rounded-lg px-3 py-2 text-sm ${on ? "bg-slate-800 font-semibold text-white" : "text-slate-300 hover:bg-slate-900 hover:text-white"}`}>{item.label}</span>;
+        return <span aria-current={on ? "page" : undefined} className={`rounded-lg px-3 py-2 text-sm ${on ? "bg-slate-800 font-semibold text-white" : "text-slate-300 hover:bg-slate-900 hover:text-white"}`}>{t(item.labelKey)}</span>;
       }}
     </NavLink>
   );
 }
 
 function TabLink({ item }: { item: NavItem }) {
+  const { t } = useI18n();
   const active = useMatch(item);
   return (
     <NavLink to={item.to} end={item.end} className="flex-1">
@@ -67,7 +68,7 @@ function TabLink({ item }: { item: NavItem }) {
         const on = active(isActive);
         return (
           <span aria-current={on ? "page" : undefined} className={`flex min-h-[56px] flex-col items-center justify-center gap-0.5 text-[11px] ${on ? "text-sky-300" : "text-slate-400"}`}>
-            {item.icon}{item.label}
+            {item.icon}{t(item.labelKey)}
           </span>
         );
       }}
@@ -77,32 +78,34 @@ function TabLink({ item }: { item: NavItem }) {
 
 export function Layout() {
   const { me, logout } = useAuth();
+  const { t } = useI18n();
   const items = useNavItems();
   const { data: meta } = useQuery({ queryKey: ["meta"], queryFn: () => api<Meta>("/meta"), retry: false });
   return (
     <div className="flex min-h-screen flex-col bg-slate-950 text-slate-100">
       {meta?.demo_mode && (
         <div role="alert" data-testid="demo-banner" className="bg-fuchsia-800 px-4 py-1.5 text-center text-xs font-semibold sm:text-sm">
-          DEMO-MODUS: Beispieldaten, keine echten Marktdaten
+          {t("demo.banner")}
         </div>
       )}
       <header className="sticky top-0 z-30 border-b border-slate-800 bg-slate-950/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-2">
-          <Link to="/" className="shrink-0 font-semibold">Marktmuster<span className="hidden sm:inline">-Dashboard</span></Link>
-          {me && <nav aria-label="Hauptnavigation" className="ml-2 hidden gap-1 md:flex">{items.filter((i) => i.to !== "/konto").map((i) => <DesktopLink key={i.to} item={i} />)}</nav>}
+          <Link to="/" className="shrink-0 font-semibold">{t("app.name")}<span className="hidden sm:inline">{t("app.suffix")}</span></Link>
+          {me && <nav aria-label={t("nav.main")} className="ml-2 hidden gap-1 md:flex">{items.filter((i) => i.to !== "/konto").map((i) => <DesktopLink key={i.to} item={i} />)}</nav>}
           {me && (
             <div className="ml-auto flex items-center gap-2 text-sm text-slate-300">
+              <LanguageSwitch />
               <NavLink to="/konto" className="hidden max-w-[10rem] truncate rounded-lg px-2 py-2 underline-offset-2 hover:underline md:block">{me.user.display_name}</NavLink>
-              <button type="button" onClick={() => void logout()} className="rounded-lg px-3 py-2 hover:bg-slate-900">Abmelden</button>
+              <button type="button" onClick={() => void logout()} className="rounded-lg px-3 py-2 hover:bg-slate-900">{t("auth.logout")}</button>
             </div>
           )}
         </div>
       </header>
-      <Disclaimer text={meta?.disclaimer} />
+      <Disclaimer />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-5"><Outlet /></main>
-      <div className={me ? "pb-16 md:pb-0" : ""}><Disclaimer text={meta?.disclaimer} /></div>
+      <div className={me ? "pb-16 md:pb-0" : ""}><Disclaimer /></div>
       {me && (
-        <nav aria-label="Hauptnavigation (Handy)" className="fixed inset-x-0 bottom-0 z-30 flex border-t border-slate-800 bg-slate-950/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
+        <nav aria-label={t("nav.mobile")} className="fixed inset-x-0 bottom-0 z-30 flex border-t border-slate-800 bg-slate-950/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
           {items.map((i) => <TabLink key={i.to} item={i} />)}
         </nav>
       )}
