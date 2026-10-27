@@ -8,6 +8,6 @@
 		Referrer-Policy "strict-origin-when-cross-origin"
 		-Server
 	}
-	# Websocket (/ws) und API laufen über denselben Weg wie die Seite
+	# WebSocket (/ws) and API use the same route as the page
 	reverse_proxy web:80
 }

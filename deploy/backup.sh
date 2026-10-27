@@ -1,7 +1,7 @@
 #!/bin/sh
-# Nächtliche Sicherung der SQLite-Datenbank (Konten, Watchlists, Nachrichten, Analysen).
-# Nutzt die SQLite-Sicherungsfunktion, ist also auch bei laufendem Betrieb konsistent.
-# Ablage: /opt/marktmuster-backups (Host), 14 Tage lang. Aufruf: ./deploy/backup.sh
+# Nightly backup of the SQLite database (accounts, watchlists, news, analyses).
+# Uses SQLite's backup function, so it is consistent even while running.
+# Stored in /opt/marktmuster-backups (host) for 14 days. Usage: ./deploy/backup.sh
 set -eu
 cd "$(dirname "$0")/.."
 . ./deploy/lib.sh
@@ -23,4 +23,4 @@ with tempfile.NamedTemporaryFile(suffix=".db") as tmp:
 PY
 gzip -f "$DEST/marktmuster-$STAMP.db"
 find "$DEST" -name 'marktmuster-*.db.gz' -mtime +"$KEEP_DAYS" -delete
-echo "Sicherung: $DEST/marktmuster-$STAMP.db.gz"
+echo "Backup: $DEST/marktmuster-$STAMP.db.gz"
