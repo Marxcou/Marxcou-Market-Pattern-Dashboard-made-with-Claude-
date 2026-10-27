@@ -17,10 +17,13 @@ import { alignSeries, toTime } from "../lib/chartData";
 import { ChartGroup } from "../lib/chartSync";
 import { api, PENDING_POLL_MS, type BarsResponse, type InstrumentWithQuote } from "../lib/api";
 import { formatDateTime, formatPercent, formatPrice } from "../lib/format";
+import { useI18n, type MessageKey } from "../lib/i18n";
 import { useInstrumentNews } from "../lib/news";
 import { RANGES, rangeStart, windowBars } from "../lib/timeframes";
 
 export function ChartPage() {
+  const { t } = useI18n();
+  const rangeName = (label: string) => t(`range.${label}` as MessageKey);
   const { id } = useParams();
   const qc = useQueryClient();
   const [rangeLabel, setRangeLabel] = useState("6M");
@@ -98,8 +101,8 @@ export function ChartPage() {
 
   return (
     <section>
-      <Link to="/" className="inline-flex min-h-[40px] items-center text-sm text-slate-400 hover:text-slate-200">← Watchlist</Link>
-      {inst.isError && <p role="alert" className="mt-2 text-rose-300">Instrument konnte nicht geladen werden.</p>}
+      <Link to="/" className="inline-flex min-h-[40px] items-center text-sm text-slate-400 hover:text-slate-200">{t("chart.back")}</Link>
+      {inst.isError && <p role="alert" className="mt-2 text-rose-300">{t("chart.instrumentError")}</p>}
       {inst.isLoading && <div className="mb-4 space-y-2"><Skeleton className="h-7 w-1/2" /><Skeleton className="h-9 w-40" /></div>}
       {inst.data && (
         <header className="mb-3">
@@ -112,70 +115,70 @@ export function ChartPage() {
               <SourceTip source={q.source} ts={q.ts_utc} fetchedAt={q.fetched_at} />
             </div>
           ) : (
-            <p className="text-sm text-amber-300">Kein aktueller Kurs verfügbar.</p>
+            <p className="text-sm text-amber-300">{t("chart.noQuote")}</p>
           )}
         </header>
       )}
 
       <SectionNav items={[
-        { id: "sec-chart", label: "Chart" },
-        { id: "sec-muster", label: "Muster", count: detections.length },
-        { id: "sec-prognose", label: "Prognose" },
-        { id: "sec-ereignisse", label: "Ereignisse", count: events.data?.events.length },
-        { id: "sec-bewegungen", label: "Bewegungen", count: moves.data?.moves.length },
-        { id: "sec-nachrichten", label: "Nachrichten", count: markers.length },
+        { id: "sec-chart", label: t("chart.sec.chart") },
+        { id: "sec-muster", label: t("chart.sec.patterns"), count: detections.length },
+        { id: "sec-prognose", label: t("chart.sec.forecast") },
+        { id: "sec-ereignisse", label: t("chart.sec.events"), count: events.data?.events.length },
+        { id: "sec-bewegungen", label: t("chart.sec.moves"), count: moves.data?.moves.length },
+        { id: "sec-nachrichten", label: t("chart.sec.news"), count: markers.length },
       ]} />
 
       <div id="sec-chart" className="scroll-mt-28">
       <div className="card mb-3 space-y-3 p-3">
         <div className="flex flex-wrap items-center gap-2">
-          <div role="group" aria-label="Zeitraum" className="flex flex-wrap gap-1">
+          <div role="group" aria-label={t("chart.period")} className="flex flex-wrap gap-1">
             {RANGES.map((r) => (
               <button key={r.label} type="button" aria-pressed={r.label === rangeLabel} onClick={() => setRangeLabel(r.label)}
-                className={`seg ${r.label === rangeLabel ? "seg-on" : ""}`}>{r.label}</button>
+                className={`seg ${r.label === rangeLabel ? "seg-on" : ""}`}>{rangeName(r.label)}</button>
             ))}
           </div>
-          <div role="group" aria-label="Diagrammtyp" className="ml-auto flex gap-1">
+          <div role="group" aria-label={t("chart.type")} className="ml-auto flex gap-1">
             {(["candles", "line"] as const).map((k) => (
               <button key={k} type="button" aria-pressed={k === kind} onClick={() => setKind(k)}
-                className={`seg ${k === kind ? "seg-on" : ""}`}>{k === "candles" ? "Kerzen" : "Linie"}</button>
+                className={`seg ${k === kind ? "seg-on" : ""}`}>{t(k === "candles" ? "chart.candles" : "chart.line")}</button>
             ))}
           </div>
         </div>
-        <div role="group" aria-label="Indikatoren" className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 pb-1" data-testid="indicator-toggles">
-          <span className="shrink-0 text-sm text-slate-400">Indikatoren:</span>
-          {INDICATOR_TOGGLES.map((t) => (
-            <label key={t.key} className={`seg shrink-0 cursor-pointer ${activeInd.includes(t.key) ? "seg-on" : ""}`}>
-              <input type="checkbox" className="sr-only" checked={activeInd.includes(t.key)} onChange={() => toggleInd(t.key)} />{t.label}
+        <div role="group" aria-label={t("chart.indicators")} className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 pb-1" data-testid="indicator-toggles">
+          <span className="shrink-0 text-sm text-slate-400">{t("chart.indicatorsLabel")}</span>
+          {INDICATOR_TOGGLES.map((tg) => (
+            <label key={tg.key} className={`seg shrink-0 cursor-pointer ${activeInd.includes(tg.key) ? "seg-on" : ""}`}>
+              <input type="checkbox" className="sr-only" checked={activeInd.includes(tg.key)} onChange={() => toggleInd(tg.key)} />{tg.labelKey ? t(tg.labelKey) : tg.label}
             </label>
           ))}
           <span className="mx-1 h-5 w-px shrink-0 bg-slate-700" aria-hidden="true" />
           <label className={`seg shrink-0 cursor-pointer ${showForecast ? "seg-on" : ""}`}>
-            <input type="checkbox" className="sr-only" checked={showForecast} onChange={() => setShowForecast((v) => !v)} />Prognosekorridor
+            <input type="checkbox" className="sr-only" checked={showForecast} onChange={() => setShowForecast((v) => !v)} />{t("chart.forecastToggle")}
           </label>
           {showForecast && fcTf != null && (<>
-            <label className={`seg shrink-0 cursor-pointer ${showMedian ? "seg-on" : ""}`} title="Median je Tag innerhalb des Korridors">
-              <input type="checkbox" className="sr-only" checked={showMedian} onChange={() => setShowMedian((v) => !v)} />Mittlerer Verlauf
+            <label className={`seg shrink-0 cursor-pointer ${showMedian ? "seg-on" : ""}`} title={t("chart.medianTitle")}>
+              <input type="checkbox" className="sr-only" checked={showMedian} onChange={() => setShowMedian((v) => !v)} />{t("chart.medianToggle")}
             </label>
-            <label className={`seg shrink-0 cursor-pointer ${showExamples ? "seg-on" : ""}`} title="Einzelne simulierte Verläufe als Beispiele">
-              <input type="checkbox" className="sr-only" checked={showExamples} onChange={() => setShowExamples((v) => !v)} />Beispielpfade
+            <label className={`seg shrink-0 cursor-pointer ${showExamples ? "seg-on" : ""}`} title={t("chart.examplesTitle")}>
+              <input type="checkbox" className="sr-only" checked={showExamples} onChange={() => setShowExamples((v) => !v)} />{t("chart.examplesToggle")}
             </label>
           </>)}
         </div>
       </div>
 
-      {bars.isLoading && <div role="status" aria-label="Lade Kursdaten …"><Skeleton className="h-72 w-full sm:h-96" /><p className="mt-2 text-sm text-slate-400">Lade Kursdaten …</p></div>}
-      {bars.isError && <p role="alert" className="text-rose-300">Kursdaten konnten nicht geladen werden (Backend nicht erreichbar).</p>}
+      {bars.isLoading && <div role="status" aria-label={t("chart.loadingBars")}><Skeleton className="h-72 w-full sm:h-96" /><p className="mt-2 text-sm text-slate-400">{t("chart.loadingBars")}</p></div>}
+      {bars.isError && <p role="alert" className="text-rose-300">{t("chart.barsError")}</p>}
       {bars.data && shown.length === 0 && bars.data.pending && (
         <div className="rounded border border-slate-700 bg-slate-900 p-4 text-slate-200" data-testid="bars-pending" role="status">
-          <p className="font-semibold">Kursdaten werden abgerufen …</p>
+          <p className="font-semibold">{t("chart.barsPending")}</p>
           <p className="text-sm text-slate-400">{bars.data.empty_reason}</p>
         </div>
       )}
       {bars.data && shown.length === 0 && !bars.data.pending && (
         <div className="rounded border border-amber-700/50 bg-amber-950/30 p-4 text-amber-200" data-testid="no-bars">
-          <p className="font-semibold">Keine Kursdaten für diesen Zeitraum.</p>
-          <p className="text-sm">{bars.data.empty_reason ?? "Die Quelle hat für diesen Zeitraum keine Daten geliefert."}</p>
+          <p className="font-semibold">{t("chart.noBars")}</p>
+          <p className="text-sm">{bars.data.empty_reason ?? t("chart.noBarsHint")}</p>
         </div>
       )}
       {shown.length > 0 && (
@@ -193,23 +196,23 @@ export function ChartPage() {
           ))}
           {activeInd.length > 0 && (
             <div className="mt-2 text-xs text-slate-400" data-testid="indicator-info">
-              {ind.isLoading && <p>Lade Indikatoren …</p>}
-              {ind.isError && <p role="alert" className="text-rose-300">Indikatoren konnten nicht geladen werden (Backend nicht erreichbar).</p>}
-              {ind.data?.empty_reason && <p className="text-amber-300" data-testid="no-indicators">Keine Indikatoren: {ind.data.empty_reason}</p>}
+              {ind.isLoading && <p>{t("chart.loadingInd")}</p>}
+              {ind.isError && <p role="alert" className="text-rose-300">{t("chart.indError")}</p>}
+              {ind.data?.empty_reason && <p className="text-amber-300" data-testid="no-indicators">{t("chart.noInd", { reason: ind.data.empty_reason })}</p>}
               {ind.data && !ind.data.empty_reason && (
                 <>
-                  <p>Berechnet aus den Kursdaten der Quelle{ind.data.sources.length === 1 ? "" : "n"} {ind.data.sources.map((s) => s.name).join(", ")}; Verfahren {ind.data.algo_version}; Kerzen abgerufen {ind.data.bars_fetched_at ? formatDateTime(ind.data.bars_fetched_at) : "(Zeitpunkt nicht angegeben)"}.</p>
+                  <p>{t("chart.indBasis", { plural: ind.data.sources.length === 1 ? "" : t("chart.indBasisPlural"), sources: ind.data.sources.map((s) => s.name).join(", "), algo: ind.data.algo_version, time: ind.data.bars_fetched_at ? formatDateTime(ind.data.bars_fetched_at) : t("chart.timeNA") })}</p>
                   <ul className="mt-1 list-disc pl-5">{ind.data.indicators.map((i) => <li key={i.key}>{i.label}{i.formula ? `: ${i.formula}` : ""}</li>)}</ul>
-                  {activeInd.some((k) => !ind.data!.indicators.some((i) => i.key === INDICATOR_TOGGLES.find((t) => t.key === k)?.seriesKey)) && <p className="text-amber-300">Für einen gewählten Indikator hat das Backend keine Werte geliefert (zu wenige Kerzen oder nicht berechnet).</p>}
+                  {activeInd.some((k) => !ind.data!.indicators.some((i) => i.key === INDICATOR_TOGGLES.find((tg) => tg.key === k)?.seriesKey)) && <p className="text-amber-300">{t("chart.indMissing")}</p>}
                   <div className="mt-1 flex flex-wrap gap-2">{ind.data.sources.map((s) => <SourceTip key={s.key} source={s} fetchedAt={ind.data!.bars_fetched_at ?? ""} />)}</div>
                 </>
               )}
             </div>
           )}
           <p className="mt-2 text-xs text-slate-400" data-testid="last-update">
-            Letzter Datenpunkt: {last && formatDateTime(last.ts_utc)}
-            {lastUpdate && ` · Zuletzt im Dashboard aktualisiert: ${formatDateTime(lastUpdate)}`}
-            {shown.some((b) => b.is_demo) && " · Beispieldaten (Demo-Modus)"}
+            {t("chart.lastPoint", { time: last ? formatDateTime(last.ts_utc) : "" })}
+            {lastUpdate && t("chart.lastUpdate", { time: formatDateTime(lastUpdate) })}
+            {shown.some((b) => b.is_demo) && ` · ${t("demo.data")}`}
           </p>
           {last && <SourceTip source={last.source} ts={last.ts_utc} fetchedAt={last.fetched_at} />}
         </>
@@ -219,47 +222,47 @@ export function ChartPage() {
 
       <div id="sec-muster" className="card scroll-mt-28 mt-6" data-testid="chart-patterns">
         <div className="mb-2 flex flex-wrap items-center gap-3">
-          <h2 className="section-title">Erkannte Chartmuster</h2>
-          <label className="text-xs text-slate-300"><input type="checkbox" checked={showInvalid} onChange={(e) => setShowInvalid(e.target.checked)} /> auch ungültige Muster zeigen</label>
+          <h2 className="section-title">{t("chart.patterns")}</h2>
+          <label className="text-xs text-slate-300"><input type="checkbox" checked={showInvalid} onChange={(e) => setShowInvalid(e.target.checked)} /> {t("chart.showInvalid")}</label>
         </div>
-        {patTf == null && <p className="text-sm text-amber-300" data-testid="no-patterns">Die Mustererkennung arbeitet nur mit Tages- und Stundenkerzen. Für den Zeitraum {range.label} (Kerzen {range.timeframe}) werden keine Muster erkannt.</p>}
-        {patterns.isError && <p role="alert" className="text-rose-300">Muster konnten nicht geladen werden (Backend nicht erreichbar).</p>}
-        {patterns.data?.pending && <p className="text-sm text-slate-300" role="status" data-testid="patterns-pending">Muster werden berechnet: {patterns.data.empty_reason}</p>}
-        {patterns.data?.empty_reason && !patterns.data.pending && <p className="text-sm text-amber-300" data-testid="no-patterns">Keine Muster: {patterns.data.empty_reason}</p>}
+        {patTf == null && <p className="text-sm text-amber-300" data-testid="no-patterns">{t("chart.patternTf", { range: rangeName(range.label), tf: range.timeframe })}</p>}
+        {patterns.isError && <p role="alert" className="text-rose-300">{t("chart.patternsError")}</p>}
+        {patterns.data?.pending && <p className="text-sm text-slate-300" role="status" data-testid="patterns-pending">{t("chart.patternsPending", { reason: patterns.data.empty_reason ?? "" })}</p>}
+        {patterns.data?.empty_reason && !patterns.data.pending && <p className="text-sm text-amber-300" data-testid="no-patterns">{t("chart.noPatterns", { reason: patterns.data.empty_reason ?? "" })}</p>}
         {detections.length > 0 && <PatternList items={detections} selectedId={selectedPattern} onSelect={setSelectedPattern} />}
         {patterns.data && <ZoneList zones={patterns.data.zones} />}
         {selectedDetection && <div className="mt-4"><PatternPanel p={selectedDetection} onClose={() => setSelectedPattern(null)} /></div>}
-        {detections.length > 0 && !selectedDetection && <p className="mt-2 text-xs text-slate-400">Ein Muster wählen (Liste oder Klick im Chart), um die vollständige Erklärung zu sehen.</p>}
+        {detections.length > 0 && !selectedDetection && <p className="mt-2 text-xs text-slate-400">{t("chart.pickPattern")}</p>}
       </div>
 
       {showForecast && (
         <div id="sec-prognose" className="scroll-mt-28 mt-6" data-testid="chart-forecast">
           {fcTf == null
-            ? <p className="text-sm text-amber-300" data-testid="no-forecast">Prognosekorridore gibt es nur für Tageskerzen. Für den Zeitraum {range.label} (Kerzen {range.timeframe}) wird keiner berechnet.</p>
+            ? <p className="text-sm text-amber-300" data-testid="no-forecast">{t("chart.forecastDaily", { range: rangeName(range.label), tf: range.timeframe })}</p>
             : <ForecastPanel data={forecast.data} loading={forecast.isLoading} error={forecast.isError} horizon={horizon} onHorizon={setHorizon} currency={inst.data?.currency ?? "EUR"} pattern={selectedDetection} showMedian={showMedian} showExamples={showExamples} />}
         </div>
       )}
 
       <div id="sec-ereignisse" className="card scroll-mt-28 mt-6" data-testid="chart-events">
-        <h2 className="section-title mb-2">Indikator-Ereignisse</h2>
-        {events.isError && <p role="alert" className="text-rose-300">Ereignisse konnten nicht geladen werden (Backend nicht erreichbar).</p>}
-        {events.data?.empty_reason && <p className="text-sm text-amber-300" data-testid="no-events">Keine Ereignisse: {events.data.empty_reason}</p>}
-        {events.data && events.data.events.length > 0 && <><p className="mb-2 text-xs text-slate-400">Marker im Chart: GC Golden Cross, DC Death Cross, RSI Divergenz, BB Bollinger-Ausbruch, Vol Volumenspitze. Die Ereignisse beschreiben nur die Lage der Werte.</p><EventList events={events.data.events} /></>}
+        <h2 className="section-title mb-2">{t("chart.events")}</h2>
+        {events.isError && <p role="alert" className="text-rose-300">{t("chart.eventsError")}</p>}
+        {events.data?.empty_reason && <p className="text-sm text-amber-300" data-testid="no-events">{t("chart.noEvents", { reason: events.data.empty_reason ?? "" })}</p>}
+        {events.data && events.data.events.length > 0 && <><p className="mb-2 text-xs text-slate-400">{t("chart.eventsLegend")}</p><EventList events={events.data.events} /></>}
       </div>
 
       <div id="sec-bewegungen" className="card scroll-mt-28 mt-6" data-testid="chart-moves">
-        <h2 className="section-title mb-2">Auffällige Kursbewegungen und zeitlich passende Meldungen</h2>
-        {moves.isError && <p role="alert" className="text-rose-300">Kursbewegungen konnten nicht geladen werden (Backend nicht erreichbar).</p>}
-        {moves.data?.empty_reason && <p className="text-sm text-amber-300" data-testid="no-moves">Keine Auswertung: {moves.data.empty_reason}</p>}
+        <h2 className="section-title mb-2">{t("chart.moves")}</h2>
+        {moves.isError && <p role="alert" className="text-rose-300">{t("chart.movesError")}</p>}
+        {moves.data?.empty_reason && <p className="text-sm text-amber-300" data-testid="no-moves">{t("chart.noMoves", { reason: moves.data.empty_reason ?? "" })}</p>}
         {moves.data && moves.data.moves.length > 0 && <MoveList moves={moves.data.moves} note={moves.data.note} onOpenNews={(cid) => setSelected([cid])} />}
       </div>
 
       <div id="sec-nachrichten" className="card scroll-mt-28 mt-6" data-testid="chart-news">
-        <h2 className="section-title mb-2">Nachrichten-Marker</h2>
-        {news.isError && <p role="alert" className="text-rose-300">Nachrichten konnten nicht geladen werden (Backend nicht erreichbar).</p>}
-        {news.data?.empty_reason && <p className="text-sm text-amber-300" data-testid="no-markers">Keine Nachrichten-Marker: {news.data.empty_reason}</p>}
-        {news.data && !news.data.empty_reason && markers.length === 0 && <p className="text-sm text-slate-400">Für den gezeigten Zeitraum liegen keine Meldungen zu diesem Instrument vor.</p>}
-        {markers.length > 0 && <p className="text-xs text-slate-400">Marker „N“ = Meldung zeitlich an dieser Kerze (keine Aussage über eine Ursache der Kursbewegung). Klick auf einen Marker zeigt die Meldung mit allen Quellen.</p>}
+        <h2 className="section-title mb-2">{t("chart.newsMarkers")}</h2>
+        {news.isError && <p role="alert" className="text-rose-300">{t("chart.newsError")}</p>}
+        {news.data?.empty_reason && <p className="text-sm text-amber-300" data-testid="no-markers">{t("chart.noMarkers", { reason: news.data.empty_reason ?? "" })}</p>}
+        {news.data && !news.data.empty_reason && markers.length === 0 && <p className="text-sm text-slate-400">{t("chart.noNewsInRange")}</p>}
+        {markers.length > 0 && <p className="text-xs text-slate-400">{t("chart.markerHelp")}</p>}
         <div className="mt-3 space-y-4">{selectedClusters.map((c) => <NewsClusterCard key={c.id} cluster={c} />)}</div>
       </div>
     </section>

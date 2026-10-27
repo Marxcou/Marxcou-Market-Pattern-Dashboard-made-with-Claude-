@@ -2,14 +2,16 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, type Instrument } from "../lib/api";
+import { useI18n } from "../lib/i18n";
 
 export function SearchBox({ watchedIds }: { watchedIds: Set<number> }) {
   const qc = useQueryClient();
+  const { t } = useI18n();
   const [input, setInput] = useState("");
   const [q, setQ] = useState("");
   useEffect(() => {
-    const t = setTimeout(() => setQ(input.trim()), 300);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setQ(input.trim()), 300);
+    return () => clearTimeout(timer);
   }, [input]);
 
   const search = useQuery({
@@ -28,14 +30,14 @@ export function SearchBox({ watchedIds }: { watchedIds: Set<number> }) {
   });
 
   return (
-    <section aria-label="Suche" className="mb-6">
-      <label htmlFor="search" className="mb-1 block text-sm text-slate-300">Suche nach Ticker, Firmenname oder ISIN</label>
-      <input id="search" type="search" value={input} onChange={(e) => setInput(e.target.value)} placeholder="z. B. AAPL, SAP oder US0378331005"
+    <section aria-label={t("search.label")} className="mb-6">
+      <label htmlFor="search" className="mb-1 block text-sm text-slate-300">{t("search.prompt")}</label>
+      <input id="search" type="search" value={input} onChange={(e) => setInput(e.target.value)} placeholder={t("search.placeholder")}
         className="min-h-[44px] w-full max-w-xl rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-base placeholder:text-slate-500" />
-      {q && search.isLoading && <p className="mt-2 text-sm text-slate-400">Suche läuft …</p>}
-      {search.isError && <p className="mt-2 text-sm text-rose-300">Die Suche ist fehlgeschlagen. Bitte später erneut versuchen.</p>}
+      {q && search.isLoading && <p className="mt-2 text-sm text-slate-400">{t("search.running")}</p>}
+      {search.isError && <p className="mt-2 text-sm text-rose-300">{t("search.failed")}</p>}
       {search.data && search.data.length === 0 && (
-        <p className="mt-2 text-sm text-slate-400" data-testid="no-results">Keine Treffer in den gespeicherten Instrumenten.</p>
+        <p className="mt-2 text-sm text-slate-400" data-testid="no-results">{t("search.none")}</p>
       )}
       {search.data && search.data.length > 0 && (
         <ul className="mt-2 max-w-xl divide-y divide-slate-800 overflow-hidden rounded-lg border border-slate-800 bg-slate-900" data-testid="search-results">
@@ -45,10 +47,10 @@ export function SearchBox({ watchedIds }: { watchedIds: Set<number> }) {
                 <span className="font-semibold">{i.symbol}</span> · {i.name} <span className="text-slate-400">({i.exchange}{i.isin ? `, ${i.isin}` : ""})</span>
               </Link>
               {watchedIds.has(i.id) ? (
-                <span className="shrink-0 text-xs text-slate-400">In Watchlist ✓</span>
+                <span className="shrink-0 text-xs text-slate-400">{t("search.inWatchlist")}</span>
               ) : (
                 <button type="button" className="seg shrink-0 text-xs" onClick={() => add.mutate(i.id)} disabled={add.isPending}>
-                  Zur Watchlist
+                  {t("search.add")}
                 </button>
               )}
             </li>

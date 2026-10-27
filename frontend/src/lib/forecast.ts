@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
+import { tr, type MessageKey } from "./i18n";
 import { api, PENDING_POLL_MS, type ForecastExamplePath, type ForecastMetric, type ForecastResponse, type ForecastStep, type PatternDetection, type QuantileKey } from "./api";
 
-export const FORECAST_MISSING = "Die Prognose-Schnittstelle des Backends ist noch nicht verfügbar. Es wird kein Korridor angezeigt.";
 
 // Prognosen laufen auf Tageskerzen (Vertrag Phase 4); für andere Zeiträume gibt es keinen Korridor.
 export const forecastTimeframe = (tfm: string) => (tfm === "1d" ? tfm : null);
@@ -38,7 +38,7 @@ export const useForecast = (id: string | undefined, timeframe: string | null, ho
         // Fehlende Prognosen kommen als 200 mit empty_reason; 404 (Endpunkt oder Instrument unbekannt) wird ebenso als Leerzustand gezeigt. Leerzustand mit Grund, keine Platzhalterdaten (Grundregel 6).
         if (e instanceof Error && e.message === "HTTP 404") {
           return { instrument_id: Number(id), timeframe: timeframe ?? "", method: null, horizon_bars: horizon, based_on_until: null, last_close: null,
-            generated_at: null, algo_version: "", steps: [], backtest: null, data_basis: null, empty_reason: FORECAST_MISSING };
+            generated_at: null, algo_version: "", steps: [], backtest: null, data_basis: null, empty_reason: tr("fc.missing") };
         }
         throw e;
       }
@@ -58,14 +58,14 @@ export const bandSeries = (steps: ForecastStep[], b: BandSpec): BandPoint[] =>
 
 // Wo liegt ein Niveau relativ zu den Bändern am Ende des Horizonts? Rein beschreibend, keine Wahrscheinlichkeit für ein Ereignis.
 export function levelPosition(level: number, last: ForecastStep | undefined): { inside: 50 | 80 | 95 | null; text: string } {
-  if (!last) return { inside: null, text: "Kein Prognosekorridor vorhanden." };
+  if (!last) return { inside: null, text: tr("fc.pos.none") };
   const q = last.quantiles;
   const inside = ([50, 80, 95] as const).find((l) => {
     const b = BANDS.find((x) => x.level === l)!;
     return level >= q[b.lower] && level <= q[b.upper];
   });
-  if (inside) return { inside, text: `liegt am Ende des Horizonts innerhalb des ${inside}-%-Bereichs` };
-  return { inside: null, text: `liegt am Ende des Horizonts außerhalb des 95-%-Bereichs (${level > q["97.5"] ? "darüber" : "darunter"})` };
+  if (inside) return { inside, text: tr("fc.pos.inside", { n: inside }) };
+  return { inside: null, text: tr("fc.pos.outside", { dir: tr(level > q["97.5"] ? "fc.pos.above" : "fc.pos.below") }) };
 }
 
 export interface ScenarioLevel { key: string; label: string; price: number; color: string }
@@ -73,23 +73,23 @@ const LEVEL_COLOR: Record<string, string> = { bestaetigung: "#a78bfa", scheitern
 export const scenarioLevels = (p: PatternDetection | null): ScenarioLevel[] =>
   (p?.scenarios ?? []).flatMap((s, i) => s.trigger_level == null ? [] : [{ key: `${p!.id}-${s.kind}-${i}`, label: `${s.title} (${p!.name})`, price: s.trigger_level, color: LEVEL_COLOR[s.kind] ?? "#94a3b8" }]);
 
-export const METRIC_NAME: Record<string, string> = {
-  median_abs_error: "Mittlerer absoluter Fehler des Medians (Kurs am Horizont)",
-  pinball_loss: "Pinball-Verlust (Quantilfehler, alle Bänder)",
+export const metricName = (m: ForecastMetric) => {
+  const key = `fcbt.metric.${m.key}` as MessageKey;
+  const s = tr(key);
+  return s !== key ? s : m.name ?? m.key;
 };
-export const metricName = (m: ForecastMetric) => m.name ?? METRIC_NAME[m.key] ?? m.key;
 
 // Kleiner Fehler ist besser: Verhältnis Modell zu Referenz "Kurs bleibt gleich".
 export function metricVsNaive(m: ForecastMetric): { ratio: number | null; text: string } {
-  if (m.naive == null || m.model == null || !(m.naive > 0) || !Number.isFinite(m.model)) return { ratio: null, text: "nicht vergleichbar" };
+  if (m.naive == null || m.model == null || !(m.naive > 0) || !Number.isFinite(m.model)) return { ratio: null, text: tr("fcbt.vs.na") };
   const ratio = m.model / m.naive;
-  if (Math.abs(ratio - 1) < 0.005) return { ratio, text: "gleich groß wie die Referenz" };
-  return { ratio, text: ratio < 1 ? "geringerer Fehler als die Referenz" : "größerer Fehler als die Referenz" };
+  if (Math.abs(ratio - 1) < 0.005) return { ratio, text: tr("fcbt.vs.same") };
+  return { ratio, text: tr(ratio < 1 ? "fcbt.vs.lower" : "fcbt.vs.higher") };
 }
 
 // Beschreibt die Abdeckung: hätte das 80-%-Band etwa 80 % der Ergebnisse enthalten sollen?
 export function coverageNote(nominal: number, observed: number): string {
   const diff = observed - nominal;
-  if (Math.abs(diff) <= 0.05) return "nahe am Sollwert";
-  return diff < 0 ? "Band war historisch zu eng (weniger Ergebnisse darin als angegeben)" : "Band war historisch zu weit (mehr Ergebnisse darin als angegeben)";
+  if (Math.abs(diff) <= 0.05) return tr("fcbt.cov.close");
+  return tr(diff < 0 ? "fcbt.cov.narrow" : "fcbt.cov.wide");
 }

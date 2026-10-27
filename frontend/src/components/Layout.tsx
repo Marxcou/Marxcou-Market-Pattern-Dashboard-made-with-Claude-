@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { api, type Meta } from "../lib/api";
 import { useAuth } from "../lib/auth";
-import { LanguageSwitch, useI18n } from "../lib/i18n";
+import { LanguageSwitch, useI18n, type MessageKey } from "../lib/i18n";
 
 // Der Hinweis kommt aus dem Wörterbuch der gewählten Sprache und ist damit auch ohne /api/meta sichtbar (Grundregel 5).
 export function Disclaimer() {
@@ -27,7 +27,7 @@ const ICONS = {
   admin: icon("M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 20a6 6 0 0 1 12 0M17 8a2.5 2.5 0 1 1 0 5M17 20a5 5 0 0 0-2-4"),
 };
 
-interface NavItem { to: string; labelKey: string; icon: ReactNode; end?: boolean; extraMatch?: string }
+interface NavItem { to: string; labelKey: MessageKey; icon: ReactNode; end?: boolean; extraMatch?: string }
 
 function useNavItems(): NavItem[] {
   const { me } = useAuth();

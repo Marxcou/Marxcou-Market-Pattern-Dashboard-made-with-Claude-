@@ -1,5 +1,5 @@
-import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
-import { renderApp, mockApi, ME, SOURCE, INSTRUMENT } from "./testUtils";
+import { screen, fireEvent, waitFor, within } from "@testing-library/react";
+import { render, renderApp, mockApi, ME, SOURCE, INSTRUMENT } from "./testUtils";
 import { PatternPanel } from "./components/PatternPanel";
 import { EventList, MoveList } from "./components/AnalysisLists";
 import { alignSeries, priceOnLine, snapTime, toTime } from "./lib/chartData";

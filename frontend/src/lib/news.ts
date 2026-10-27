@@ -1,9 +1,9 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { tr } from "./i18n";
 import { api, type NewsCounts, type NewsResponse, type SentimentStatus, type SentimentLabel } from "./api";
 
 export interface NewsFilter { instrumentId?: number; source?: string; sentiment?: SentimentLabel; since?: string; until?: string }
 
-export const NEWS_MISSING = "Die Nachrichten-Schnittstelle des Backends ist noch nicht verfügbar. Es werden keine Nachrichten angezeigt.";
 
 function qs(f: NewsFilter, cursor?: string) {
   const p = new URLSearchParams();
@@ -21,7 +21,7 @@ async function orMissing<T extends { empty_reason: string | null }>(path: string
   try {
     return await api<T>(path);
   } catch (e) {
-    if (e instanceof Error && e.message === "HTTP 404") return { ...empty, empty_reason: NEWS_MISSING };
+    if (e instanceof Error && e.message === "HTTP 404") return { ...empty, empty_reason: tr("news.missing") };
     throw e;
   }
 }

@@ -3,16 +3,14 @@ import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { NewsClusterCard } from "../components/NewsClusterCard";
 import { api, type InstrumentWithQuote, type SentimentLabel, type Source } from "../lib/api";
+import { useI18n, type MessageKey } from "../lib/i18n";
 import { useNews, useSentimentStatus } from "../lib/news";
 
-const PERIODS = [
-  { label: "24 Stunden", hours: 24 },
-  { label: "7 Tage", hours: 168 },
-  { label: "30 Tage", hours: 720 },
-  { label: "Alle", hours: 0 },
-];
+const PERIOD_HOURS = [24, 168, 720, 0];
+const SENTIMENTS = ["positiv", "neutral", "negativ"] as const;
 
 export function News() {
+  const { t, locale } = useI18n();
   const [params] = useSearchParams();
   const [instrumentId, setInstrumentId] = useState(params.get("instrument") ?? "");
   const [source, setSource] = useState("");
@@ -39,56 +37,55 @@ export function News() {
   const total = pages[0]?.total ?? 0;
   const sstat = useSentimentStatus();
 
+  const usd = (v: number) => v.toLocaleString(locale, { style: "currency", currency: "USD" });
   const sel = "rounded border border-slate-700 bg-slate-900 px-2 py-1 text-sm";
   return (
     <section>
-      <h1 className="mb-4 ">Nachrichten</h1>
-      <form className="mb-4 flex flex-wrap gap-3" aria-label="Filter" onSubmit={(e) => e.preventDefault()}>
-        <label className="text-sm">Aktie{" "}
+      <h1 className="mb-4 ">{t("news.title")}</h1>
+      <form className="mb-4 flex flex-wrap gap-3" aria-label={t("news.filter")} onSubmit={(e) => e.preventDefault()}>
+        <label className="text-sm">{t("news.stock")}{" "}
           <select className={sel} value={instrumentId} onChange={(e) => setInstrumentId(e.target.value)}>
-            <option value="">Alle</option>
+            <option value="">{t("common.all")}</option>
             {watch.data?.map((i) => <option key={i.id} value={i.id}>{i.symbol}</option>)}
           </select></label>
-        <label className="text-sm">Quelle{" "}
+        <label className="text-sm">{t("news.source")}{" "}
           <select className={sel} value={source} onChange={(e) => setSource(e.target.value)}>
-            <option value="">Alle</option>
+            <option value="">{t("common.all")}</option>
             {newsSources.map((s) => <option key={s.key} value={s.key}>{s.name}</option>)}
           </select></label>
-        <label className="text-sm">Zeitraum{" "}
+        <label className="text-sm">{t("news.period")}{" "}
           <select className={sel} value={hours} onChange={(e) => setHours(Number(e.target.value))}>
-            {PERIODS.map((p) => <option key={p.label} value={p.hours}>{p.label}</option>)}
+            {PERIOD_HOURS.map((h) => <option key={h} value={h}>{t(`news.period.${h}` as MessageKey)}</option>)}
           </select></label>
-        <label className="text-sm">Stimmung{" "}
+        <label className="text-sm">{t("news.sentiment")}{" "}
           <select className={sel} value={sentiment} onChange={(e) => setSentiment(e.target.value)}>
-            <option value="">Alle</option>
-            <option value="positiv">positiv</option>
-            <option value="neutral">neutral</option>
-            <option value="negativ">negativ</option>
+            <option value="">{t("common.all")}</option>
+            {SENTIMENTS.map((s) => <option key={s} value={s}>{t(`sentiment.${s}` as MessageKey)}</option>)}
           </select></label>
       </form>
 
       {sstat.data && (
         <p className="mb-3 text-xs text-slate-400" data-testid="sentiment-status">
-          Stimmungsanalyse: {sstat.data.active_method === "claude" ? "KI-generiert (Claude)" : "regelbasiertes Wörterbuch"}
-          {sstat.data.fallback_reason && ` · Ausweichverfahren aktiv: ${sstat.data.fallback_reason}`}
-          {sstat.data.claude_configured && ` · KI-Budget ${sstat.data.month}: ${sstat.data.spent_usd.toLocaleString("de-DE", { style: "currency", currency: "USD" })} von ${sstat.data.budget_usd.toLocaleString("de-DE", { style: "currency", currency: "USD" })}`}
+          {t("news.sentimentStatus", { method: t(sstat.data.active_method === "claude" ? "news.methodClaude" : "news.methodLexicon") })}
+          {sstat.data.fallback_reason && t("news.fallbackActive", { reason: sstat.data.fallback_reason })}
+          {sstat.data.claude_configured && t("news.budget", { month: sstat.data.month, spent: usd(sstat.data.spent_usd), budget: usd(sstat.data.budget_usd) })}
         </p>
       )}
-      {news.isLoading && <p className="text-slate-400">Lade Nachrichten …</p>}
-      {news.isError && <p role="alert" className="text-rose-300">Nachrichten konnten nicht geladen werden (Backend nicht erreichbar).</p>}
+      {news.isLoading && <p className="text-slate-400">{t("news.loading")}</p>}
+      {news.isError && <p role="alert" className="text-rose-300">{t("news.loadError")}</p>}
       {news.data && items.length === 0 && (
         <div className="rounded border border-amber-700/50 bg-amber-950/30 p-4 text-amber-200" data-testid="no-news">
-          <p className="font-semibold">Keine Nachrichten für diese Auswahl.</p>
-          <p className="text-sm">{emptyReason ?? "Für die gewählten Filter liegen keine Meldungen vor. Prüfe auf der Seite „Quellen“, ob die Nachrichtenquellen erreichbar sind."}</p>
+          <p className="font-semibold">{t("news.none")}</p>
+          <p className="text-sm">{emptyReason ?? t("news.noneHint")}</p>
         </div>
       )}
       {items.length > 0 && (
         <>
-          <p className="mb-2 text-xs text-slate-400">{total} Meldungen (Duplikate zusammengeführt, alle Quellen je Meldung aufgeführt)</p>
+          <p className="mb-2 text-xs text-slate-400">{t("news.total", { total })}</p>
           <div className="space-y-4">{items.map((c) => <NewsClusterCard key={c.id} cluster={c} />)}</div>
           {news.hasNextPage && (
             <button type="button" onClick={() => void news.fetchNextPage()} disabled={news.isFetchingNextPage} className="mt-4 rounded border border-slate-700 px-3 py-1 text-sm">
-              {news.isFetchingNextPage ? "Lade …" : "Weitere Meldungen laden"}
+              {news.isFetchingNextPage ? t("common.loading") : t("news.more")}
             </button>
           )}
         </>

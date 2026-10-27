@@ -1,9 +1,14 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render } from "@testing-library/react";
+import { render as rtlRender, type RenderOptions } from "@testing-library/react";
+import type { ReactElement, ReactNode } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { App } from "./App";
 import { AuthProvider } from "./lib/auth";
 import { LanguageProvider } from "./lib/i18n";
+
+// Die Oberflächentests prüfen die deutschen Texte; die Sprache wird deshalb fest auf Deutsch gestellt.
+const GermanUi = ({ children }: { children: ReactNode }) => <LanguageProvider lang="de">{children}</LanguageProvider>;
+export const render = (ui: ReactElement, options?: RenderOptions) => rtlRender(ui, { wrapper: GermanUi, ...options });
 
 export const SOURCE = { key: "alpaca", name: "Alpaca", homepage: "https://alpaca.markets", terms_url: "https://alpaca.markets/disclosures", delay_text: "Echtzeit (IEX)" };
 export const INSTRUMENT = { id: 1, symbol: "AAPL", name: "Apple Inc.", isin: "US0378331005", exchange: "XNAS", currency: "USD" };
@@ -23,7 +28,7 @@ export function mockApi(routes: Record<string, unknown>) {
 export function renderApp(path: string) {
   return render(
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-      <LanguageProvider><AuthProvider><MemoryRouter initialEntries={[path]}><App /></MemoryRouter></AuthProvider></LanguageProvider>
+      <LanguageProvider lang="de"><AuthProvider><MemoryRouter initialEntries={[path]}><App /></MemoryRouter></AuthProvider></LanguageProvider>
     </QueryClientProvider>,
   );
 }

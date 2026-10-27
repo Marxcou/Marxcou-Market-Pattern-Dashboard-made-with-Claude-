@@ -1,7 +1,7 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AiExplanation, type ExplanationResponse } from "./components/AiExplanation";
-import { mockApi } from "./testUtils";
+import { render, mockApi } from "./testUtils";
 
 const BUDGET = { month: "2026-09", spent_usd: 0.42, budget_usd: 10 };
 const AI: ExplanationResponse = { text: "Der Doppelboden wurde erkannt, weil zwei Tiefs nahe beieinander liegen.", source: "ki", label: "KI-generiert (Claude Sonnet 5.5)", model_name: "Claude Sonnet 5.5", model_version: "claude-sonnet-5-5", generated_at: "2026-09-29T12:00:00Z", cost_usd: 0.0123, fallback_reason: null, budget: BUDGET };

@@ -1,11 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { App } from "./App";
 import { AuthProvider } from "./lib/auth";
 import { LanguageProvider } from "./lib/i18n";
 import { formatNumber, formatPercent } from "./lib/format";
-import { renderApp, mockApi, ME, SOURCE, INSTRUMENT } from "./testUtils";
+import { render, renderApp, mockApi, ME, SOURCE, INSTRUMENT } from "./testUtils";
 
 vi.mock("./components/PriceChart", () => ({ PriceChart: ({ bars }: { bars: unknown[] }) => <div data-testid="price-chart">{bars.length} Balken</div> }));
 
@@ -16,7 +16,7 @@ describe.each(ROUTES)("Route %s", (path) => {
     mockApi({ "/auth/me": ME, "/watchlist": [], "/instruments/1": { ...INSTRUMENT, quote: null }, "/instruments/1/bars": { instrument: INSTRUMENT, timeframe: "1d", bars: [], empty_reason: "x" } });
     render(
       <QueryClientProvider client={new QueryClient()}>
-        <LanguageProvider><AuthProvider><MemoryRouter initialEntries={[path]}><App /></MemoryRouter></AuthProvider></LanguageProvider>
+        <LanguageProvider lang="de"><AuthProvider><MemoryRouter initialEntries={[path]}><App /></MemoryRouter></AuthProvider></LanguageProvider>
       </QueryClientProvider>,
     );
     expect((await screen.findAllByTestId("disclaimer"))[0].textContent).toContain("keine Anlageberatung");
@@ -74,5 +74,18 @@ describe("Chart-Seite", () => {
     renderApp("/instrument/1");
     expect(await screen.findByTestId("price-chart")).toBeTruthy();
     expect(screen.getByTestId("last-update").textContent).toContain("Letzter Datenpunkt");
+  });
+});
+
+describe("Englische Oberfläche", () => {
+  it("zeigt Anmeldung und Hinweis auf Englisch (Grundregel 5)", async () => {
+    mockApi({ "/auth/me": 401 });
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <LanguageProvider lang="en"><AuthProvider><MemoryRouter initialEntries={["/"]}><App /></MemoryRouter></AuthProvider></LanguageProvider>
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByRole("heading", { name: "Log in" })).toBeTruthy();
+    expect((await screen.findAllByTestId("disclaimer"))[0].textContent).toContain("does not constitute investment advice");
   });
 });
