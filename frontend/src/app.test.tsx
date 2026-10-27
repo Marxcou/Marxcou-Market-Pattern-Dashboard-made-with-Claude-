@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { App } from "./App";
 import { AuthProvider } from "./lib/auth";
+import { LanguageProvider } from "./lib/i18n";
 import { formatNumber, formatPercent } from "./lib/format";
 import { renderApp, mockApi, ME, SOURCE, INSTRUMENT } from "./testUtils";
 
@@ -15,7 +16,7 @@ describe.each(ROUTES)("Route %s", (path) => {
     mockApi({ "/auth/me": ME, "/watchlist": [], "/instruments/1": { ...INSTRUMENT, quote: null }, "/instruments/1/bars": { instrument: INSTRUMENT, timeframe: "1d", bars: [], empty_reason: "x" } });
     render(
       <QueryClientProvider client={new QueryClient()}>
-        <AuthProvider><MemoryRouter initialEntries={[path]}><App /></MemoryRouter></AuthProvider>
+        <LanguageProvider><AuthProvider><MemoryRouter initialEntries={[path]}><App /></MemoryRouter></AuthProvider></LanguageProvider>
       </QueryClientProvider>,
     );
     expect((await screen.findAllByTestId("disclaimer"))[0].textContent).toContain("keine Anlageberatung");
