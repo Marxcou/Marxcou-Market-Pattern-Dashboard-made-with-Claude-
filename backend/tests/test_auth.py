@@ -39,7 +39,7 @@ def test_ensure_admin_refuses_placeholders(client, monkeypatch, caplog):
             "admin_email": "admin@example.com", "admin_password": "change-me-now"})())
         bootstrap.ensure_admin(db)
         assert db.query(User).count() == 0
-    assert "Platzhalter" in caplog.text
+    assert "placeholders" in caplog.text
 
 
 def test_ensure_admin_warns_on_email_mismatch_and_keeps_password(client, monkeypatch, caplog):

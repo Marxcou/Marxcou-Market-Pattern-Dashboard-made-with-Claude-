@@ -1,4 +1,4 @@
-"""Einstiegspunkt der Mustererkennung: Kerzen + Parameter -> Erkennungen und Zonen (deterministisch)."""
+"""Entry point of the pattern detection: candles + parameters -> detections and zones (deterministic)."""
 from dataclasses import dataclass
 
 from app.analysis.params import Params, default_params

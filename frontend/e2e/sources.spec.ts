@@ -21,9 +21,9 @@ test("jede Quelle zeigt Beschreibung, Intervall, Verzögerung, Status und Nutzun
 });
 
 test("Demo-Quellen sind online und ausdrücklich als Beispieldaten benannt", async ({ page }) => {
-  const demo = page.getByTestId("source-card").filter({ hasText: "Demo-Kursquelle (Beispieldaten)" });
+  const demo = page.getByTestId("source-card").filter({ hasText: "Demo price source (sample data)" });
   await expect(demo.getByTestId("source-status")).toHaveText("online");
-  await expect(demo).toContainText("Erfundene Kerzen für Tests");
+  await expect(demo).toContainText("Invented candles for tests");
 });
 
 test("Quellen ohne Schlüssel erscheinen als deaktiviert mit Grund statt zu verschwinden", async ({ page }) => {

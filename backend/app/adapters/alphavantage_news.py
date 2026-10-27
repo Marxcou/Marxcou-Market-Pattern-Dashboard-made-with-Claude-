@@ -1,5 +1,5 @@
-"""Alpha Vantage News (optional, kostenlos: 25 Anfragen pro Tag). Nur Überschrift, Auszug und Link werden
-übernommen; die Stimmungsangaben von Alpha Vantage werden bewusst nicht verwendet (eigenes, erklärtes Verfahren)."""
+"""Alpha Vantage News (optional, free: 25 requests per day). Only headline, excerpt and link are
+taken over; the sentiment values from Alpha Vantage are deliberately not used (own, explained method)."""
 from datetime import UTC, datetime
 from typing import Any
 
@@ -11,7 +11,7 @@ from app.adapters.news_common import clean_excerpt, clean_title
 from app.api_usage import calls_today, count_call
 from app.config import get_settings
 
-DAILY_LIMIT = 20  # Reserve unter den 25 Anfragen pro Tag
+DAILY_LIMIT = 20  # reserve below the 25 requests per day
 CHUNK = 5
 
 
@@ -28,10 +28,10 @@ class AlphaVantageNewsAdapter(PassiveHealth, NewsAdapter):
     def metadata(self) -> AdapterMetadata:
         return AdapterMetadata(
             key=self.key, name="Alpha Vantage News", kind="news",
-            description="Optionale zusätzliche US-Nachrichtenquelle. Das kostenlose Kontingent (25 Anfragen pro Tag) "
-            "reicht nur für wenige Aktien je Stunde; die Aktien werden reihum abgefragt.",
+            description="Optional additional US news source. The free quota (25 requests per day) "
+            "only covers a few stocks per hour; the stocks are queried in rotation.",
             homepage="https://www.alphavantage.co", terms_url="https://www.alphavantage.co/terms_of_service/",
-            update_interval="stündlich, reihum (max. 20 Anfragen/Tag)", delay_text="Minuten", requires_key=True,
+            update_interval="hourly, in rotation (max. 20 requests/day)", delay_text="minutes", requires_key=True,
             is_official=True,
         )
 
@@ -54,8 +54,8 @@ class AlphaVantageNewsAdapter(PassiveHealth, NewsAdapter):
             "limit": 50, "sort": "LATEST", "apikey": self._token})
         try:
             data = resp.json()
-            if "feed" not in data:  # Limit- und Schlüsselfehler kommen als 200 mit Textfeld
-                info = str(data.get("Information") or data.get("Note") or "keine Daten")
+            if "feed" not in data:  # limit and key errors come as 200 with a text field
+                info = str(data.get("Information") or data.get("Note") or "no data")
                 raise SourceError("Alpha Vantage: " + info[:120])
             fetched = datetime.now(UTC)
             out = []

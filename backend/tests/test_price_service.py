@@ -159,7 +159,7 @@ def test_bars_endpoint_dedupes_sources_and_explains_xetra_intraday(client):
     r = client.get(f"/api/instruments/{ids[0]}/bars", params={"timeframe": "1d"}).json()
     assert len(r["bars"]) == 1 and r["bars"][0]["source"]["key"] == "alpaca"
     x = client.get(f"/api/instruments/{ids[1]}/bars", params={"timeframe": "5m"}).json()
-    assert x["bars"] == [] and "XETRA" in x["empty_reason"] and "Intraday" in x["empty_reason"]
+    assert x["bars"] == [] and "XETRA" in x["empty_reason"] and "intraday" in x["empty_reason"]
     registry.clear()
 
 

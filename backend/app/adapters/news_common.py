@@ -1,4 +1,4 @@
-"""Hilfen für News-Adapter: kurzer Auszug (nie Volltext), Zeitparser, Symbol-Konventionen."""
+"""Helpers for news adapters: short excerpt (never full text), time parser, symbol conventions."""
 import html
 import re
 from datetime import UTC, datetime
@@ -9,7 +9,7 @@ _WS = re.compile(r"\s+")
 
 
 def clean_excerpt(text: str | None, max_len: int = EXCERPT_MAX) -> str:
-    """Entfernt HTML, normalisiert Leerraum und kürzt an einer Wortgrenze auf höchstens max_len Zeichen."""
+    """Removes HTML, normalizes whitespace and shortens at a word boundary to at most max_len characters."""
     if not text:
         return ""
     t = _WS.sub(" ", html.unescape(_TAGS.sub(" ", text))).strip()
@@ -28,7 +28,7 @@ def utc(dt: datetime) -> datetime:
 
 
 def company_search_name(name: str) -> str:
-    """Firmenname ohne Rechtsform ('Apple Inc.' -> 'Apple'), für Namenssuche und Namensabgleich."""
+    """Company name without legal form ('Apple Inc.' -> 'Apple'), for name search and name matching."""
     n = re.sub(r"[.,]", " ", name)
     n = re.sub(
         r"\b(inc|incorporated|corp|corporation|co|company|ltd|limited|plc|llc|ag|se|kgaa|gmbh|nv|sa|holdings?|group|"

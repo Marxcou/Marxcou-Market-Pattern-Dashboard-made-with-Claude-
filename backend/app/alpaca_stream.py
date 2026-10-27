@@ -1,5 +1,5 @@
-"""Live-Kurse per Alpaca-WebSocket (IEX-Feed). Läuft im Worker in einem eigenen Thread.
-Höchstens 30 Symbole (Limit des kostenlosen Tarifs); die Reihenfolge der Watchlist entscheidet."""
+"""Live prices via Alpaca WebSocket (IEX feed). Runs in the worker in its own thread.
+At most 30 symbols (limit of the free tier); the order of the watchlist decides."""
 import asyncio
 import json
 import logging
@@ -18,12 +18,12 @@ from app.price_service import store_quote, watched_instruments
 
 log = logging.getLogger("alpaca-stream")
 MAX_SYMBOLS = 30
-MIN_SECONDS_BETWEEN_QUOTES = 2.0  # pro Symbol, damit die Datenbank und die Oberfläche nicht überflutet werden
+MIN_SECONDS_BETWEEN_QUOTES = 2.0  # per symbol, so the database and the interface are not flooded
 URL = "wss://stream.data.alpaca.markets/v2/iex"
 
 
 def parse_trades(raw: str) -> list[tuple[str, float, datetime]]:
-    """Trade-Nachrichten ('T': 't') -> (Symbol, Preis, Zeitpunkt UTC). Andere Nachrichtentypen werden ignoriert."""
+    """Trade messages ('T': 't') -> (symbol, price, time UTC). Other message types are ignored."""
     try:
         msgs = json.loads(raw)
     except ValueError:
@@ -79,7 +79,7 @@ def _current_symbols() -> dict[str, tuple[int, str]]:
 
 
 def stream_forever() -> None:
-    """Verbindet neu (mit Backoff), bis der Prozess endet. Ohne Schlüssel oder Watchlist passiert nichts."""
+    """Reconnects (with backoff) until the process ends. Without a key or watchlist nothing happens."""
     delay = 5.0
     while True:
         adapter = next((a for a in all_adapters() if a.metadata().key == "alpaca"), None)
@@ -88,12 +88,12 @@ def stream_forever() -> None:
             time.sleep(60)
             continue
         try:
-            asyncio.run(asyncio.wait_for(_run_once(symbols), timeout=900))  # alle 15 Min. Symbolliste erneuern
+            asyncio.run(asyncio.wait_for(_run_once(symbols), timeout=900))  # renew the symbol list every 15 min.
             delay = 5.0
         except TimeoutError:
             delay = 5.0
-        except Exception as exc:  # Verbindungsabbruch, Auth-Fehler, Limit: Live-Feed pausiert, Polling läuft weiter
-            log.warning("Alpaca-Stream unterbrochen: %s", exc)
+        except Exception as exc:  # connection drop, auth error, limit: live feed pauses, polling continues
+            log.warning("Alpaca stream interrupted: %s", exc)
             time.sleep(delay)
             delay = min(delay * 2, 300.0)
 

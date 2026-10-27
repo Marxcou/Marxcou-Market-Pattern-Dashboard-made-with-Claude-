@@ -1,8 +1,8 @@
-"""Schlüssel dürfen weder in Logs noch in gespeicherten Statustexten landen (Regel: Schlüssel nur in .env).
+"""Keys must land neither in logs nor in stored status texts (rule: keys only in .env).
 
-Zwei Schutzschichten: (1) bekannte Geheimwerte aus den Einstellungen werden überall ersetzt, (2) URL-Parameter mit
-typischen Schlüsselnamen (token, apikey, ...) werden unabhängig vom Wert ersetzt. Zusätzlich ist das
-HTTP-Client-Logging (httpx/httpcore), das komplette Anfrage-URLs ausgibt, auf WARNING gestellt."""
+Two layers of protection: (1) known secret values from the settings are replaced everywhere, (2) URL parameters with
+typical key names (token, apikey, ...) are replaced regardless of the value. In addition, the
+HTTP client logging (httpx/httpcore), which prints complete request URLs, is set to WARNING."""
 import logging
 import re
 import sys
@@ -18,7 +18,7 @@ _installed = False
 
 
 def secret_values() -> list[str]:
-    """Alle konfigurierten Geheimwerte (aus .env), längste zuerst, damit Teilwerte nichts übrig lassen."""
+    """All configured secret values (from .env), longest first so partial values leave nothing behind."""
     values = {
         v.strip() for name, v in get_settings().model_dump().items()
         if isinstance(v, str) and any(h in name for h in _NAME_HINTS) and len(v.strip()) >= _MIN_SECRET_LEN
@@ -33,15 +33,15 @@ def redact(text: str) -> str:
 
 
 def _plain_args(args: object) -> bool:
-    """Nur Tupel aus Text und Zahlen dürfen einzeln bereinigt werden; alles andere (Objekte, Ausnahmen, Mappings)
-    wird erst formatiert, weil erst der Text zeigt, ob ein Geheimwert darin steckt."""
+    """Only tuples of text and numbers may be cleaned individually; everything else (objects, exceptions, mappings)
+    is formatted first, because only the text shows whether a secret is in it."""
     plain = (str, int, float, bool, type(None))
     return isinstance(args, tuple) and len(args) > 0 and all(isinstance(a, plain) for a in args)
 
 
 def install() -> None:
-    """Einmal je Prozess aufrufen (API, Worker, Backtest-Job): jeder Log-Eintrag wird beim Erzeugen bereinigt,
-    auch Tracebacks. Gilt für alle Logger und Handler, auch für die von uvicorn."""
+    """Call once per process (API, worker, backtest job): every log entry is cleaned when it is created,
+    including tracebacks. Applies to all loggers and handlers, including those of uvicorn."""
     global _installed
     for name in ("httpx", "httpcore"):
         logging.getLogger(name).setLevel(logging.WARNING)
@@ -54,7 +54,7 @@ def install() -> None:
         rec = factory(*args, **kwargs)
         try:
             if _plain_args(rec.args):
-                # Struktur der Argumente erhalten: uvicorns Zugriffs-Formatierer entpackt record.args selbst
+                # keep the structure of the arguments: uvicorn's access formatter unpacks record.args itself
                 rec.msg = redact(str(rec.msg))
                 rec.args = tuple(redact(a) if isinstance(a, str) else a for a in rec.args)  # type: ignore[union-attr]
             else:
@@ -65,13 +65,13 @@ def install() -> None:
                 rec.exc_text = redact(rec.exc_text)
             if rec.stack_info:
                 rec.stack_info = redact(rec.stack_info)
-        except Exception:  # Logging darf nie die Anwendung stören
-            rec.msg, rec.args = "[Logeintrag wegen Redaktionsfehler unterdrückt]", None
+        except Exception:  # logging must never disturb the application
+            rec.msg, rec.args = "[log entry suppressed because of a redaction error]", None
             rec.exc_info = rec.exc_text = None
         return rec
 
     logging.setLogRecordFactory(make_record)
-    # Fehler ausserhalb von Logging (z. B. unbehandelte Ausnahme im Hauptthread) laufen über excepthook
+    # Errors outside logging (e.g. an unhandled exception in the main thread) go through excepthook
 
     def safe_hook(exc_type, exc, tb):  # type: ignore[no-untyped-def]
         import traceback

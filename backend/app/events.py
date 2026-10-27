@@ -1,5 +1,5 @@
-"""Worker -> API: der Worker schreibt Events in die Tabelle 'events', der API-Prozess liest sie und
-leitet sie per WebSocket weiter. Redis kann das später ersetzen (gleiche publish()/poll()-Schnittstelle)."""
+"""Worker -> API: the worker writes events to the 'events' table, the API process reads them and
+forwards them via WebSocket. Redis can replace this later (same publish()/poll() interface)."""
 from datetime import timedelta
 from typing import Any, cast
 
@@ -22,8 +22,8 @@ EVENT_KEEP = timedelta(hours=24)
 
 
 def prune(db: Session) -> int:
-    """Die Tabelle ist nur eine Warteschlange für offene WebSocket-Verbindungen (sie lesen ab ihrer Verbindung).
-    Ohne Aufräumen wächst sie um jede Kursaktualisierung jedes Instruments."""
+    """The table is only a queue for open WebSocket connections (they read from their connection onwards).
+    Without cleanup it grows with every price update of every instrument."""
     res = db.execute(delete(Event).where(Event.created_at < utcnow() - EVENT_KEEP))
     db.commit()
     return cast("CursorResult[Any]", res).rowcount or 0

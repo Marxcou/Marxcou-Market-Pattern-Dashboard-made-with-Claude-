@@ -1,4 +1,4 @@
-"""Stooq: Tagesdaten (Handelsende) für US und XETRA, Hauptquelle für XETRA im kostenlosen Tarif."""
+"""Stooq: daily data (end of trading) for US and XETRA, main source for XETRA in the free tier."""
 import csv
 import io
 from datetime import UTC, datetime
@@ -28,9 +28,9 @@ class StooqAdapter(ProbedHealth, PriceAdapter):
     def metadata(self) -> AdapterMetadata:
         return AdapterMetadata(
             key=self.key, name="Stooq", kind="price",
-            description="Tagesdaten (Handelsende) für US-Aktien und XETRA. Keine Intraday-Daten.",
-            homepage="https://stooq.com", terms_url="https://stooq.com/", update_interval="täglich",
-            delay_text="Handelsende (Tagesdaten)", requires_key=True, is_official=False,
+            description="Daily data (end of trading) for US stocks and XETRA. No intraday data.",
+            homepage="https://stooq.com", terms_url="https://stooq.com/", update_interval="daily",
+            delay_text="end of trading (daily data)", requires_key=True, is_official=False,
         )
 
     def is_configured(self) -> bool:
@@ -63,9 +63,9 @@ def parse_csv(
     elif not head or head.lower().startswith("no data"):
         if allow_empty:
             return []
-        raise SourceError("Keine Daten")
-    else:  # z. B. Hinweis zum API-Schlüssel oder Limit: nicht als Kursdaten deuten
-        raise SourceError("Stooq lieferte keine CSV-Daten (Schlüssel oder Limit prüfen)")
+        raise SourceError("No data")
+    else:  # e.g. a note about the API key or limit: do not interpret as price data
+        raise SourceError("Stooq returned no CSV data (check key or limit)")
     out: list[BarRecord] = []
     for row in csv.DictReader(io.StringIO(text)):
         try:

@@ -1,8 +1,8 @@
-"""Wendepunkte (Pivots) per ZigZag mit ATR-Schwelle. Alle Muster bauen auf diesen Pivots auf.
+"""Turning points (pivots) via ZigZag with ATR threshold. All patterns build on these pivots.
 
-Ein Hoch gilt als Wendepunkt, sobald der Kurs von dort um mindestens max(atr_faktor × ATR, min_bewegung_pct)
-gefallen ist (Tief entsprechend). `confirmed_idx` ist die Kerze, an der das feststand: bis dahin war der
-Wendepunkt nicht bekannt (wichtig für den Backtest ohne Blick in die Zukunft)."""
+A high counts as a turning point as soon as the price has fallen from there by at least
+max(atr_faktor × ATR, min_bewegung_pct) (low accordingly). `confirmed_idx` is the candle at which that was
+established: until then the turning point was not known (important for the backtest without look-ahead)."""
 from dataclasses import dataclass
 from typing import Literal
 

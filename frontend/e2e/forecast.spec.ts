@@ -31,10 +31,10 @@ test("Prognosekorridor mit Wahrscheinlichkeitsbereichen, Methode und Backtest", 
 test("Mittlerer Verlauf mit Backtest-Fehler und Beispielpfade nur zusammen mit dem Korridor", async ({ page }) => {
   const panel = page.getByTestId("forecast-panel");
   const median = panel.getByTestId("median-line");
-  await expect(median).toContainText("Mittlerer Verlauf der Modellverteilung");
-  await expect(median).toContainText("kein erwarteter Kurs");
+  await expect(median).toContainText("Central path of the model distribution");
+  await expect(median).toContainText("not an expected price");
   await expect(median.getByTestId("median-error-table")).toContainText("Referenz „Kurs bleibt gleich“");
-  await expect(panel.getByTestId("example-paths")).toContainText("nicht wahrscheinlicher");
+  await expect(panel.getByTestId("example-paths")).toContainText("no more likely");
   const examples = page.getByLabel("Beispielpfade");
   await examples.check({ force: true });
   await expect(examples).toBeChecked();
@@ -55,7 +55,7 @@ test("Horizont umschaltbar", async ({ page }) => {
 });
 
 test("Szenario-Niveaus eines gewählten Musters erscheinen im Vergleich zum Korridor", async ({ page }) => {
-  await page.getByTestId("pattern-list").getByRole("button", { name: /Doppelboden/ }).click();
+  await page.getByTestId("pattern-list").getByRole("button", { name: /Double bottom/ }).click();
   await expect(page.getByTestId("scenario-levels")).toContainText("Szenario-Niveaus");
 });
 

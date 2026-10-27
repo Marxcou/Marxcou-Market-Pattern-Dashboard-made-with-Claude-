@@ -228,7 +228,7 @@ def test_sec_edgar_invalid_contact_email_disables_source_instead_of_crashing(mon
     try:
         a = SecEdgarAdapter()  # früher: UnicodeEncodeError beim Aufbau des User-Agent
         assert not a.is_configured()
-        assert "ungültig" in a.disabled_reason
+        assert "invalid" in a.disabled_reason
     finally:
         get_settings.cache_clear()
 
@@ -254,7 +254,7 @@ def test_invalid_env_values_never_stop_adapter_loading_and_sync(monkeypatch):
             sync_sources(db)
             rows = {r.key: r for r in db.query(Source)}
         assert rows["sec_edgar"].status == "disabled" and rows["alpaca"].status == "disabled"
-        assert "ungültig" in rows["sec_edgar"].last_error or "unzulässig" in rows["alpaca"].last_error
+        assert "invalid" in rows["sec_edgar"].last_error or "invalid characters" in rows["alpaca"].last_error
         assert "openfigi" in rows  # läuft ohne Schlüssel weiter, nicht versteckt
     finally:
         registry.clear()

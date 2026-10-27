@@ -1,4 +1,4 @@
-"""Grundregel-Check (CI): keine Empfehlungssprache in Backend-Code und Frontend-Texten."""
+"""Core-rules check (CI): no recommendation language in backend code and frontend texts."""
 from pathlib import Path
 
 from app.grundregeln import find_forbidden
@@ -22,5 +22,7 @@ def test_no_recommendation_language():
 
 
 def test_filter_detects_terms():
+    assert find_forbidden("We recommend: Strong Buy, price target 200") == ["price target", "strong buy"]
     assert find_forbidden("Wir empfehlen: Strong Buy, Kursziel 200") == ["kursziel", "strong buy"]
+    assert find_forbidden("Historically a rise followed in 62% of cases") == []
     assert find_forbidden("Historisch folgte in 62 % der Fälle ein Anstieg") == []

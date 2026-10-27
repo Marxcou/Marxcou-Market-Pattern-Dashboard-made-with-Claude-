@@ -1,12 +1,12 @@
-"""Kennzeichnete Testdaten für die Ende-zu-Ende-Tests (Playwright) und lokale Sichtprüfung.
+"""Labeled test data for the end-to-end tests (Playwright) and local visual checks.
 
     DEMO_MODE=true python -m app.e2e_seed
 
-Grundregel 6: Diese Daten sind erfunden und werden nie als echt ausgegeben. Der Befehl läuft nur mit DEMO_MODE=true
-(Banner "DEMO-MODUS" in der Oberfläche); Kerzen und Kurse tragen is_demo=true, Instrumente und Quellen heißen
-"Demo ..." bzw. "(Beispieldaten)". Der Lauf ist wiederholbar (bestehende Demo-Zeilen bleiben, Analysen werden neu
-berechnet). Muster, Indikator-Ereignisse und Prognose entstehen mit denselben Diensten wie im Betrieb; nur der
-Muster-Backtest ist ein fest eingetragener Testlauf mit erkennbarer Universumsangabe."""
+Core rule 6: This data is invented and is never presented as real. The command only runs with DEMO_MODE=true
+(banner "DEMO MODE" in the interface); candles and prices carry is_demo=true, instruments and sources are called
+"Demo ..." or "(sample data)". The run is repeatable (existing demo rows stay, analyses are recomputed).
+Patterns, indicator events and forecast are created with the same services as in operation; only the
+pattern backtest is a hard-coded test run with a recognizable universe label."""
 import logging
 import sys
 from datetime import UTC, datetime, timedelta
@@ -41,11 +41,11 @@ log = logging.getLogger("e2e_seed")
 BARS = 420
 LABEL = "Beispieldaten"
 
-# Kursverlauf: langsamer Vorlauf, dann Doppelboden (Tiefs bei ~100 und ~100,3, Nackenlinie ~110). DEMOA: bestätigter
-# Ausbruch (Chart-Tests), DEMOB: noch in Bildung (Zähler auf der Watchlist).
+# Price course: slow lead-in, then double bottom (lows at ~100 and ~100.3, neckline ~110). DEMOA: confirmed
+# breakout (chart tests), DEMOB: still forming (counter on the watchlist).
 ANCHORS: dict[str, list[tuple[int, float]]] = {
     "DEMOA": [(0, 140), (250, 120), (280, 100), (295, 110), (310, 100.3), (335, 118), (360, 125), (BARS - 1, 124)],
-    # Doppelboden noch in Bildung (zählt als "aktuell erkanntes Muster" auf der Watchlist-Karte)
+    # double bottom still forming (counts as a "currently detected pattern" on the watchlist card)
     "DEMOB": [(0, 140), (350, 120), (380, 100), (395, 110), (410, 100.3), (BARS - 1, 106)],
 }
 NAMES = {"DEMOA": "Demo Beispiel AG", "DEMOB": "Demo Muster Holding"}
@@ -62,8 +62,8 @@ def _series(anchors: list[tuple[int, float]], seed: int) -> np.ndarray:
 def _source(db: Session, key: str, name: str, kind: str, description: str, now: datetime) -> Source:
     row = db.scalar(select(Source).where(Source.key == key)) or Source(key=key)
     row.name, row.kind, row.description = name, kind, description
-    row.homepage, row.terms_url = "https://example.org/demo", "https://example.org/demo/nutzung"
-    row.update_interval, row.delay_text = "nur beim Befüllen der Testdaten", "keine (erfundene Beispieldaten)"
+    row.homepage, row.terms_url = "https://example.org/demo", "https://example.org/demo/terms"
+    row.update_interval, row.delay_text = "only when the test data is loaded", "none (invented sample data)"
     row.requires_key, row.is_official = False, False
     row.status, row.last_success_at, row.last_error = "online", now, None
     db.add(row)
@@ -108,10 +108,10 @@ def _news(db: Session, inst: Instrument, sa: Source, sb: Source, sent: Source, n
     if db.scalar(select(NewsCluster.id).limit(1)) is not None:
         return
     spec = [
-        ("Demo Beispiel AG meldet Zahlen für das dritte Quartal (Beispielmeldung)", 30, "positiv", 0.6,
-         "Beispielmeldung mit erfundenem Inhalt zur Prüfung der Oberfläche.", ["Zahlen für das dritte Quartal"]),
-        ("Demo Beispiel AG kündigt Änderung im Vorstand an (Beispielmeldung)", 26 * 60, "neutral", 0.0,
-         "Beispielmeldung mit erfundenem Inhalt zur Prüfung der Oberfläche.", []),
+        ("Demo Example Corp reports third-quarter figures (sample item)", 30, "positiv", 0.6,
+         "Sample item with invented content for checking the interface.", ["third-quarter figures"]),
+        ("Demo Example Corp announces board change (sample item)", 26 * 60, "neutral", 0.0,
+         "Sample item with invented content for checking the interface.", []),
     ]
     for n, (title, minutes_ago, label, score, excerpt, evidence) in enumerate(spec):
         pub = now - timedelta(minutes=minutes_ago)
@@ -121,45 +121,45 @@ def _news(db: Session, inst: Instrument, sa: Source, sb: Source, sent: Source, n
         for s, tag in ((sa, "a"), (sb, "b")):
             db.add(NewsItem(source_id=s.id, external_id=f"demo-{n}-{tag}", url=f"https://example.org/demo/{n}/{tag}",
                             url_normalized=f"example.org/demo/{n}/{tag}", title=title, excerpt=excerpt,
-                            published_at=pub, fetched_at=now, language="de", publisher=s.name, cluster_id=cluster.id))
+                            published_at=pub, fetched_at=now, language="en", publisher=s.name, cluster_id=cluster.id))
         db.add(NewsInstrument(cluster_id=cluster.id, instrument_id=inst.id, match_method="provider_tag",
                               source_id=sa.id, fetched_at=now))
         db.add(Sentiment(cluster_id=cluster.id, label=label, score=score, evidence=evidence,
-                         rationale="Erfundene Beispielbegründung für die Oberflächenprüfung.",
-                         method="lexicon", model_name="Demo-Lexikon (Beispieldaten)", model_version="e2e",
+                         rationale="Invented sample rationale for checking the interface.",
+                         method="lexicon", model_name="Demo lexicon (sample data)", model_version="e2e",
                          source_id=sent.id))
 
 
 def _pattern_backtest(db: Session) -> None:
-    """Fest eingetragener Testlauf, damit die Erklärtafel den Backtest-Block zeigt. Universum benennt ihn als Demo."""
+    """Hard-coded test run so the explanation panel shows the backtest block. The universe names it as a demo."""
     if db.scalar(select(BacktestRun.id).where(BacktestRun.kind == "pattern", BacktestRun.subject == "doppelboden",
                                               BacktestRun.universe.like("Demo%"))) is not None:
         return
     db.add(BacktestRun(
         kind="pattern", subject="doppelboden", timeframe="1d", algo_version=ALGO_VERSION,
-        params={"horizon_bars": 20, "min_move_pct": 3.0}, universe="Demo-Universum (erfundene Beispieldaten)",
-        sample_size=120, hit_rate=0.6, ci_low=0.51, ci_high=0.69, base_rate=0.5, date_range="Beispielzeitraum",
-        metrics={"verdict_text": "Beispielwert für die Oberflächenprüfung, keine echte Trefferquote.",
-                 "survivorship_note": "Erfundene Beispieldaten.",
+        params={"horizon_bars": 20, "min_move_pct": 3.0}, universe="Demo universe (invented sample data)",
+        sample_size=120, hit_rate=0.6, ci_low=0.51, ci_high=0.69, base_rate=0.5, date_range="Sample period",
+        metrics={"verdict_text": "Sample value for checking the interface, not a real hit rate.",
+                 "survivorship_note": "Invented sample data.",
                  "scenarios": {"bestaetigung": {"share": 0.6, "sample_size": 120,
-                                                "text": "Beispielwert, keine echte Statistik."}}}))
+                                                "text": "Sample value, not real statistics."}}}))
 
 
 def seed() -> None:
     if not get_settings().demo_mode:
-        sys.exit("Abbruch: Die Testdaten sind erfunden und dürfen nur mit DEMO_MODE=true angelegt werden "
-                 "(Grundregel 6).")
+        sys.exit("Aborted: The test data is invented and may only be created with DEMO_MODE=true "
+                 "(core rule 6).")
     now = datetime.now(UTC)
     with SessionLocal() as db:
         ensure_admin(db)
-        price = _source(db, "demo_kurse", "Demo-Kursquelle (Beispieldaten)", "price",
-                        "Erfundene Kerzen für Tests. Keine echten Marktdaten.", now)
-        na = _source(db, "demo_news_a", "Demo-Nachrichtenquelle A (Beispieldaten)", "news",
-                     "Erfundene Meldungen für Tests.", now)
-        nb = _source(db, "demo_news_b", "Demo-Nachrichtenquelle B (Beispieldaten)", "news",
-                     "Erfundene Meldungen für Tests.", now)
-        sent = _source(db, "demo_stimmung", "Demo-Stimmungsverfahren (Beispieldaten)", "reference",
-                       "Erfundene Stimmungswerte für Tests.", now)
+        price = _source(db, "demo_kurse", "Demo price source (sample data)", "price",
+                        "Invented candles for tests. No real market data.", now)
+        na = _source(db, "demo_news_a", "Demo news source A (sample data)", "news",
+                     "Invented items for tests.", now)
+        nb = _source(db, "demo_news_b", "Demo news source B (sample data)", "news",
+                     "Invented items for tests.", now)
+        sent = _source(db, "demo_stimmung", "Demo sentiment method (sample data)", "reference",
+                       "Invented sentiment values for tests.", now)
         insts = [_instrument(db, "DEMOA", "XETR", "EUR", price, now),
                  _instrument(db, "DEMOB", "XNAS", "USD", price, now)]
         for i, inst in enumerate(insts):

@@ -1,16 +1,16 @@
-"""Statistische Prognosen als Quantil-Korridor und rollierender Backtest (reines numpy, ohne I/O).
+"""Statistical forecasts as a quantile corridor and rolling backtest (pure numpy, no I/O).
 
-Grundregel 4: Ergebnis ist immer ein Satz Quantile je Schritt. Der Median (50-%-Quantil) wird als "mittlerer Verlauf"
-nur innerhalb dieses Korridors gezeigt, nie allein; Beispielpfade aus der Simulation ebenso. Alles ist deterministisch:
-der Zufalls-Seed der Simulation hängt nur vom Datenstand ab (gleiche Kerzen -> gleicher Korridor).
+Core rule 4: the result is always a set of quantiles per step. The median (50% quantile) is shown as the "central path"
+only inside this corridor, never alone; example paths from the simulation likewise. Everything is deterministic:
+the random seed of the simulation depends only on the data state (same candles -> same corridor).
 
-Methoden:
-- monte_carlo_block_bootstrap (Hauptmethode): zieht Blöcke zusammenhängender historischer Tagesrenditen und setzt
-  sie zu vielen möglichen Pfaden zusammen. Blöcke erhalten kurzfristige Abhängigkeiten (z. B. Phasen hoher
-  Schwankung). Der historische Durchschnittstrend wird entfernt, damit ein vergangener Anstieg oder Rückgang nicht
-  fortgeschrieben wird.
-- arima_1_1_0 (Vergleich): AR(1) auf Tagesrenditen der Log-Kurse (= ARIMA(1,1,0) mit Konstante), geschätzt per
-  Kleinste-Quadrate, Normalverteilung der Fehler.
+Methods:
+- monte_carlo_block_bootstrap (main method): draws blocks of consecutive historical daily returns and assembles
+  them into many possible paths. Blocks preserve short-term dependencies (e.g. phases of high
+  volatility). The historical average trend is removed so that a past advance or decline is not
+  extrapolated.
+- arima_1_1_0 (comparison): AR(1) on daily returns of the log prices (= ARIMA(1,1,0) with constant), estimated by
+  least squares, normally distributed errors.
 """
 import hashlib
 import math
@@ -29,7 +29,7 @@ HORIZON = 20
 MIN_BARS = 250
 QUANTILES: tuple[float, ...] = (0.025, 0.10, 0.25, 0.50, 0.75, 0.90, 0.975)
 QKEYS: tuple[str, ...] = ("2.5", "10", "25", "50", "75", "90", "97.5")
-# Standardnormal-Quantile zu QUANTILES (für ARIMA, ohne scipy)
+# Standard normal quantiles for QUANTILES (for ARIMA, without scipy)
 Z: tuple[float, ...] = (-1.959964, -1.281552, -0.674490, 0.0, 0.674490, 1.281552, 1.959964)
 BANDS: list[dict[str, Any]] = [
     {"level": 0.5, "lower": "25", "upper": "75"},
@@ -51,42 +51,42 @@ BACKTEST_PARAMS: dict[str, Any] = {
 }
 
 COMMON_LIMITATIONS = [
-    "Nutzt ausschließlich den bisherigen Kursverlauf; Nachrichten, Termine und Fundamentaldaten fließen nicht ein.",
-    "Handelstage in der Zukunft sind vereinfacht als Werktage (Mo–Fr) gezählt; Feiertage sind nicht berücksichtigt.",
-    "Die Bänder beschreiben die Schwankungsbreite unter der Annahme, dass die Vergangenheit repräsentativ ist. "
-    "Seltene Ereignisse können außerhalb des 95-%-Bandes liegen.",
+    "Uses only the past price history; news, events and fundamentals are not taken into account.",
+    "Future trading days are simplified as weekdays (Mon–Fri); holidays are not taken into account.",
+    "The bands describe the range of fluctuation under the assumption that the past is representative. "
+    "Rare events can lie outside the 95% band.",
 ]
 
 METHODS: dict[str, dict[str, Any]] = {
     PRIMARY: {
-        "name": "Monte-Carlo-Simulation (Block-Bootstrap)",
+        "name": "Monte Carlo simulation (block bootstrap)",
         "description": (
-            "Aus den Tagesrenditen der letzten {lookback_bars} Handelstage werden Blöcke von je {block_length} "
-            "aufeinanderfolgenden Tagen zufällig gezogen und zu {paths} möglichen Kursverläufen zusammengesetzt. "
-            "Je Tag werden daraus die Quantile 2,5/10/25/50/75/90/97,5 % bestimmt; sie bilden die Bänder "
-            "50 %, 80 % und 95 %."
+            "From the daily returns of the last {lookback_bars} trading days, blocks of {block_length} "
+            "consecutive days each are drawn at random and assembled into {paths} possible price paths. "
+            "For each day the quantiles 2.5/10/25/50/75/90/97.5% are determined; they form the bands "
+            "50%, 80% and 95%."
         ),
         "assumptions": [
-            "Die künftigen Tagesrenditen ähneln in Verteilung und kurzfristiger Abhängigkeit denen des "
-            "Rückblickzeitraums.",
-            "Der durchschnittliche Trend des Rückblickzeitraums wird entfernt (kein Fortschreiben vergangener "
-            "Anstiege oder Rückgänge).",
+            "Future daily returns resemble those of the lookback period in distribution and short-term "
+            "dependence.",
+            "The average trend of the lookback period is removed (past advances or declines are not "
+            "extrapolated).",
         ],
         "limitations": COMMON_LIMITATIONS,
     },
     COMPARISON: {
-        "name": "ARIMA(1,1,0) auf Log-Kursen",
+        "name": "ARIMA(1,1,0) on log prices",
         "description": (
-            "Autoregressives Modell erster Ordnung auf den Tagesrenditen der Log-Kurse der letzten {lookback_bars} "
-            "Handelstage (Kleinste-Quadrate-Schätzung mit Konstante). Die Bänder folgen aus der Normalverteilung "
-            "der aufsummierten Prognosefehler."
+            "First-order autoregressive model on the daily returns of the log prices of the last {lookback_bars} "
+            "trading days (least-squares estimate with constant). The bands follow from the normal distribution "
+            "of the accumulated forecast errors."
         ),
         "assumptions": [
-            "Tagesrenditen hängen nur linear von der Vortagesrendite ab.",
-            "Fehler sind normalverteilt mit konstanter Varianz; ein mittlerer Trend wird mitgeschätzt.",
+            "Daily returns depend only linearly on the previous day's return.",
+            "Errors are normally distributed with constant variance; a mean trend is estimated as well.",
         ],
         "limitations": [*COMMON_LIMITATIONS,
-                        "Normalverteilte Fehler unterschätzen starke Kurssprünge meist."],
+                        "Normally distributed errors usually underestimate large price jumps."],
     },
 }
 
@@ -121,7 +121,7 @@ def future_weekdays(last: datetime, n: int) -> list[datetime]:
 
 
 def simulate_bootstrap(close: FloatArray, horizon: int, params: dict[str, Any], seed: int) -> FloatArray:
-    """Pfade (paths x horizon) der Schlusskurse nach dem zirkulären Block-Bootstrap."""
+    """Paths (paths x horizon) of the closing prices from the circular block bootstrap."""
     r = log_returns(close[-(int(params["lookback_bars"]) + 1):])
     if params.get("remove_drift", True):
         r = r - r.mean()
@@ -139,7 +139,7 @@ def quantiles_from_paths(paths: FloatArray) -> FloatArray:
 
 
 def fit_ar1(r: FloatArray) -> tuple[float, float, float]:
-    """Kleinste-Quadrate-Schätzung r_t = c + phi * r_{t-1} + e_t. Liefert (mu, phi, sigma)."""
+    """Least-squares estimate r_t = c + phi * r_{t-1} + e_t. Returns (mu, phi, sigma)."""
     x, y = r[:-1], r[1:]
     xm, ym = x.mean(), y.mean()
     var_x = float(((x - xm) ** 2).sum())
@@ -159,7 +159,7 @@ def arima_quantiles(close: FloatArray, horizon: int, params: dict[str, Any]) -> 
     ks = np.arange(1, horizon + 1)
     mean_r = mu + phi**ks * (last_r - mu)
     mean_cum = np.cumsum(mean_r)
-    # Beitrag des Fehlers e_{T+j} zur Summe bis h: psi_j = (1 - phi^(h-j+1)) / (1 - phi)
+    # Contribution of the error e_{T+j} to the sum up to h: psi_j = (1 - phi^(h-j+1)) / (1 - phi)
     var_cum = np.empty(horizon)
     for h in range(1, horizon + 1):
         j = np.arange(1, h + 1)
@@ -175,7 +175,7 @@ class Forecast:
     method: str
     params: dict[str, Any]
     quantiles: FloatArray  # len(QUANTILES) x horizon
-    paths: FloatArray | None = None  # nur Bootstrap, für Szenario-Wahrscheinlichkeiten
+    paths: FloatArray | None = None  # bootstrap only, for scenario probabilities
     seed: int | None = None
 
 
@@ -183,24 +183,25 @@ def forecast(method: str, close: FloatArray, horizon: int = HORIZON, params: dic
              seed: int = 0) -> Forecast:
     p = dict(params or DEFAULT_PARAMS[method])
     if len(close) < MIN_BARS:
-        raise ValueError(f"mindestens {MIN_BARS} Kerzen nötig")
+        raise ValueError(f"at least {MIN_BARS} candles required")
     if method == PRIMARY:
         paths = simulate_bootstrap(close, horizon, p, seed)
         return Forecast(method, {**p, "seed": seed}, quantiles_from_paths(paths), paths, seed)
     if method == COMPARISON:
         return Forecast(method, p, arima_quantiles(close, horizon, p))
-    raise ValueError(f"Unbekannte Methode {method}")
+    raise ValueError(f"Unknown method {method}")
 
 
-# --- Beispielpfade ---------------------------------------------------------------------------------------------
+# --- Example paths ---------------------------------------------------------------------------------------------
 
-# Aus den simulierten Pfaden werden die gezeigt, deren Endwert an diesen Perzentilen aller Endwerte liegt. So decken
-# die Beispiele die Breite der Verteilung ab, statt nur ähnliche Verläufe zu zeigen; keiner ist wahrscheinlicher.
+# From the simulated paths, those are shown whose end value lies at these percentiles of all end values. This way
+# the examples cover the width of the distribution instead of showing only similar paths; none is more likely.
 EXAMPLE_PERCENTILES: tuple[int, ...] = (10, 30, 50, 70, 90)
 
 
 def example_path_indices(paths: FloatArray, percentiles: Sequence[int] = EXAMPLE_PERCENTILES) -> list[tuple[int, int]]:
-    """(Perzentil, Pfadindex) je Perzentil: der Pfad, dessen Endwert an dieser Stelle der sortierten Endwerte liegt."""
+    """(percentile, path index) per percentile: the path whose end value lies at this position among the sorted
+    end values."""
     n = paths.shape[0]
     order = np.argsort(paths[:, -1], kind="stable")
     return [(p, int(order[min(n - 1, round(p / 100 * (n - 1)))])) for p in percentiles]
@@ -213,7 +214,7 @@ def example_path_rows(paths: FloatArray, ts: Sequence[datetime], digits: int = 4
             for p, k in example_path_indices(paths)]
 
 
-# --- Muster-Szenarien -------------------------------------------------------------------------------------------
+# --- Pattern scenarios -------------------------------------------------------------------------------------------
 
 
 @dataclass(frozen=True)
@@ -224,8 +225,8 @@ class FirstPassage:
 
 
 def first_passage(paths: FloatArray, upper: float, lower: float) -> FirstPassage:
-    """Anteil der Pfade, deren Schlusskurs zuerst >= upper bzw. <= lower liegt (oder keins von beiden im
-    Horizont). Die Niveaus bleiben über den Horizont konstant."""
+    """Share of paths whose closing price first reaches >= upper or <= lower (or neither within the
+    horizon). The levels stay constant over the horizon."""
     horizon = paths.shape[1]
     hit_up = paths >= upper
     hit_dn = paths <= lower
@@ -251,8 +252,8 @@ def norm_cdf(x: float) -> float:
 
 
 def diebold_mariano(d: FloatArray, lag: int) -> float | None:
-    """Einseitiger p-Wert für H1: mittlere Verlustdifferenz d = model - naive < 0. Newey-West-Varianz mit `lag`
-    (überlappende Horizonte). None, wenn die Varianz nicht positiv ist."""
+    """One-sided p-value for H1: mean loss difference d = model - naive < 0. Newey-West variance with `lag`
+    (overlapping horizons). None if the variance is not positive."""
     n = len(d)
     if n < 2:
         return None
@@ -295,7 +296,7 @@ class BacktestResult:
 
 
 def backtest_origins(n: int, params: dict[str, Any]) -> list[int]:
-    """Ursprünge (Index der letzten bekannten Kerze), neueste zuerst gewählt, dann aufsteigend sortiert."""
+    """Origins (index of the last known candle), newest chosen first, then sorted ascending."""
     max_h = max(params["horizons"])
     first, last = int(params["min_train_bars"]) - 1, n - 1 - max_h
     if last < first:
@@ -306,8 +307,8 @@ def backtest_origins(n: int, params: dict[str, Any]) -> list[int]:
 
 def rolling_backtest(method: str, close: FloatArray, params: dict[str, Any] | None = None,
                      bt: dict[str, Any] | None = None, seed_fn: Callable[[int], int] | None = None) -> BacktestResult:
-    """Rollierender Ursprung ohne Vorgriff: je Ursprung o wird nur close[:o+1] verwendet und mit close[o+h]
-    verglichen. Fehler in Prozent des Kurses am Ursprung."""
+    """Rolling origin without look-ahead: for each origin o only close[:o+1] is used and compared with close[o+h].
+    Errors in percent of the price at the origin."""
     p = dict(params or DEFAULT_PARAMS[method])
     b = {**BACKTEST_PARAMS, **(bt or {})}
     if method == PRIMARY:

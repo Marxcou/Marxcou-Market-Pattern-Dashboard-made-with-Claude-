@@ -1,5 +1,5 @@
-"""Benutzerverwaltung (nur Administratoren). Es gibt keine offene Registrierung und keinen E-Mail-Versand:
-Einmalpasswörter werden genau einmal in der Antwort angezeigt und nie gespeichert (nur der Argon2-Hash)."""
+"""User management (administrators only). There is no open registration and no email sending:
+one-time passwords are shown exactly once in the response and never stored (only the Argon2 hash)."""
 from datetime import datetime
 
 from fastapi import APIRouter, HTTPException
@@ -27,12 +27,12 @@ class AdminUserOut(BaseModel):
 class UserCreate(BaseModel):
     email: EmailStr
     display_name: str = Field(min_length=1, max_length=100)
-    password: str | None = Field(default=None, min_length=10, max_length=200)  # leer = wird erzeugt
+    password: str | None = Field(default=None, min_length=10, max_length=200)  # empty = generated
     role: str = Field(default="user", pattern="^(admin|user)$")
 
 
 class UserCreated(AdminUserOut):
-    temporary_password: str  # nur in dieser Antwort
+    temporary_password: str  # in this response only
 
 
 class UserPatch(BaseModel):
@@ -48,7 +48,7 @@ class PasswordReset(BaseModel):
 def _get(db: Session, user_id: int) -> User:
     user = db.get(User, user_id)
     if user is None:
-        raise HTTPException(404, "Benutzer nicht gefunden")
+        raise HTTPException(404, "User not found")
     return user
 
 
@@ -65,7 +65,7 @@ def list_users(db: DB, _admin: AdminUser) -> list[User]:
 def create_user(body: UserCreate, db: DB, _admin: AdminUser) -> dict[str, object]:
     email = body.email.lower()
     if db.scalar(select(User).where(User.email == email)):
-        raise HTTPException(409, "E-Mail ist bereits vergeben")
+        raise HTTPException(409, "Email is already taken")
     password = body.password or generate_temporary_password()
     user = User(email=email, display_name=body.display_name, role=body.role,
                 password_hash=hash_password(password), must_change_password=True)
@@ -79,9 +79,9 @@ def patch_user(user_id: int, body: UserPatch, db: DB, admin: AdminUser) -> User:
     user = _get(db, user_id)
     demoting = user.role == "admin" and (body.role == "user" or body.is_active is False)
     if demoting and user.is_active and _active_admins(db) <= 1:
-        raise HTTPException(409, "Der letzte aktive Administrator kann nicht gesperrt oder herabgestuft werden")
+        raise HTTPException(409, "The last active administrator cannot be blocked or demoted")
     if user.id == admin.id and (body.is_active is False or body.role == "user"):
-        raise HTTPException(409, "Das eigene Konto kann nicht gesperrt oder herabgestuft werden")
+        raise HTTPException(409, "Your own account cannot be blocked or demoted")
     if body.display_name is not None:
         user.display_name = body.display_name
     if body.role is not None:

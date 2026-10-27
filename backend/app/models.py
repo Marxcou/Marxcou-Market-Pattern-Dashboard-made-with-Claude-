@@ -1,5 +1,5 @@
-"""Kerntabellen für Phase 1. Jede Datenzeile trägt source_id und fetched_at (Grundregel 2).
-Weitere Tabellen (News, Muster, Prognosen, ...) kommen mit ihren Phasen per eigener Migration."""
+"""Core tables for phase 1. Every data row carries source_id and fetched_at (core rule 2).
+Further tables (news, patterns, forecasts, ...) come with their phases via their own migration."""
 from datetime import UTC, date, datetime
 from typing import Any
 
@@ -119,7 +119,7 @@ class Quote(Base):
 
 
 class Event(Base):
-    """Worker -> API Ereignis-Warteschlange (SQLite-basiert; Redis später möglich)."""
+    """Worker -> API event queue (SQLite-based; Redis possible later)."""
     __tablename__ = "events"
     id: Mapped[int] = mapped_column(primary_key=True)
     type: Mapped[str] = mapped_column(String(40))  # quote | news | detection | source_status
@@ -128,7 +128,7 @@ class Event(Base):
 
 
 class NewsCluster(Base):
-    """Zusammengeführte Meldungen zur selben Nachricht. Die UI listet alle Quellen des Clusters."""
+    """Merged items about the same story. The UI lists all sources of the cluster."""
     __tablename__ = "news_clusters"
     id: Mapped[int] = mapped_column(primary_key=True)
     canonical_title: Mapped[str] = mapped_column(String(500))
@@ -146,7 +146,7 @@ class NewsItem(Base):
     url: Mapped[str] = mapped_column(String(1000))
     url_normalized: Mapped[str] = mapped_column(String(1000), index=True)
     title: Mapped[str] = mapped_column(String(500))
-    excerpt: Mapped[str] = mapped_column(String(300), default="")  # nie der Volltext
+    excerpt: Mapped[str] = mapped_column(String(300), default="")  # never the full text
     published_at: Mapped[datetime] = mapped_column(UtcDateTime(), index=True)
     fetched_at: Mapped[datetime] = mapped_column(UtcDateTime())
     language: Mapped[str | None] = mapped_column(String(8), nullable=True)
@@ -165,13 +165,13 @@ class NewsInstrument(Base):
 
 
 class Sentiment(Base):
-    """Stimmung je Cluster mit Begründung und Verfahren. source_id verweist auf das Verfahren
-    (sentiment_lexicon oder claude_sentiment) und erscheint damit auf der Seite Quellen."""
+    """Sentiment per cluster with rationale and method. source_id points to the method
+    (sentiment_lexicon or claude_sentiment) and thus appears on the Sources page."""
     __tablename__ = "sentiments"
     cluster_id: Mapped[int] = mapped_column(ForeignKey("news_clusters.id"), primary_key=True)
     label: Mapped[str] = mapped_column(String(10))  # positiv | neutral | negativ
     score: Mapped[float] = mapped_column(Float)  # -1 .. 1
-    evidence: Mapped[list[str]] = mapped_column(JSON, default=list)  # wörtliche Zitate
+    evidence: Mapped[list[str]] = mapped_column(JSON, default=list)  # verbatim quotes
     rationale: Mapped[str] = mapped_column(Text)
     method: Mapped[str] = mapped_column(String(10))  # lexicon | claude
     model_name: Mapped[str] = mapped_column(String(100))
@@ -181,7 +181,7 @@ class Sentiment(Base):
 
 
 class LlmUsage(Base):
-    """Verbrauch der Claude-API je Monat (für die harte Obergrenze CLAUDE_MONTHLY_BUDGET_USD)."""
+    """Claude API usage per month (for the hard cap CLAUDE_MONTHLY_BUDGET_USD)."""
     __tablename__ = "llm_usage"
     month: Mapped[str] = mapped_column(String(7), primary_key=True)  # YYYY-MM (UTC)
     input_tokens: Mapped[int] = mapped_column(Integer, default=0)
@@ -190,9 +190,9 @@ class LlmUsage(Base):
 
 
 class AiExplanation(Base):
-    """Erklärtext zu einer Erkennung oder Prognose, einmal je Datenstand (input_hash) erzeugt und zwischengespeichert.
-    method 'claude' = KI-Text (nach Prüfung), 'template' = deterministische Vorlage (fallback_reason nennt den Grund,
-    wenn ein KI-Text versucht und verworfen wurde)."""
+    """Explanation text for a detection or forecast, generated once per data state (input_hash) and cached.
+    method 'claude' = AI text (after validation), 'template' = deterministic template (fallback_reason gives the reason
+    if an AI text was attempted and discarded)."""
     __tablename__ = "ai_explanations"
     id: Mapped[int] = mapped_column(primary_key=True)
     subject_kind: Mapped[str] = mapped_column(String(10))  # pattern | forecast
@@ -209,8 +209,8 @@ class AiExplanation(Base):
 
 
 class IndicatorEvent(Base):
-    """Indikator-Ereignis mit Erklärung (Kriterien mit tatsächlichen Werten). source_id ist die Quelle der
-    Markierungs-Kerze, source_ids alle Quellen der verwendeten Kerzen; fetched_at der späteste Abruf davon."""
+    """Indicator event with explanation (criteria with actual values). source_id is the source of the
+    marker candle, source_ids all sources of the candles used; fetched_at the latest retrieval of them."""
     __tablename__ = "indicator_events"
     id: Mapped[int] = mapped_column(primary_key=True)
     instrument_id: Mapped[int] = mapped_column(ForeignKey("instruments.id"), index=True)
@@ -240,7 +240,7 @@ class IndicatorEvent(Base):
 
 
 class NotableMove(Base):
-    """Auffällige Kursbewegung (Rendite- oder Volumen-z-Wert über Schwelle)."""
+    """Notable price move (return or volume z-value above threshold)."""
     __tablename__ = "notable_moves"
     id: Mapped[int] = mapped_column(primary_key=True)
     instrument_id: Mapped[int] = mapped_column(ForeignKey("instruments.id"), index=True)
@@ -262,15 +262,15 @@ class NotableMove(Base):
 
 
 class MoveNewsLink(Base):
-    """Zeitliche Übereinstimmung Bewegung <-> Meldungscluster. Keine Aussage über Ursache."""
+    """Temporal coincidence move <-> news cluster. No statement about cause."""
     __tablename__ = "move_news_links"
     move_id: Mapped[int] = mapped_column(ForeignKey("notable_moves.id", ondelete="CASCADE"), primary_key=True)
     cluster_id: Mapped[int] = mapped_column(ForeignKey("news_clusters.id"), primary_key=True)
-    time_offset_minutes: Mapped[int] = mapped_column(Integer)  # Veröffentlichung minus Beginn der Kerze
+    time_offset_minutes: Mapped[int] = mapped_column(Integer)  # publication minus start of the candle
     source_id: Mapped[int] = mapped_column(ForeignKey("sources.id"))
     fetched_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=utcnow)
 class ApiUsage(Base):
-    """Abrufzähler je Quelle und UTC-Tag für Tageskontingente (übersteht Neustarts des Workers)."""
+    """Retrieval counter per source and UTC day for daily quotas (survives worker restarts)."""
     __tablename__ = "api_usage"
     source_key: Mapped[str] = mapped_column(String(50), primary_key=True)
     day: Mapped[date] = mapped_column(Date, primary_key=True)
@@ -278,8 +278,8 @@ class ApiUsage(Base):
 
 
 class SentimentBatch(Base):
-    """Eine bei Anthropic eingereichte Batch-Anfrage für Stimmungen. reserved_usd ist der Höchstbetrag, der bis zum
-    Eintreffen der Ergebnisse gegen das Monatslimit gerechnet wird."""
+    """A batch request for sentiments submitted to Anthropic. reserved_usd is the maximum amount counted against the
+    monthly limit until the results arrive."""
     __tablename__ = "sentiment_batches"
     id: Mapped[int] = mapped_column(primary_key=True)
     batch_id: Mapped[str] = mapped_column(String(100), unique=True)
@@ -293,14 +293,14 @@ class SentimentBatchItem(Base):
     __tablename__ = "sentiment_batch_items"
     batch_id: Mapped[int] = mapped_column(ForeignKey("sentiment_batches.id"), primary_key=True)
     cluster_id: Mapped[int] = mapped_column(ForeignKey("news_clusters.id"), primary_key=True, index=True)
-    # pending | succeeded | rejected (Antwort nicht belegbar) | errored | expired | canceled
+    # pending | succeeded | rejected (response not verifiable) | errored | expired | canceled
     status: Mapped[str] = mapped_column(String(10), default="pending")
 
 
 class PatternDetection(Base):
-    """Erkanntes Chartmuster mit vollständiger Erklärung (Grundregel 3): Kriterien mit tatsächlichen Werten,
-    Konfidenz-Aufschlüsselung, Szenarien mit Niveaus. Die Trefferquote hängt am Backtest (backtest_runs) und wird
-    beim Lesen nachgeschlagen. source_id ist die Quelle der letzten Musterkerze, source_ids alle verwendeten."""
+    """Detected chart pattern with full explanation (core rule 3): criteria with actual values,
+    confidence breakdown, scenarios with levels. The hit rate hangs on the backtest (backtest_runs) and is looked up
+    on reading. source_id is the source of the last pattern candle, source_ids all those used."""
     __tablename__ = "pattern_detections"
     id: Mapped[int] = mapped_column(primary_key=True)
     instrument_id: Mapped[int] = mapped_column(ForeignKey("instruments.id"), index=True)
@@ -343,7 +343,7 @@ class PatternDetection(Base):
 
 
 class SupportResistanceZone(Base):
-    """Unterstützungs-/Widerstandszone aus Häufungen von Wendepunkten; wird je Lauf komplett ersetzt."""
+    """Support/resistance zone from clusters of turning points; replaced completely on every run."""
     __tablename__ = "sr_zones"
     id: Mapped[int] = mapped_column(primary_key=True)
     instrument_id: Mapped[int] = mapped_column(ForeignKey("instruments.id"), index=True)
@@ -368,8 +368,8 @@ class SupportResistanceZone(Base):
 
 
 class PatternScan(Base):
-    """Letzter Lauf der Mustererkennung je Instrument und Zeitraster: Datengrundlage (Grundregel 2) und
-    Leerstands-Grund (Grundregel 6)."""
+    """Last run of the pattern detection per instrument and timeframe: data basis (core rule 2) and
+    reason for being empty (core rule 6)."""
     __tablename__ = "pattern_scans"
     instrument_id: Mapped[int] = mapped_column(ForeignKey("instruments.id"), primary_key=True)
     timeframe: Mapped[str] = mapped_column(String(3), primary_key=True)
@@ -386,8 +386,8 @@ class PatternScan(Base):
 
 
 class BacktestRun(Base):
-    """Ergebnis eines Backtests (Workstream 3C schreibt, 3B liest). Für Muster: kind='pattern',
-    subject=pattern_type; es gilt der neueste Lauf mit gleicher timeframe und algo_version."""
+    """Result of a backtest (workstream 3C writes, 3B reads). For patterns: kind='pattern',
+    subject=pattern_type; the latest run with the same timeframe and algo_version applies."""
     __tablename__ = "backtest_runs"
     id: Mapped[int] = mapped_column(primary_key=True)
     kind: Mapped[str] = mapped_column(String(20))  # pattern | forecast
@@ -409,9 +409,9 @@ class BacktestRun(Base):
 
 
 class Forecast(Base):
-    """Letzte Prognose je Instrument, Zeitraster und Methode (Grundregel 4: nur Quantile je Schritt).
-    backtest_run_id verweist auf den Prognose-Backtest (backtest_runs, kind='forecast'). pattern_levels enthält
-    für die Hauptmethode die simulierten Anteile, mit denen Muster-Niveaus zuerst erreicht werden."""
+    """Latest forecast per instrument, timeframe and method (core rule 4: only quantiles per step).
+    backtest_run_id points to the forecast backtest (backtest_runs, kind='forecast'). pattern_levels contains
+    for the main method the simulated shares with which pattern levels are reached first."""
     __tablename__ = "forecasts"
     id: Mapped[int] = mapped_column(primary_key=True)
     instrument_id: Mapped[int] = mapped_column(ForeignKey("instruments.id"), index=True)
@@ -428,7 +428,7 @@ class Forecast(Base):
     backtest_run_id: Mapped[int | None] = mapped_column(ForeignKey("backtest_runs.id"), nullable=True)
     backtest_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     pattern_levels: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list)
-    # Nur Hauptmethode: einige simulierte Pfade als Beispiele (analysis.forecast.example_path_rows)
+    # Main method only: a few simulated paths as examples (analysis.forecast.example_path_rows)
     example_paths: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list)
     bars_from: Mapped[datetime | None] = mapped_column(UtcDateTime(), nullable=True)
     bar_count: Mapped[int] = mapped_column(Integer, default=0)

@@ -9,7 +9,7 @@ test("Watchlist zeigt Karte mit Kurs, Tagesveränderung, Meldungen und Mustern s
   await expect(card.getByText("Beispieldaten (Demo-Modus)")).toBeVisible();
   await expect(card.getByTestId("news-count")).toContainText("Nachrichten (letzte 24 Stunden): 1");
   await expect(card.getByTestId("pattern-count")).toContainText(/Aktuell erkannte Muster: \d+/);
-  await card.getByText("Quelle: Demo-Kursquelle (Beispieldaten)").click();
+  await card.getByText("Quelle: Demo price source (sample data)").click();
   await expect(card.getByText("Abgerufen:")).toBeVisible();
 });
 

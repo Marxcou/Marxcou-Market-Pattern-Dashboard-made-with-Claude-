@@ -1,5 +1,5 @@
-"""Alpaca Market Data (Basic, kostenlos): US-Kurse und Historie über den IEX-Feed.
-IEX ist eine einzelne Börse mit kleinem Volumenanteil, der Kurs kann vom konsolidierten Kurs abweichen."""
+"""Alpaca Market Data (Basic, free): US prices and history via the IEX feed.
+IEX is a single exchange with a small share of volume; the price can differ from the consolidated price."""
 import logging
 from datetime import UTC, datetime
 from typing import Any
@@ -29,9 +29,9 @@ class AlpacaAdapter(ProbedHealth, PriceAdapter):
         key_id, secret = s.alpaca_api_key_id.strip(), s.alpaca_api_secret_key.strip()
         self._configured = bool(key_id and secret)
         if self._configured and not (is_header_safe(key_id) and is_header_safe(secret)):
-            log.warning("ALPACA_API_KEY_ID/ALPACA_API_SECRET_KEY: unzulässige Zeichen, Alpaca bleibt deaktiviert")
+            log.warning("ALPACA_API_KEY_ID/ALPACA_API_SECRET_KEY: invalid characters, Alpaca stays disabled")
             self._configured, key_id, secret = False, "", ""
-            self.disabled_reason = "Alpaca-Schlüssel enthält unzulässige Zeichen (nur ASCII, ohne Leerzeichen)"
+            self.disabled_reason = "Alpaca key contains invalid characters (ASCII only, no spaces)"
         self.http = ResilientHttp(
             base_url="https://data.alpaca.markets",
             headers={"APCA-API-KEY-ID": key_id, "APCA-API-SECRET-KEY": secret},
@@ -41,10 +41,11 @@ class AlpacaAdapter(ProbedHealth, PriceAdapter):
     def metadata(self) -> AdapterMetadata:
         return AdapterMetadata(
             key=self.key, name="Alpaca Market Data (IEX)", kind="price",
-            description="US-Aktien: Echtzeitkurse über den IEX-Feed (eine Börse, kann vom konsolidierten Kurs "
-            "abweichen) und Kurshistorie. Kostenloser Tarif.",
+            description="US stocks: real-time prices via the IEX feed (one exchange, may differ from the consolidated "
+            "price) "
+            "and price history. Free tier.",
             homepage="https://alpaca.markets/data", terms_url="https://alpaca.markets/disclosures",
-            update_interval="Live per WebSocket, Abruf alle 60 Sek.", delay_text="IEX-Echtzeitkurs",
+            update_interval="Live via WebSocket, retrieval every 60 sec.", delay_text="IEX real-time price",
             requires_key=True,
         )
 
@@ -97,7 +98,7 @@ class AlpacaAdapter(ProbedHealth, PriceAdapter):
         try:
             data = resp.json()
         except ValueError as exc:
-            raise SourceError("Antwort ist kein JSON") from exc
+            raise SourceError("Response is not JSON") from exc
         if not isinstance(data, dict):
             raise SourceError("Unerwartetes Antwortformat")
         return data

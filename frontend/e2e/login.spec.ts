@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { CREDENTIALS, loginViaUi } from "./helpers/auth";
-import { DISCLAIMER } from "./helpers/grundregeln";
+import { DISCLAIMER_DE } from "./helpers/grundregeln";
 
 test("nicht angemeldet: geschützte Seiten leiten zur Anmeldung", async ({ page }) => {
   for (const path of ["/", "/nachrichten", "/quellen"]) {
@@ -30,7 +30,7 @@ test("Anmelden und Abmelden", async ({ page }) => {
 
 test("Hinweis (Grundregel 5) und Demo-Banner sind auf der Anmeldeseite sichtbar", async ({ page }) => {
   await page.goto("/login");
-  await expect(page.getByTestId("disclaimer").first()).toHaveText(DISCLAIMER);
+  await expect(page.getByTestId("disclaimer").first()).toHaveText(DISCLAIMER_DE);
   await expect(page.getByTestId("disclaimer").first()).toBeVisible();
   await expect(page.getByTestId("demo-banner")).toContainText("DEMO-MODUS");
 });

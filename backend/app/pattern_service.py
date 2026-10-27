@@ -1,9 +1,9 @@
-"""Mustererkennung für Watchlist-Instrumente ausführen und speichern (Worker-Job).
+"""Run pattern detection for watchlist instruments and store the results (worker job).
 
-Jeder Lauf rechnet die komplette Historie neu (deterministisch). Erkennungen werden über einen Fingerabdruck
-(Mustertyp + Beginn) wiedererkannt: Statuswechsel aktualisieren die Zeile, nicht mehr gefundene Erkennungen
-(z. B. weil ein Dreieck durch einen neuen Wendepunkt anders ausfällt) werden entfernt. Zonen werden je Lauf
-ersetzt."""
+Every run recomputes the complete history (deterministic). Detections are recognized by a fingerprint
+(pattern type + start): status changes update the row, detections that are no longer found
+(e.g. because a triangle turns out differently with a new turning point) are removed. Zones are replaced
+on every run."""
 import hashlib
 import logging
 from datetime import UTC, datetime
@@ -34,8 +34,8 @@ log = logging.getLogger("patterns")
 
 TIMEFRAMES = ("1d", "1h")
 BAR_LIMIT = 1500
-FRESH_BARS = 2  # nur Änderungen an den letzten Kerzen lösen ein Live-Ereignis aus
-RECENT_BARS = 20  # "aktuell" für /patterns/counts: in Bildung oder in den letzten 20 Kerzen bestätigt
+FRESH_BARS = 2  # only changes to the latest candles trigger a live event
+RECENT_BARS = 20  # "current" for /patterns/counts: forming or confirmed within the last 20 candles
 
 
 def fingerprint(det: Detection, ts: list[datetime]) -> str:
@@ -71,8 +71,8 @@ def _sources(rows: list[tuple[PriceBar, Source]], start: int, end: int) -> tuple
 
 def scan_instrument(db: Session, inst: Instrument, timeframe: str, now: datetime | None = None,
                     params: Params | None = None, skip_unchanged: bool = False) -> dict[str, int]:
-    """skip_unchanged: der Worker-Job rechnet nicht neu, wenn Kerzen (Anzahl, letzte Kerze), Parameter und
-    Algorithmus-Version dem letzten Lauf entsprechen. Die Erkennung ist deterministisch, das Ergebnis wäre gleich."""
+    """skip_unchanged: the worker job does not recompute if candles (count, last candle), parameters and
+    algorithm version match the last run. Detection is deterministic, the result would be the same."""
     now = now or datetime.now(UTC)
     params = params or default_params()
     phash = params_hash(params)
@@ -86,7 +86,7 @@ def scan_instrument(db: Session, inst: Instrument, timeframe: str, now: datetime
     scan.bar_count = len(rows)
     stats = {"new": 0, "updated": 0, "removed": 0, "zones": 0}
     if not rows:
-        scan.empty_reason = "Noch keine Kursdaten gespeichert."
+        scan.empty_reason = "No price data stored yet."
         scan.bars_from = scan.bars_to = scan.recent_from = scan.last_fetched_at = None
         scan.source_ids = []
         db.add(scan)
@@ -98,8 +98,8 @@ def scan_instrument(db: Session, inst: Instrument, timeframe: str, now: datetime
     scan.source_ids = sorted({s.id for _, s in rows})
     scan.last_fetched_at = max(aware(b.fetched_at) for b, _ in rows)
     if len(rows) < engine.MIN_BARS:
-        scan.empty_reason = (f"Zu wenige Kerzen für die Mustererkennung (mindestens {engine.MIN_BARS}, "
-                             f"vorhanden {len(rows)}).")
+        scan.empty_reason = (f"Too few candles for pattern detection (at least {engine.MIN_BARS}, "
+                             f"available {len(rows)}).")
         db.add(scan)
         db.execute(delete(PatternDetection).where(PatternDetection.instrument_id == inst.id,
                                                   PatternDetection.timeframe == timeframe))
@@ -198,13 +198,13 @@ def _params_for(det: Detection, params: Params) -> dict[str, float]:
 
 
 def pattern_job() -> None:
-    """Für alle Watchlist-Instrumente (alle Nutzer) und je Zeitraster; ein Fehler betrifft nur diesen Lauf."""
+    """For all watchlist instruments (all users) and per timeframe; an error affects only that run."""
     with SessionLocal() as db:
         for inst in watched_instruments(db):
             for tf in TIMEFRAMES:
                 try:
                     stats = scan_instrument(db, inst, tf, skip_unchanged=True)
-                except Exception:  # noqa: BLE001 - ein Instrument darf die anderen nicht stoppen
+                except Exception:  # noqa: BLE001 - one instrument must not stop the others
                     db.rollback()
                     log.exception("Mustererkennung %s/%s fehlgeschlagen", inst.symbol, tf)
                     continue

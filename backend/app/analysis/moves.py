@@ -1,5 +1,5 @@
-"""Auffällige Kursbewegungen: Rendite (Schluss zu Vorschluss) oder Volumen weichen stark vom Verhalten der
-Vorkerzen ab. Die Verknüpfung mit Meldungen ist rein zeitlich (Grundregel: keine Kausalität behaupten)."""
+"""Notable price moves: return (close to previous close) or volume deviate strongly from the behavior of the
+preceding candles. The link to news is purely temporal (core rule: do not claim causality)."""
 from dataclasses import dataclass
 from datetime import timedelta
 from typing import Any
@@ -8,11 +8,11 @@ import numpy as np
 
 from app.analysis.events import Series
 
-ALGO_VERSION = "move-links-1"
-NOTE = "Zeitlich zusammenfallend, keine Aussage über Ursache."
+ALGO_VERSION = "move-links-2"
+NOTE = "Coinciding in time, no statement about cause."
 TIMEFRAME_DELTA = {"1m": timedelta(minutes=1), "5m": timedelta(minutes=5), "1h": timedelta(hours=1),
                    "1d": timedelta(days=1)}
-# Zeitfenster um die Kerze, in dem erste Veröffentlichungen als "zeitlich passend" gelten (Minuten)
+# Time window around the candle in which first publications count as "matching in time" (minutes)
 WINDOWS = {"1m": (30, 5), "5m": (60, 15), "1h": (180, 60), "1d": (1440, 360)}
 PARAMS: dict[str, Any] = {"lookback_bars": 60, "z_threshold": 3.0}
 

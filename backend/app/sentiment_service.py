@@ -1,5 +1,5 @@
-"""Stimmung je Cluster berechnen: Claude, wenn verfügbar und im Budget, sonst Lexikon. Die Rückfallstufe ist immer
-sichtbar (method und model_name der gespeicherten Stimmung, plus /api/news/sentiment-status)."""
+"""Compute sentiment per cluster: Claude if available and within budget, otherwise lexicon. The fallback level is always
+visible (method and model_name of the stored sentiment, plus /api/news/sentiment-status)."""
 import logging
 from datetime import timedelta
 
@@ -23,12 +23,12 @@ from app.sentiment_claude import (
 from app.sentiment_lexicon import SentimentResult, analyze
 
 log = logging.getLogger("sentiment")
-UPGRADE_WINDOW = timedelta(days=3)  # Lexikon-Einstufungen jüngerer Cluster werden mit Claude nachgeholt
+UPGRADE_WINDOW = timedelta(days=3)  # lexicon ratings of recent clusters are redone with Claude
 BATCH_SIZE = 100
-RETRYABLE = ("expired", "canceled")  # nur diese Batch-Ergebnisse werden erneut eingereicht
-# Direktmodus: Cluster, deren Claude-Anfrage bereits bezahlt und verworfen wurde (z. B. Zitat nicht wörtlich) oder
-# fehlschlug. Sie werden in diesem Prozess nicht erneut angefragt; sonst würde dieselbe Meldung bei jedem Durchlauf
-# (alle 5 Minuten, 3 Tage lang) erneut Kosten verursachen. Der Batch-Modus merkt sich das in sentiment_batch_items.
+RETRYABLE = ("expired", "canceled")  # only these batch results are submitted again
+# Direct mode: clusters whose Claude request was already paid for and discarded (e.g. quote not verbatim) or
+# failed. They are not requested again in this process; otherwise the same item would cause costs again on every
+# run (every 5 minutes, for 3 days). Batch mode remembers this in sentiment_batch_items.
 _DIRECT_FAILED: set[int] = set()
 
 
@@ -40,14 +40,14 @@ def _claude() -> ClaudeSentimentSource | None:
 def fallback_reason(db: Session) -> str | None:
     claude = _claude()
     if claude is None:
-        return "Kein API-Schlüssel gesetzt"
+        return "No API key set"
     if spent_usd(db) >= get_settings().claude_monthly_budget_usd or claude.budget_exhausted:
         return "Monatslimit erreicht"
     return None
 
 
 def reserved_usd(db: Session) -> float:
-    """Höchstbetrag offener Batches, der bis zum Eintreffen der Ergebnisse gegen das Monatslimit zählt."""
+    """Maximum amount of open batches that counts against the monthly limit until the results arrive."""
     return float(db.scalar(select(func.coalesce(func.sum(SentimentBatch.reserved_usd), 0.0))
                            .where(SentimentBatch.status == "in_progress")) or 0.0)
 
@@ -72,21 +72,21 @@ def _canonical_item(db: Session, cluster: NewsCluster) -> NewsItem:
 def compute(db: Session, cluster: NewsCluster) -> SentimentResult:
     item = _canonical_item(db, cluster)
     claude = _claude()
-    # Batch-Modus: die Meldung erscheint sofort mit Lexikon-Stimmung; Claude liefert nach (submit_batch)
+    # Batch mode: the item appears immediately with lexicon sentiment; Claude follows up (submit_batch)
     if claude is not None and not get_settings().claude_use_batch:
         try:
             return claude.classify(db, item.title, item.excerpt, item.language)
         except SourceError as exc:
             if not isinstance(exc, BudgetExceeded | SourceUnavailable):
                 _DIRECT_FAILED.add(cluster.id)
-            log.info("Claude-Stimmung nicht verfügbar (%s), Lexikon-Fallback", exc)
+            log.info("Claude sentiment unavailable (%s), lexicon fallback", exc)
     return analyze(item.title, item.excerpt, item.language)
 
 
 def store(db: Session, cluster_id: int, res: SentimentResult) -> None:
     sid = db.scalar(select(Source.id).where(Source.key == res.source_key))
     if sid is None:
-        raise SourceError(f"Unbekannte Quelle {res.source_key}")
+        raise SourceError(f"Unknown source {res.source_key}")
     row = db.get(Sentiment, cluster_id) or Sentiment(cluster_id=cluster_id)
     row.label, row.score, row.evidence, row.rationale = res.label, res.score, res.evidence, res.rationale
     row.method, row.model_name, row.model_version, row.source_id = res.method, res.model_name, res.model_version, sid
@@ -96,7 +96,7 @@ def store(db: Session, cluster_id: int, res: SentimentResult) -> None:
 
 
 def submit_batch(db: Session, limit: int = BATCH_SIZE) -> int:
-    """Reicht Lexikon-eingestufte Cluster jüngerer Meldungen als Batch bei Claude ein. Gibt die Anzahl zurück."""
+    """Submit lexicon-rated clusters of recent items to Claude as a batch. Returns the count."""
     claude = _claude()
     if claude is None or fallback_reason(db) is not None:
         return 0
@@ -119,7 +119,7 @@ def submit_batch(db: Session, limit: int = BATCH_SIZE) -> int:
     try:
         batch_id = claude.submit_batch(requests)
     except SourceError as exc:
-        log.warning("Claude-Batch nicht eingereicht: %s", exc)
+        log.warning("Claude batch not submitted: %s", exc)
         return 0
     row = SentimentBatch(batch_id=batch_id, reserved_usd=reserved)
     db.add(row)
@@ -130,8 +130,8 @@ def submit_batch(db: Session, limit: int = BATCH_SIZE) -> int:
 
 
 def process_batches(db: Session) -> int:
-    """Holt Ergebnisse beendeter Batches ab. Jede Antwort läuft durch dieselbe Prüfung wie bei Einzelaufrufen
-    (wörtliche Zitate, keine Empfehlungssprache); was nicht besteht, bleibt bei der Lexikon-Stimmung."""
+    """Fetch results of ended batches. Every response goes through the same validation as single calls
+    (verbatim quotes, no recommendation language); what does not pass stays with the lexicon sentiment."""
     claude = _claude()
     if claude is None:
         return 0
@@ -164,7 +164,7 @@ def process_batches(db: Session) -> int:
                 parsed = verify(block["input"], item.title, item.excerpt)
             except (KeyError, TypeError, ValueError, StopIteration, SourceError) as exc:
                 it.status = "rejected"
-                log.info("Claude-Batch %s: Antwort für Cluster %s verworfen (%s)", batch.batch_id, it.cluster_id, exc)
+                log.info("Claude batch %s: response for cluster %s discarded (%s)", batch.batch_id, it.cluster_id, exc)
                 continue
             store(db, it.cluster_id, parsed)
             it.status = "succeeded"
@@ -175,8 +175,8 @@ def process_batches(db: Session) -> int:
 
 
 def sentiment_pass(db: Session, limit: int = 30) -> int:
-    """Berechnet fehlende Stimmungen und holt Lexikon-Einstufungen jüngerer Cluster mit Claude nach
-    (direkt oder, Standard, als Batch)."""
+    """Compute missing sentiments and redo lexicon ratings of recent clusters with Claude
+    (directly or, by default, as a batch)."""
     done = 0
     missing = db.scalars(select(NewsCluster).outerjoin(Sentiment, Sentiment.cluster_id == NewsCluster.id)
                          .where(Sentiment.cluster_id.is_(None)).order_by(NewsCluster.first_published_at.desc())

@@ -1,4 +1,4 @@
-"""Marketaux (kostenlos: 100 Anfragen pro Tag, 3 Artikel pro Anfrage): globale Meldungen inkl. deutscher Unternehmen."""
+"""Marketaux (free: 100 requests per day, 3 articles per request): global news including German companies."""
 from datetime import UTC, datetime
 from typing import Any
 
@@ -10,7 +10,7 @@ from app.adapters.news_common import clean_excerpt, clean_title, xetra_symbol
 from app.api_usage import calls_today, count_call
 from app.config import get_settings
 
-DAILY_LIMIT = 90  # Reserve unter den 100 Anfragen pro Tag
+DAILY_LIMIT = 90  # reserve below the 100 requests per day
 CHUNK = 5
 
 
@@ -26,10 +26,11 @@ class MarketauxAdapter(PassiveHealth, NewsAdapter):
     def metadata(self) -> AdapterMetadata:
         return AdapterMetadata(
             key=self.key, name="Marketaux", kind="news",
-            description="Globale Finanznachrichten mit Unternehmenszuordnung, auch für deutsche Werte. Im kostenlosen "
-            "Tarif gibt es 100 Anfragen pro Tag mit je 3 Artikeln; die Aktien werden reihum abgefragt.",
+            description="Global financial news with company assignment, also for German stocks. The free "
+            "tier has 100 requests per day with 3 articles each; the stocks are queried in rotation.",
             homepage="https://www.marketaux.com", terms_url="https://www.marketaux.com/terms",
-            update_interval="alle 20 Min., reihum (max. 90 Anfragen/Tag)", delay_text="Minuten", requires_key=True,
+            update_interval="every 20 min., in rotation (max. 90 requests/day)", delay_text="minutes",
+            requires_key=True,
         )
 
     def is_configured(self) -> bool:

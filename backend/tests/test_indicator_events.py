@@ -63,7 +63,7 @@ def test_bullish_rsi_divergence_detected_with_values():
     assert e.confirmed_index == e.index + ev.PARAMS["rsi_divergence"]["pivot_window"]
     assert 5 <= e.values["bars_apart"] <= 60
     assert len(e.criteria) == 4 and all(c["passed"] for c in e.criteria)
-    assert "höheres Tief" in e.summary
+    assert "higher low" in e.summary
 
 
 def test_bearish_rsi_divergence_is_mirror_image():

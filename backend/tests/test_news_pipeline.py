@@ -153,8 +153,8 @@ def test_lexicon_sentiment_stored_with_method_model_and_evidence(env):
                         symbols=["AAPL"])], env["finnhub"])
         assert sentiment_pass(db) == 1
         s = db.scalars(select(Sentiment)).one()
-        assert (s.label, s.method, s.model_name) == ("positiv", "lexicon", "Finanz-Lexikon (regelbasiert)")
-        assert s.evidence == ["beats estimates", "raises guidance"] and "Wortliste" in s.rationale
+        assert (s.label, s.method, s.model_name) == ("positiv", "lexicon", "Financial lexicon (rule-based)")
+        assert s.evidence == ["beats estimates", "raises guidance"] and "word list" in s.rationale
         assert s.source_id == db.scalar(select(Source.id).where(Source.key == "sentiment_lexicon"))
 
 
@@ -266,7 +266,7 @@ def test_source_without_key_is_disabled_with_reason_and_never_fetches(env):
     with SessionLocal() as db:
         assert run_adapter(db, env["finnhub"]) is None
         row = db.scalar(select(Source).where(Source.key == "finnhub_news"))
-        assert (row.status, row.last_error) == ("disabled", "API-Schlüssel nicht gesetzt")
+        assert (row.status, row.last_error) == ("disabled", "API key not set")
         assert db.scalar(select(Source.status).where(Source.key == "claude_sentiment")) == "disabled"
 
 
@@ -310,7 +310,7 @@ def test_api_news_list_filters_and_cluster_shape(client, env):
     assert apple["instruments"] == [{"id": apple["instruments"][0]["id"], "symbol": "AAPL",
                                      "match_method": "provider_tag"}]
     s = apple["sentiment"]
-    assert (s["label"], s["method"], s["model_name"]) == ("positiv", "lexicon", "Finanz-Lexikon (regelbasiert)")
+    assert (s["label"], s["method"], s["model_name"]) == ("positiv", "lexicon", "Financial lexicon (rule-based)")
     assert s["evidence"] and s["rationale"] and s["created_at"]
     assert client.get("/api/news", params={"sentiment": "negativ"}).json()["total"] == 1
     assert client.get("/api/news", params={"source": "finnhub_news"}).json()["total"] == 1
@@ -339,7 +339,7 @@ def test_api_instrument_news_counts_and_status(client, env):
     counts = client.get("/api/news/counts").json()
     assert sorted(counts["counts"].values()) == [1, 1] and counts["empty_reason"] is None
     st = client.get("/api/news/sentiment-status").json()
-    assert st["active_method"] == "lexicon" and st["fallback_reason"] == "Kein API-Schlüssel gesetzt"
+    assert st["active_method"] == "lexicon" and st["fallback_reason"] == "No API key set"
     assert st["budget_usd"] == 10 and st["claude_configured"] is False
 
 
@@ -354,11 +354,11 @@ def test_api_empty_states_explain_why(client, env):
         db.execute(Source.__table__.update().where(Source.kind == "news").values(status="disabled"))
         db.commit()
     r = client.get("/api/news").json()
-    assert r["items"] == [] and "Keine News-Quelle aktiv" in r["empty_reason"]
+    assert r["items"] == [] and "No news source active" in r["empty_reason"]
     with SessionLocal() as db:
         db.execute(Source.__table__.update().where(Source.kind == "news").values(status="online"))
         db.commit()
-    assert "Noch keine Meldungen abgerufen" in client.get("/api/news").json()["empty_reason"]
+    assert "No news retrieved yet" in client.get("/api/news").json()["empty_reason"]
     counts = client.get("/api/news/counts").json()
     assert all(v == 0 for v in counts["counts"].values()) and counts["empty_reason"]
 

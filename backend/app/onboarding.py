@@ -1,9 +1,9 @@
-"""Sofortige Erstberechnung für ein neu auf eine Watchlist gesetztes Instrument.
+"""Immediate first calculation for an instrument newly put on a watchlist.
 
-Die periodischen Jobs (Muster/Analyse alle 5 Minuten, Prognose alle 15 Minuten) würden ein neues Instrument erst
-verzögert erfassen. Dieser Lauf ruft dieselben Dienste einmalig auf: Kursabruf, Mustererkennung, Indikator-Ereignisse,
-Prognose. Jeder Schritt ist einzeln abgesichert; schlägt einer fehl, bleibt es bei dem Leerzustand mit Grund und die
-periodischen Jobs holen es nach."""
+The periodic jobs (patterns/analysis every 5 minutes, forecast every 15 minutes) would only pick up a new instrument
+with a delay. This run calls the same services once: price retrieval, pattern detection, indicator events,
+forecast. Each step is secured individually; if one fails, the empty state with a reason remains and the
+periodic jobs catch up."""
 import logging
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
@@ -23,13 +23,13 @@ from app.price_service import backfill_new_instrument, has_intraday
 
 log = logging.getLogger("onboarding")
 
-# So lange nach dem Hinzufügen gilt ein noch fehlendes Ergebnis als "wird berechnet". Danach zeigt die Oberfläche
-# wieder den nüchternen Leerzustand mit Grund, damit ein fehlgeschlagener Lauf nicht ewig als Wartezustand erscheint.
+# For this long after adding, a missing result counts as "being calculated". After that the interface shows
+# the plain empty state with a reason again, so a failed run does not appear as waiting forever.
 PENDING_WINDOW = timedelta(minutes=15)
 
 
 def is_pending(db: Session, instrument_id: int, now: datetime | None = None) -> bool:
-    """True, wenn das Instrument innerhalb des Zeitfensters auf einer Watchlist landete (Berechnung läuft/steht an)."""
+    """True if the instrument landed on a watchlist within the time window (calculation running/pending)."""
     now = now or datetime.now(UTC)
     added = db.scalar(select(func.max(WatchlistItem.added_at)).where(WatchlistItem.instrument_id == instrument_id))
     if added is None:
@@ -42,13 +42,13 @@ def is_pending(db: Session, instrument_id: int, now: datetime | None = None) -> 
 def _step(db: Session, label: str, fn: Callable[[], object]) -> None:
     try:
         fn()
-    except Exception:  # noqa: BLE001 - ein Schritt darf die folgenden nicht verhindern
+    except Exception:  # noqa: BLE001 - one step must not prevent the following ones
         db.rollback()
         log.exception("Erstberechnung %s fehlgeschlagen", label)
 
 
 def process_new_instrument(instrument_id: int) -> None:
-    """Hintergrundaufgabe nach dem Hinzufügen zur Watchlist."""
+    """Background task after adding to the watchlist."""
     with SessionLocal() as db:
         inst = db.get(Instrument, instrument_id)
         if inst is None:
@@ -56,7 +56,7 @@ def process_new_instrument(instrument_id: int) -> None:
         _step(db, f"{inst.symbol} Kursabruf", lambda: backfill_new_instrument(instrument_id))
         for tf in PATTERN_TIMEFRAMES:
             if tf != "1d" and not has_intraday(inst.exchange):
-                continue  # ohne Intraday-Kerzen gibt es nichts zu erkennen; die API nennt den Grund
+                continue  # without intraday candles there is nothing to detect; the API gives the reason
             _step(db, f"{inst.symbol} Muster {tf}", partial(scan_instrument, db, inst, tf))
         for tf in ANALYSIS_TIMEFRAMES:
             if tf != "1d" and not has_intraday(inst.exchange):

@@ -9,7 +9,7 @@ from app.security import hash_password
 
 log = logging.getLogger(__name__)
 
-# Platzhalter aus .env.example: damit wird nie ein Admin angelegt.
+# Placeholders from .env.example: an admin is never created with these.
 PLACEHOLDER_EMAILS = {"admin@example.com"}
 PLACEHOLDER_PASSWORDS = {"change-me-now"}
 
@@ -19,9 +19,9 @@ def is_placeholder(email: str, password: str) -> bool:
 
 
 def apply_admin_credentials(db: Session, email: str, password: str) -> str:
-    """Setzt E-Mail und Passwort des Admins aus den Vorgaben (legt ihn an oder aktualisiert ihn).
+    """Sets the admin's email and password from the given values (creates or updates the admin).
 
-    Rückgabe: "created" oder "updated". Wird vom CLI-Befehl `python -m app.admin_cli` genutzt.
+    Returns: "created" or "updated". Used by the CLI command `python -m app.admin_cli`.
     """
     email = email.strip().lower()
     admin = db.scalar(select(User).where(User.email == email)) or db.scalar(
@@ -39,10 +39,10 @@ def apply_admin_credentials(db: Session, email: str, password: str) -> str:
 
 
 def ensure_admin(db: Session) -> None:
-    """Legt beim Start den ersten Admin aus ADMIN_EMAIL/ADMIN_PASSWORD an (nur wenn noch keiner existiert).
+    """Creates the first admin from ADMIN_EMAIL/ADMIN_PASSWORD at startup (only if none exists yet).
 
-    Ein vorhandener Admin wird nie überschrieben (ein in der App geändertes Passwort bleibt bestehen).
-    Weicht ADMIN_EMAIL vom vorhandenen Admin ab, steht eine Warnung im Log samt Hinweis auf den CLI-Befehl.
+    An existing admin is never overwritten (a password changed in the app stays in place).
+    If ADMIN_EMAIL differs from the existing admin, a warning with a pointer to the CLI command appears in the log.
     """
     s = get_settings()
     if not s.admin_email or not s.admin_password:
@@ -52,15 +52,15 @@ def ensure_admin(db: Session) -> None:
     if admins:
         if email not in {a.email for a in admins}:
             log.warning(
-                "ADMIN_EMAIL aus .env (%s) passt zu keinem vorhandenen Admin (%s). Die .env-Zugangsdaten werden "
-                "nur beim allerersten Start übernommen. "
-                "Zum Übernehmen: docker compose run --rm api python -m app.admin_cli",
+                "ADMIN_EMAIL from .env (%s) does not match any existing admin (%s). The .env credentials are "
+                "only applied on the very first start. "
+                "To apply them: docker compose run --rm api python -m app.admin_cli",
                 email, ", ".join(a.email for a in admins))
         return
     if is_placeholder(email, s.admin_password):
         log.error(
-            "Kein Admin angelegt: ADMIN_EMAIL/ADMIN_PASSWORD in .env enthalten noch die Platzhalter aus .env.example. "
-            "Bitte in .env eigene Werte eintragen und neu starten.")
+            "No admin created: ADMIN_EMAIL/ADMIN_PASSWORD in .env still contain the placeholders from .env.example. "
+            "Please enter your own values in .env and restart.")
         return
     db.add(User(email=email, display_name="Administrator", role="admin",
                 password_hash=hash_password(s.admin_password)))

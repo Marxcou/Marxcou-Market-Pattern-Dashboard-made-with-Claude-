@@ -1,9 +1,9 @@
-"""Feste Aktienauswahl für den Muster-Backtest: DAX-Werte (XETRA) und große US-Aktien (NYSE/Nasdaq).
+"""Fixed stock selection for the pattern backtest: DAX stocks (XETRA) and large US stocks (NYSE/Nasdaq).
 
-Es sind heutige Indexmitglieder bzw. heute große Unternehmen (Survivorship Bias, wird im Ergebnis genannt).
-Die DAX-Liste entspricht der Zusammensetzung nach bestem Wissen (Stand 2025) und sollte vor einem Lauf
-geprüft werden; mit `--universe-file` lässt sich eine eigene Liste verwenden (eine Zeile je Wert:
-`SYMBOL,BÖRSE`, Börse = XETR, XNYS oder XNAS). Werte ohne Daten werden im Lauf als fehlend aufgeführt."""
+These are current index members or currently large companies (survivorship bias, named in the result).
+The DAX list reflects the composition to the best of our knowledge (as of 2025) and should be checked
+before a run; `--universe-file` allows a custom list (one line per symbol:
+`SYMBOL,EXCHANGE`, exchange = XETR, XNYS or XNAS). Symbols without data are listed as missing in the run."""
 from pathlib import Path
 
 DAX = [
@@ -25,7 +25,7 @@ US_NYSE = [
     "MMM", "LMT", "ORCL", "SCHW", "PLD", "MO", "CVS", "BMY", "MDT", "TGT", "SYK", "CB", "CI", "DUK",
 ]
 
-UNIVERSE_LABEL = f"DAX-Auswahl ({len(DAX)} Werte) und {len(US_NASDAQ) + len(US_NYSE)} große US-Aktien"
+UNIVERSE_LABEL = f"DAX selection ({len(DAX)} stocks) and {len(US_NASDAQ) + len(US_NYSE)} large US stocks"
 
 
 def default_universe() -> list[tuple[str, str]]:
@@ -40,6 +40,6 @@ def read_universe_file(path: Path) -> list[tuple[str, str]]:
             continue
         symbol, _, exchange = (p.strip() for p in line.partition(","))
         if exchange not in ("XETR", "XNYS", "XNAS"):
-            raise ValueError(f"Unbekannte Börse in Zeile '{raw}' (erlaubt: XETR, XNYS, XNAS)")
+            raise ValueError(f"Unknown exchange in line '{raw}' (allowed: XETR, XNYS, XNAS)")
         out.append((symbol.upper(), exchange))
     return out

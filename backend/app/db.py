@@ -15,17 +15,17 @@ class Base(DeclarativeBase):
 
 
 class UtcDateTime(TypeDecorator[datetime]):
-    """Zeitstempel immer in UTC. SQLite speichert keine Zeitzone: ohne Umrechnung würde ein Wert mit Versatz
-    (z. B. RSS "+0200") mit seiner Ortszeit als UTC abgelegt, und gelesene Werte kämen ohne Zeitzone zurück, so dass
-    die API "2026-09-30T08:00:00" ohne "Z" liefert und der Browser das als Ortszeit liest. Beim Schreiben wird nach
-    UTC umgerechnet, beim Lesen UTC angehängt."""
+    """Timestamps always in UTC. SQLite stores no time zone: without conversion a value with an offset
+    (e.g. RSS "+0200") would be stored with its local time as UTC, and values read back would come without a time
+    zone, so that the API returns "2026-09-30T08:00:00" without "Z" and the browser reads it as local time. On
+    writing it is converted to UTC, on reading UTC is attached."""
 
     impl = DateTime(timezone=True)
     cache_ok = True
 
     def process_bind_param(self, value: datetime | None, dialect: Dialect) -> datetime | None:
         if value is None or value.tzinfo is None:
-            return value  # ohne Zeitzone gilt der Wert schon als UTC
+            return value  # without a time zone the value already counts as UTC
         return value.astimezone(UTC)
 
     def process_result_value(self, value: datetime | None, dialect: Dialect) -> datetime | None:

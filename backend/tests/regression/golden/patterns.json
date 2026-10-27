@@ -13,42 +13,42 @@
       {
        "contribution": 0.2268,
        "key": "form",
-       "name": "Verlauf der Linien",
+       "name": "Course of the lines",
        "sub_score": 0.9073,
        "weight": 0.25
       },
       {
        "contribution": 0.2,
        "key": "verengung",
-       "name": "Verengung der Spanne",
+       "name": "Narrowing of the range",
        "sub_score": 1.0,
        "weight": 0.2
       },
       {
        "contribution": 0.2,
        "key": "anpassung",
-       "name": "Lage der Wendepunkte an den Linien",
+       "name": "Position of the turning points on the lines",
        "sub_score": 1.0,
        "weight": 0.2
       },
       {
        "contribution": 0.0,
        "key": "beruehrungen",
-       "name": "Berührungen je Linie",
+       "name": "Touches per line",
        "sub_score": 0.0,
        "weight": 0.15
       },
       {
        "contribution": 0.1,
        "key": "innerhalb",
-       "name": "Schlusskurse zwischen den Linien",
+       "name": "Closing prices between the lines",
        "sub_score": 1.0,
        "weight": 0.1
       },
       {
        "contribution": 0.05,
        "key": "volumen",
-       "name": "Volumenverlauf",
+       "name": "Volume trend",
        "sub_score": 0.5,
        "weight": 0.1
       }
@@ -146,35 +146,35 @@
       {
        "contribution": 0.28,
        "key": "extrem_abweichung",
-       "name": "Abweichung der beiden Tiefs",
+       "name": "Deviation between the two lows",
        "sub_score": 0.8,
        "weight": 0.35
       },
       {
        "contribution": 0.25,
        "key": "tiefe",
-       "name": "Abstand Zwischenhoch",
+       "name": "Depth of the intermediate high",
        "sub_score": 1.0,
        "weight": 0.25
       },
       {
        "contribution": 0.15,
        "key": "abstand",
-       "name": "Abstand der beiden Tiefs",
+       "name": "Distance between the two lows",
        "sub_score": 1.0,
        "weight": 0.15
       },
       {
        "contribution": 0.15,
        "key": "vortrend",
-       "name": "Vorheriger Rückgang",
+       "name": "Prior decline",
        "sub_score": 1.0,
        "weight": 0.15
       },
       {
        "contribution": 0.05,
        "key": "volumen",
-       "name": "Volumen am zweiten Tief",
+       "name": "Volume at the second low",
        "sub_score": 0.5,
        "weight": 0.1
       }
@@ -266,42 +266,42 @@
       {
        "contribution": 0.2268,
        "key": "form",
-       "name": "Verlauf der Linien",
+       "name": "Course of the lines",
        "sub_score": 0.9073,
        "weight": 0.25
       },
       {
        "contribution": 0.2,
        "key": "verengung",
-       "name": "Verengung der Spanne",
+       "name": "Narrowing of the range",
        "sub_score": 1.0,
        "weight": 0.2
       },
       {
        "contribution": 0.2,
        "key": "anpassung",
-       "name": "Lage der Wendepunkte an den Linien",
+       "name": "Position of the turning points on the lines",
        "sub_score": 1.0,
        "weight": 0.2
       },
       {
        "contribution": 0.0,
        "key": "beruehrungen",
-       "name": "Berührungen je Linie",
+       "name": "Touches per line",
        "sub_score": 0.0,
        "weight": 0.15
       },
       {
        "contribution": 0.1,
        "key": "innerhalb",
-       "name": "Schlusskurse zwischen den Linien",
+       "name": "Closing prices between the lines",
        "sub_score": 1.0,
        "weight": 0.1
       },
       {
        "contribution": 0.05,
        "key": "volumen",
-       "name": "Volumenverlauf",
+       "name": "Volume trend",
        "sub_score": 0.5,
        "weight": 0.1
       }
@@ -399,35 +399,35 @@
       {
        "contribution": 0.28,
        "key": "extrem_abweichung",
-       "name": "Abweichung der beiden Tiefs",
+       "name": "Deviation between the two lows",
        "sub_score": 0.8,
        "weight": 0.35
       },
       {
        "contribution": 0.25,
        "key": "tiefe",
-       "name": "Abstand Zwischenhoch",
+       "name": "Depth of the intermediate high",
        "sub_score": 1.0,
        "weight": 0.25
       },
       {
        "contribution": 0.15,
        "key": "abstand",
-       "name": "Abstand der beiden Tiefs",
+       "name": "Distance between the two lows",
        "sub_score": 1.0,
        "weight": 0.15
       },
       {
        "contribution": 0.15,
        "key": "vortrend",
-       "name": "Vorheriger Rückgang",
+       "name": "Prior decline",
        "sub_score": 1.0,
        "weight": 0.15
       },
       {
        "contribution": 0.05,
        "key": "volumen",
-       "name": "Volumen am zweiten Tief",
+       "name": "Volume at the second low",
        "sub_score": 0.5,
        "weight": 0.1
       }
@@ -519,42 +519,42 @@
       {
        "contribution": 0.2268,
        "key": "form",
-       "name": "Verlauf der Linien",
+       "name": "Course of the lines",
        "sub_score": 0.9073,
        "weight": 0.25
       },
       {
        "contribution": 0.2,
        "key": "verengung",
-       "name": "Verengung der Spanne",
+       "name": "Narrowing of the range",
        "sub_score": 1.0,
        "weight": 0.2
       },
       {
        "contribution": 0.2,
        "key": "anpassung",
-       "name": "Lage der Wendepunkte an den Linien",
+       "name": "Position of the turning points on the lines",
        "sub_score": 1.0,
        "weight": 0.2
       },
       {
        "contribution": 0.0,
        "key": "beruehrungen",
-       "name": "Berührungen je Linie",
+       "name": "Touches per line",
        "sub_score": 0.0,
        "weight": 0.15
       },
       {
        "contribution": 0.1,
        "key": "innerhalb",
-       "name": "Schlusskurse zwischen den Linien",
+       "name": "Closing prices between the lines",
        "sub_score": 1.0,
        "weight": 0.1
       },
       {
        "contribution": 0.05,
        "key": "volumen",
-       "name": "Volumenverlauf",
+       "name": "Volume trend",
        "sub_score": 0.5,
        "weight": 0.1
       }
@@ -652,35 +652,35 @@
       {
        "contribution": 0.28,
        "key": "extrem_abweichung",
-       "name": "Abweichung der beiden Tiefs",
+       "name": "Deviation between the two lows",
        "sub_score": 0.8,
        "weight": 0.35
       },
       {
        "contribution": 0.25,
        "key": "tiefe",
-       "name": "Abstand Zwischenhoch",
+       "name": "Depth of the intermediate high",
        "sub_score": 1.0,
        "weight": 0.25
       },
       {
        "contribution": 0.15,
        "key": "abstand",
-       "name": "Abstand der beiden Tiefs",
+       "name": "Distance between the two lows",
        "sub_score": 1.0,
        "weight": 0.15
       },
       {
        "contribution": 0.15,
        "key": "vortrend",
-       "name": "Vorheriger Rückgang",
+       "name": "Prior decline",
        "sub_score": 1.0,
        "weight": 0.15
       },
       {
        "contribution": 0.05,
        "key": "volumen",
-       "name": "Volumen am zweiten Tief",
+       "name": "Volume at the second low",
        "sub_score": 0.5,
        "weight": 0.1
       }
@@ -772,42 +772,42 @@
       {
        "contribution": 0.2229,
        "key": "form",
-       "name": "Verlauf der Linien",
+       "name": "Course of the lines",
        "sub_score": 0.8916,
        "weight": 0.25
       },
       {
        "contribution": 0.2,
        "key": "verengung",
-       "name": "Verengung der Spanne",
+       "name": "Narrowing of the range",
        "sub_score": 1.0,
        "weight": 0.2
       },
       {
        "contribution": 0.2,
        "key": "anpassung",
-       "name": "Lage der Wendepunkte an den Linien",
+       "name": "Position of the turning points on the lines",
        "sub_score": 1.0,
        "weight": 0.2
       },
       {
        "contribution": 0.0,
        "key": "beruehrungen",
-       "name": "Berührungen je Linie",
+       "name": "Touches per line",
        "sub_score": 0.0,
        "weight": 0.15
       },
       {
        "contribution": 0.1,
        "key": "innerhalb",
-       "name": "Schlusskurse zwischen den Linien",
+       "name": "Closing prices between the lines",
        "sub_score": 1.0,
        "weight": 0.1
       },
       {
        "contribution": 0.05,
        "key": "volumen",
-       "name": "Volumenverlauf",
+       "name": "Volume trend",
        "sub_score": 0.5,
        "weight": 0.1
       }
@@ -905,35 +905,35 @@
       {
        "contribution": 0.2798,
        "key": "extrem_abweichung",
-       "name": "Abweichung der beiden Hochs",
+       "name": "Deviation between the two highs",
        "sub_score": 0.7994,
        "weight": 0.35
       },
       {
        "contribution": 0.25,
        "key": "tiefe",
-       "name": "Abstand Zwischentief",
+       "name": "Depth of the intermediate low",
        "sub_score": 1.0,
        "weight": 0.25
       },
       {
        "contribution": 0.15,
        "key": "abstand",
-       "name": "Abstand der beiden Hochs",
+       "name": "Distance between the two highs",
        "sub_score": 1.0,
        "weight": 0.15
       },
       {
        "contribution": 0.15,
        "key": "vortrend",
-       "name": "Vorheriger Anstieg",
+       "name": "Prior advance",
        "sub_score": 1.0,
        "weight": 0.15
       },
       {
        "contribution": 0.05,
        "key": "volumen",
-       "name": "Volumen am zweiten Hoch",
+       "name": "Volume at the second high",
        "sub_score": 0.5,
        "weight": 0.1
       }
@@ -1025,42 +1025,42 @@
       {
        "contribution": 0.25,
        "key": "form",
-       "name": "Verlauf der Linien",
+       "name": "Course of the lines",
        "sub_score": 1.0,
        "weight": 0.25
       },
       {
        "contribution": 0.2,
        "key": "verengung",
-       "name": "Verengung der Spanne",
+       "name": "Narrowing of the range",
        "sub_score": 1.0,
        "weight": 0.2
       },
       {
        "contribution": 0.2,
        "key": "anpassung",
-       "name": "Lage der Wendepunkte an den Linien",
+       "name": "Position of the turning points on the lines",
        "sub_score": 1.0,
        "weight": 0.2
       },
       {
        "contribution": 0.0,
        "key": "beruehrungen",
-       "name": "Berührungen je Linie",
+       "name": "Touches per line",
        "sub_score": 0.0,
        "weight": 0.15
       },
       {
        "contribution": 0.1,
        "key": "innerhalb",
-       "name": "Schlusskurse zwischen den Linien",
+       "name": "Closing prices between the lines",
        "sub_score": 1.0,
        "weight": 0.1
       },
       {
        "contribution": 0.05,
        "key": "volumen",
-       "name": "Volumenverlauf",
+       "name": "Volume trend",
        "sub_score": 0.5,
        "weight": 0.1
       }
@@ -1158,35 +1158,35 @@
       {
        "contribution": 0.35,
        "key": "extrem_abweichung",
-       "name": "Abweichung der beiden Tiefs",
+       "name": "Deviation between the two lows",
        "sub_score": 1.0,
        "weight": 0.35
       },
       {
        "contribution": 0.25,
        "key": "tiefe",
-       "name": "Abstand Zwischenhoch",
+       "name": "Depth of the intermediate high",
        "sub_score": 1.0,
        "weight": 0.25
       },
       {
        "contribution": 0.15,
        "key": "abstand",
-       "name": "Abstand der beiden Tiefs",
+       "name": "Distance between the two lows",
        "sub_score": 1.0,
        "weight": 0.15
       },
       {
        "contribution": 0.15,
        "key": "vortrend",
-       "name": "Vorheriger Rückgang",
+       "name": "Prior decline",
        "sub_score": 1.0,
        "weight": 0.15
       },
       {
        "contribution": 0.05,
        "key": "volumen",
-       "name": "Volumen am zweiten Tief",
+       "name": "Volume at the second low",
        "sub_score": 0.5,
        "weight": 0.1
       }
@@ -1272,42 +1272,42 @@
       {
        "contribution": 0.25,
        "key": "form",
-       "name": "Verlauf der Linien",
+       "name": "Course of the lines",
        "sub_score": 1.0,
        "weight": 0.25
       },
       {
        "contribution": 0.2,
        "key": "verengung",
-       "name": "Verengung der Spanne",
+       "name": "Narrowing of the range",
        "sub_score": 1.0,
        "weight": 0.2
       },
       {
        "contribution": 0.174,
        "key": "anpassung",
-       "name": "Lage der Wendepunkte an den Linien",
+       "name": "Position of the turning points on the lines",
        "sub_score": 0.87,
        "weight": 0.2
       },
       {
        "contribution": 0.15,
        "key": "beruehrungen",
-       "name": "Berührungen je Linie",
+       "name": "Touches per line",
        "sub_score": 1.0,
        "weight": 0.15
       },
       {
        "contribution": 0.1,
        "key": "innerhalb",
-       "name": "Schlusskurse zwischen den Linien",
+       "name": "Closing prices between the lines",
        "sub_score": 1.0,
        "weight": 0.1
       },
       {
        "contribution": 0.05,
        "key": "volumen",
-       "name": "Volumenverlauf",
+       "name": "Volume trend",
        "sub_score": 0.5,
        "weight": 0.1
       }
@@ -1415,35 +1415,35 @@
       {
        "contribution": 0.35,
        "key": "extrem_abweichung",
-       "name": "Abweichung der beiden Tiefs",
+       "name": "Deviation between the two lows",
        "sub_score": 1.0,
        "weight": 0.35
       },
       {
        "contribution": 0.25,
        "key": "tiefe",
-       "name": "Abstand Zwischenhoch",
+       "name": "Depth of the intermediate high",
        "sub_score": 1.0,
        "weight": 0.25
       },
       {
        "contribution": 0.15,
        "key": "abstand",
-       "name": "Abstand der beiden Tiefs",
+       "name": "Distance between the two lows",
        "sub_score": 1.0,
        "weight": 0.15
       },
       {
        "contribution": 0.1196,
        "key": "vortrend",
-       "name": "Vorheriger Rückgang",
+       "name": "Prior decline",
        "sub_score": 0.797,
        "weight": 0.15
       },
       {
        "contribution": 0.05,
        "key": "volumen",
-       "name": "Volumen am zweiten Tief",
+       "name": "Volume at the second low",
        "sub_score": 0.5,
        "weight": 0.1
       }
@@ -1543,42 +1543,42 @@
       {
        "contribution": 0.25,
        "key": "form",
-       "name": "Verlauf der Linien",
+       "name": "Course of the lines",
        "sub_score": 1.0,
        "weight": 0.25
       },
       {
        "contribution": 0.2,
        "key": "verengung",
-       "name": "Verengung der Spanne",
+       "name": "Narrowing of the range",
        "sub_score": 1.0,
        "weight": 0.2
       },
       {
        "contribution": 0.2,
        "key": "anpassung",
-       "name": "Lage der Wendepunkte an den Linien",
+       "name": "Position of the turning points on the lines",
        "sub_score": 1.0,
        "weight": 0.2
       },
       {
        "contribution": 0.0,
        "key": "beruehrungen",
-       "name": "Berührungen je Linie",
+       "name": "Touches per line",
        "sub_score": 0.0,
        "weight": 0.15
       },
       {
        "contribution": 0.1,
        "key": "innerhalb",
-       "name": "Schlusskurse zwischen den Linien",
+       "name": "Closing prices between the lines",
        "sub_score": 1.0,
        "weight": 0.1
       },
       {
        "contribution": 0.05,
        "key": "volumen",
-       "name": "Volumenverlauf",
+       "name": "Volume trend",
        "sub_score": 0.5,
        "weight": 0.1
       }
@@ -1676,35 +1676,35 @@
       {
        "contribution": 0.35,
        "key": "extrem_abweichung",
-       "name": "Abweichung der beiden Hochs",
+       "name": "Deviation between the two highs",
        "sub_score": 1.0,
        "weight": 0.35
       },
       {
        "contribution": 0.25,
        "key": "tiefe",
-       "name": "Abstand Zwischentief",
+       "name": "Depth of the intermediate low",
        "sub_score": 1.0,
        "weight": 0.25
       },
       {
        "contribution": 0.15,
        "key": "abstand",
-       "name": "Abstand der beiden Hochs",
+       "name": "Distance between the two highs",
        "sub_score": 1.0,
        "weight": 0.15
       },
       {
        "contribution": 0.15,
        "key": "vortrend",
-       "name": "Vorheriger Anstieg",
+       "name": "Prior advance",
        "sub_score": 1.0,
        "weight": 0.15
       },
       {
        "contribution": 0.05,
        "key": "volumen",
-       "name": "Volumen am zweiten Hoch",
+       "name": "Volume at the second high",
        "sub_score": 0.5,
        "weight": 0.1
       }
@@ -1790,42 +1790,42 @@
       {
        "contribution": 0.25,
        "key": "form",
-       "name": "Verlauf der Linien",
+       "name": "Course of the lines",
        "sub_score": 1.0,
        "weight": 0.25
       },
       {
        "contribution": 0.2,
        "key": "verengung",
-       "name": "Verengung der Spanne",
+       "name": "Narrowing of the range",
        "sub_score": 1.0,
        "weight": 0.2
       },
       {
        "contribution": 0.1755,
        "key": "anpassung",
-       "name": "Lage der Wendepunkte an den Linien",
+       "name": "Position of the turning points on the lines",
        "sub_score": 0.8775,
        "weight": 0.2
       },
       {
        "contribution": 0.15,
        "key": "beruehrungen",
-       "name": "Berührungen je Linie",
+       "name": "Touches per line",
        "sub_score": 1.0,
        "weight": 0.15
       },
       {
        "contribution": 0.1,
        "key": "innerhalb",
-       "name": "Schlusskurse zwischen den Linien",
+       "name": "Closing prices between the lines",
        "sub_score": 1.0,
        "weight": 0.1
       },
       {
        "contribution": 0.05,
        "key": "volumen",
-       "name": "Volumenverlauf",
+       "name": "Volume trend",
        "sub_score": 0.5,
        "weight": 0.1
       }
@@ -1933,35 +1933,35 @@
       {
        "contribution": 0.35,
        "key": "extrem_abweichung",
-       "name": "Abweichung der beiden Hochs",
+       "name": "Deviation between the two highs",
        "sub_score": 1.0,
        "weight": 0.35
       },
       {
        "contribution": 0.1869,
        "key": "tiefe",
-       "name": "Abstand Zwischentief",
+       "name": "Depth of the intermediate low",
        "sub_score": 0.7475,
        "weight": 0.25
       },
       {
        "contribution": 0.15,
        "key": "abstand",
-       "name": "Abstand der beiden Hochs",
+       "name": "Distance between the two highs",
        "sub_score": 1.0,
        "weight": 0.15
       },
       {
        "contribution": 0.1329,
        "key": "vortrend",
-       "name": "Vorheriger Anstieg",
+       "name": "Prior advance",
        "sub_score": 0.8857,
        "weight": 0.15
       },
       {
        "contribution": 0.05,
        "key": "volumen",
-       "name": "Volumen am zweiten Hoch",
+       "name": "Volume at the second high",
        "sub_score": 0.5,
        "weight": 0.1
       }
@@ -2061,42 +2061,42 @@
       {
        "contribution": 0.25,
        "key": "form",
-       "name": "Verlauf der Linien",
+       "name": "Course of the lines",
        "sub_score": 1.0,
        "weight": 0.25
       },
       {
        "contribution": 0.2,
        "key": "verengung",
-       "name": "Verengung der Spanne",
+       "name": "Narrowing of the range",
        "sub_score": 1.0,
        "weight": 0.2
       },
       {
        "contribution": 0.2,
        "key": "anpassung",
-       "name": "Lage der Wendepunkte an den Linien",
+       "name": "Position of the turning points on the lines",
        "sub_score": 1.0,
        "weight": 0.2
       },
       {
        "contribution": 0.0,
        "key": "beruehrungen",
-       "name": "Berührungen je Linie",
+       "name": "Touches per line",
        "sub_score": 0.0,
        "weight": 0.15
       },
       {
        "contribution": 0.1,
        "key": "innerhalb",
-       "name": "Schlusskurse zwischen den Linien",
+       "name": "Closing prices between the lines",
        "sub_score": 1.0,
        "weight": 0.1
       },
       {
        "contribution": 0.05,
        "key": "volumen",
-       "name": "Volumenverlauf",
+       "name": "Volume trend",
        "sub_score": 0.5,
        "weight": 0.1
       }
@@ -2194,42 +2194,42 @@
       {
        "contribution": 0.25,
        "key": "form",
-       "name": "Verlauf der Linien",
+       "name": "Course of the lines",
        "sub_score": 1.0,
        "weight": 0.25
       },
       {
        "contribution": 0.2,
        "key": "verengung",
-       "name": "Verengung der Spanne",
+       "name": "Narrowing of the range",
        "sub_score": 1.0,
        "weight": 0.2
       },
       {
        "contribution": 0.1527,
        "key": "anpassung",
-       "name": "Lage der Wendepunkte an den Linien",
+       "name": "Position of the turning points on the lines",
        "sub_score": 0.7636,
        "weight": 0.2
       },
       {
        "contribution": 0.15,
        "key": "beruehrungen",
-       "name": "Berührungen je Linie",
+       "name": "Touches per line",
        "sub_score": 1.0,
        "weight": 0.15
       },
       {
        "contribution": 0.1,
        "key": "innerhalb",
-       "name": "Schlusskurse zwischen den Linien",
+       "name": "Closing prices between the lines",
        "sub_score": 1.0,
        "weight": 0.1
       },
       {
        "contribution": 0.05,
        "key": "volumen",
-       "name": "Volumenverlauf",
+       "name": "Volume trend",
        "sub_score": 0.5,
        "weight": 0.1
       }
@@ -2343,49 +2343,49 @@
       {
        "contribution": 0.25,
        "key": "stange",
-       "name": "Fahnenstange",
+       "name": "Flagpole",
        "sub_score": 1.0,
        "weight": 0.25
       },
       {
        "contribution": 0.15,
        "key": "ruecksetzer",
-       "name": "Rücksetzer in der Konsolidierung",
+       "name": "Retracement within the consolidation",
        "sub_score": 1.0,
        "weight": 0.15
       },
       {
        "contribution": 0.1271,
        "key": "neigung",
-       "name": "Neigung der Konsolidierung",
+       "name": "Slope of the consolidation",
        "sub_score": 0.8474,
        "weight": 0.15
       },
       {
        "contribution": 0.1425,
        "key": "form",
-       "name": "Parallele Linien (Flagge)",
+       "name": "Parallel lines (flag)",
        "sub_score": 0.95,
        "weight": 0.15
       },
       {
        "contribution": 0.1,
        "key": "innerhalb",
-       "name": "Schlusskurse im Kanal",
+       "name": "Closing prices inside the channel",
        "sub_score": 1.0,
        "weight": 0.1
       },
       {
        "contribution": 0.08,
        "key": "dauer",
-       "name": "Dauer der Konsolidierung",
+       "name": "Duration of the consolidation",
        "sub_score": 0.8,
        "weight": 0.1
       },
       {
        "contribution": 0.05,
        "key": "volumen",
-       "name": "Volumen in der Konsolidierung",
+       "name": "Volume during the consolidation",
        "sub_score": 0.5,
        "weight": 0.1
       }
@@ -2486,49 +2486,49 @@
       {
        "contribution": 0.25,
        "key": "stange",
-       "name": "Fahnenstange",
+       "name": "Flagpole",
        "sub_score": 1.0,
        "weight": 0.25
       },
       {
        "contribution": 0.15,
        "key": "ruecksetzer",
-       "name": "Rücksetzer in der Konsolidierung",
+       "name": "Retracement within the consolidation",
        "sub_score": 1.0,
        "weight": 0.15
       },
       {
        "contribution": 0.1473,
        "key": "neigung",
-       "name": "Neigung der Konsolidierung",
+       "name": "Slope of the consolidation",
        "sub_score": 0.9819,
        "weight": 0.15
       },
       {
        "contribution": 0.1456,
        "key": "form",
-       "name": "Parallele Linien (Flagge)",
+       "name": "Parallel lines (flag)",
        "sub_score": 0.9708,
        "weight": 0.15
       },
       {
        "contribution": 0.1,
        "key": "innerhalb",
-       "name": "Schlusskurse im Kanal",
+       "name": "Closing prices inside the channel",
        "sub_score": 1.0,
        "weight": 0.1
       },
       {
        "contribution": 0.08,
        "key": "dauer",
-       "name": "Dauer der Konsolidierung",
+       "name": "Duration of the consolidation",
        "sub_score": 0.8,
        "weight": 0.1
       },
       {
        "contribution": 0.05,
        "key": "volumen",
-       "name": "Volumen in der Konsolidierung",
+       "name": "Volume during the consolidation",
        "sub_score": 0.5,
        "weight": 0.1
       }
@@ -2629,42 +2629,42 @@
       {
        "contribution": 0.25,
        "key": "form",
-       "name": "Verlauf der Linien",
+       "name": "Course of the lines",
        "sub_score": 1.0,
        "weight": 0.25
       },
       {
        "contribution": 0.0665,
        "key": "verengung",
-       "name": "Verengung der Spanne",
+       "name": "Narrowing of the range",
        "sub_score": 0.3324,
        "weight": 0.2
       },
       {
        "contribution": 0.1532,
        "key": "anpassung",
-       "name": "Lage der Wendepunkte an den Linien",
+       "name": "Position of the turning points on the lines",
        "sub_score": 0.7661,
        "weight": 0.2
       },
       {
        "contribution": 0.15,
        "key": "beruehrungen",
-       "name": "Berührungen je Linie",
+       "name": "Touches per line",
        "sub_score": 1.0,
        "weight": 0.15
       },
       {
        "contribution": 0.1,
        "key": "innerhalb",
-       "name": "Schlusskurse zwischen den Linien",
+       "name": "Closing prices between the lines",
        "sub_score": 1.0,
        "weight": 0.1
       },
       {
        "contribution": 0.05,
        "key": "volumen",
-       "name": "Volumenverlauf",
+       "name": "Volume trend",
        "sub_score": 0.5,
        "weight": 0.1
       }
@@ -2772,49 +2772,49 @@
       {
        "contribution": 0.0673,
        "key": "stange",
-       "name": "Fahnenstange",
+       "name": "Flagpole",
        "sub_score": 0.2693,
        "weight": 0.25
       },
       {
        "contribution": 0.0468,
        "key": "ruecksetzer",
-       "name": "Rücksetzer in der Konsolidierung",
+       "name": "Retracement within the consolidation",
        "sub_score": 0.3123,
        "weight": 0.15
       },
       {
        "contribution": 0.0256,
        "key": "neigung",
-       "name": "Neigung der Konsolidierung",
+       "name": "Slope of the consolidation",
        "sub_score": 0.1706,
        "weight": 0.15
       },
       {
        "contribution": 0.1298,
        "key": "form",
-       "name": "Parallele Linien (Flagge)",
+       "name": "Parallel lines (flag)",
        "sub_score": 0.8652,
        "weight": 0.15
       },
       {
        "contribution": 0.1,
        "key": "innerhalb",
-       "name": "Schlusskurse im Kanal",
+       "name": "Closing prices inside the channel",
        "sub_score": 1.0,
        "weight": 0.1
       },
       {
        "contribution": 0.09,
        "key": "dauer",
-       "name": "Dauer der Konsolidierung",
+       "name": "Duration of the consolidation",
        "sub_score": 0.9,
        "weight": 0.1
       },
       {
        "contribution": 0.05,
        "key": "volumen",
-       "name": "Volumen in der Konsolidierung",
+       "name": "Volume during the consolidation",
        "sub_score": 0.5,
        "weight": 0.1
       }
@@ -2915,42 +2915,42 @@
       {
        "contribution": 0.25,
        "key": "form",
-       "name": "Verlauf der Linien",
+       "name": "Course of the lines",
        "sub_score": 1.0,
        "weight": 0.25
       },
       {
        "contribution": 0.0598,
        "key": "verengung",
-       "name": "Verengung der Spanne",
+       "name": "Narrowing of the range",
        "sub_score": 0.2988,
        "weight": 0.2
       },
       {
        "contribution": 0.1532,
        "key": "anpassung",
-       "name": "Lage der Wendepunkte an den Linien",
+       "name": "Position of the turning points on the lines",
        "sub_score": 0.7661,
        "weight": 0.2
       },
       {
        "contribution": 0.15,
        "key": "beruehrungen",
-       "name": "Berührungen je Linie",
+       "name": "Touches per line",
        "sub_score": 1.0,
        "weight": 0.15
       },
       {
        "contribution": 0.1,
        "key": "innerhalb",
-       "name": "Schlusskurse zwischen den Linien",
+       "name": "Closing prices between the lines",
        "sub_score": 1.0,
        "weight": 0.1
       },
       {
        "contribution": 0.05,
        "key": "volumen",
-       "name": "Volumenverlauf",
+       "name": "Volume trend",
        "sub_score": 0.5,
        "weight": 0.1
       }
@@ -3058,49 +3058,49 @@
       {
        "contribution": 0.127,
        "key": "stange",
-       "name": "Fahnenstange",
+       "name": "Flagpole",
        "sub_score": 0.5081,
        "weight": 0.25
       },
       {
        "contribution": 0.0173,
        "key": "ruecksetzer",
-       "name": "Rücksetzer in der Konsolidierung",
+       "name": "Retracement within the consolidation",
        "sub_score": 0.1152,
        "weight": 0.15
       },
       {
        "contribution": 0.0003,
        "key": "neigung",
-       "name": "Neigung der Konsolidierung",
+       "name": "Slope of the consolidation",
        "sub_score": 0.0021,
        "weight": 0.15
       },
       {
        "contribution": 0.1479,
        "key": "form",
-       "name": "Parallele Linien (Flagge)",
+       "name": "Parallel lines (flag)",
        "sub_score": 0.9863,
        "weight": 0.15
       },
       {
        "contribution": 0.1,
        "key": "innerhalb",
-       "name": "Schlusskurse im Kanal",
+       "name": "Closing prices inside the channel",
        "sub_score": 1.0,
        "weight": 0.1
       },
       {
        "contribution": 0.1,
        "key": "dauer",
-       "name": "Dauer der Konsolidierung",
+       "name": "Duration of the consolidation",
        "sub_score": 1.0,
        "weight": 0.1
       },
       {
        "contribution": 0.05,
        "key": "volumen",
-       "name": "Volumen in der Konsolidierung",
+       "name": "Volume during the consolidation",
        "sub_score": 0.5,
        "weight": 0.1
       }
@@ -3195,49 +3195,49 @@
       {
        "contribution": 0.1061,
        "key": "stange",
-       "name": "Fahnenstange",
+       "name": "Flagpole",
        "sub_score": 0.4242,
        "weight": 0.25
       },
       {
        "contribution": 0.0455,
        "key": "ruecksetzer",
-       "name": "Rücksetzer in der Konsolidierung",
+       "name": "Retracement within the consolidation",
        "sub_score": 0.3031,
        "weight": 0.15
       },
       {
        "contribution": 0.0511,
        "key": "neigung",
-       "name": "Neigung der Konsolidierung",
+       "name": "Slope of the consolidation",
        "sub_score": 0.3409,
        "weight": 0.15
       },
       {
        "contribution": 0.1338,
        "key": "form",
-       "name": "Parallele Linien (Flagge)",
+       "name": "Parallel lines (flag)",
        "sub_score": 0.8917,
        "weight": 0.15
       },
       {
        "contribution": 0.1,
        "key": "innerhalb",
-       "name": "Schlusskurse im Kanal",
+       "name": "Closing prices inside the channel",
        "sub_score": 1.0,
        "weight": 0.1
       },
       {
        "contribution": 0.09,
        "key": "dauer",
-       "name": "Dauer der Konsolidierung",
+       "name": "Duration of the consolidation",
        "sub_score": 0.9,
        "weight": 0.1
       },
       {
        "contribution": 0.05,
        "key": "volumen",
-       "name": "Volumen in der Konsolidierung",
+       "name": "Volume during the consolidation",
        "sub_score": 0.5,
        "weight": 0.1
       }
@@ -3338,42 +3338,42 @@
       {
        "contribution": 0.25,
        "key": "form",
-       "name": "Verlauf der Linien",
+       "name": "Course of the lines",
        "sub_score": 1.0,
        "weight": 0.25
       },
       {
        "contribution": 0.0356,
        "key": "verengung",
-       "name": "Verengung der Spanne",
+       "name": "Narrowing of the range",
        "sub_score": 0.1782,
        "weight": 0.2
       },
       {
        "contribution": 0.2,
        "key": "anpassung",
-       "name": "Lage der Wendepunkte an den Linien",
+       "name": "Position of the turning points on the lines",
        "sub_score": 1.0,
        "weight": 0.2
       },
       {
        "contribution": 0.0,
        "key": "beruehrungen",
-       "name": "Berührungen je Linie",
+       "name": "Touches per line",
        "sub_score": 0.0,
        "weight": 0.15
       },
       {
        "contribution": 0.1,
        "key": "innerhalb",
-       "name": "Schlusskurse zwischen den Linien",
+       "name": "Closing prices between the lines",
        "sub_score": 1.0,
        "weight": 0.1
       },
       {
        "contribution": 0.05,
        "key": "volumen",
-       "name": "Volumenverlauf",
+       "name": "Volume trend",
        "sub_score": 0.5,
        "weight": 0.1
       }
@@ -3471,42 +3471,42 @@
       {
        "contribution": 0.25,
        "key": "kopf_ueberhang",
-       "name": "Kopf gegenüber den Schultern",
+       "name": "Head relative to the shoulders",
        "sub_score": 1.0,
        "weight": 0.25
       },
       {
        "contribution": 0.225,
        "key": "schulter_abweichung",
-       "name": "Symmetrie der Schultern",
+       "name": "Symmetry of the shoulders",
        "sub_score": 0.9,
        "weight": 0.25
       },
       {
        "contribution": 0.1337,
        "key": "nacken_neigung",
-       "name": "Neigung der Nackenlinie",
+       "name": "Slope of the neckline",
        "sub_score": 0.8913,
        "weight": 0.15
       },
       {
        "contribution": 0.1105,
        "key": "zeit_symmetrie",
-       "name": "Zeitliche Symmetrie",
+       "name": "Time symmetry",
        "sub_score": 0.737,
        "weight": 0.15
       },
       {
        "contribution": 0.1,
        "key": "vortrend",
-       "name": "Vorheriger Anstieg",
+       "name": "Prior advance",
        "sub_score": 1.0,
        "weight": 0.1
       },
       {
        "contribution": 0.05,
        "key": "volumen",
-       "name": "Volumen an der rechten Schulter",
+       "name": "Volume at the right shoulder",
        "sub_score": 0.5,
        "weight": 0.1
       }
@@ -3609,35 +3609,35 @@
       {
        "contribution": 0.2232,
        "key": "extrem_abweichung",
-       "name": "Abweichung der beiden Tiefs",
+       "name": "Deviation between the two lows",
        "sub_score": 0.6377,
        "weight": 0.35
       },
       {
        "contribution": 0.25,
        "key": "tiefe",
-       "name": "Abstand Zwischenhoch",
+       "name": "Depth of the intermediate high",
        "sub_score": 1.0,
        "weight": 0.25
       },
       {
        "contribution": 0.15,
        "key": "abstand",
-       "name": "Abstand der beiden Tiefs",
+       "name": "Distance between the two lows",
        "sub_score": 1.0,
        "weight": 0.15
       },
       {
        "contribution": 0.0505,
        "key": "vortrend",
-       "name": "Vorheriger Rückgang",
+       "name": "Prior decline",
        "sub_score": 0.3367,
        "weight": 0.15
       },
       {
        "contribution": 0.05,
        "key": "volumen",
-       "name": "Volumen am zweiten Tief",
+       "name": "Volume at the second low",
        "sub_score": 0.5,
        "weight": 0.1
       }
@@ -3723,42 +3723,42 @@
       {
        "contribution": 0.2079,
        "key": "form",
-       "name": "Verlauf der Linien",
+       "name": "Course of the lines",
        "sub_score": 0.8317,
        "weight": 0.25
       },
       {
        "contribution": 0.2,
        "key": "verengung",
-       "name": "Verengung der Spanne",
+       "name": "Narrowing of the range",
        "sub_score": 1.0,
        "weight": 0.2
       },
       {
        "contribution": 0.2,
        "key": "anpassung",
-       "name": "Lage der Wendepunkte an den Linien",
+       "name": "Position of the turning points on the lines",
        "sub_score": 1.0,
        "weight": 0.2
       },
       {
        "contribution": 0.0,
        "key": "beruehrungen",
-       "name": "Berührungen je Linie",
+       "name": "Touches per line",
        "sub_score": 0.0,
        "weight": 0.15
       },
       {
        "contribution": 0.1,
        "key": "innerhalb",
-       "name": "Schlusskurse zwischen den Linien",
+       "name": "Closing prices between the lines",
        "sub_score": 1.0,
        "weight": 0.1
       },
       {
        "contribution": 0.05,
        "key": "volumen",
-       "name": "Volumenverlauf",
+       "name": "Volume trend",
        "sub_score": 0.5,
        "weight": 0.1
       }
@@ -3862,42 +3862,42 @@
       {
        "contribution": 0.25,
        "key": "form",
-       "name": "Verlauf der Linien",
+       "name": "Course of the lines",
        "sub_score": 1.0,
        "weight": 0.25
       },
       {
        "contribution": 0.0405,
        "key": "verengung",
-       "name": "Verengung der Spanne",
+       "name": "Narrowing of the range",
        "sub_score": 0.2026,
        "weight": 0.2
       },
       {
        "contribution": 0.2,
        "key": "anpassung",
-       "name": "Lage der Wendepunkte an den Linien",
+       "name": "Position of the turning points on the lines",
        "sub_score": 1.0,
        "weight": 0.2
       },
       {
        "contribution": 0.0,
        "key": "beruehrungen",
-       "name": "Berührungen je Linie",
+       "name": "Touches per line",
        "sub_score": 0.0,
        "weight": 0.15
       },
       {
        "contribution": 0.1,
        "key": "innerhalb",
-       "name": "Schlusskurse zwischen den Linien",
+       "name": "Closing prices between the lines",
        "sub_score": 1.0,
        "weight": 0.1
       },
       {
        "contribution": 0.05,
        "key": "volumen",
-       "name": "Volumenverlauf",
+       "name": "Volume trend",
        "sub_score": 0.5,
        "weight": 0.1
       }
@@ -3995,42 +3995,42 @@
       {
        "contribution": 0.25,
        "key": "kopf_ueberhang",
-       "name": "Kopf gegenüber den Schultern",
+       "name": "Head relative to the shoulders",
        "sub_score": 1.0,
        "weight": 0.25
       },
       {
        "contribution": 0.2249,
        "key": "schulter_abweichung",
-       "name": "Symmetrie der Schultern",
+       "name": "Symmetry of the shoulders",
        "sub_score": 0.8995,
        "weight": 0.25
       },
       {
        "contribution": 0.1361,
        "key": "nacken_neigung",
-       "name": "Neigung der Nackenlinie",
+       "name": "Slope of the neckline",
        "sub_score": 0.907,
        "weight": 0.15
       },
       {
        "contribution": 0.1105,
        "key": "zeit_symmetrie",
-       "name": "Zeitliche Symmetrie",
+       "name": "Time symmetry",
        "sub_score": 0.737,
        "weight": 0.15
       },
       {
        "contribution": 0.1,
        "key": "vortrend",
-       "name": "Vorheriger Rückgang",
+       "name": "Prior decline",
        "sub_score": 1.0,
        "weight": 0.1
       },
       {
        "contribution": 0.05,
        "key": "volumen",
-       "name": "Volumen an der rechten Schulter",
+       "name": "Volume at the right shoulder",
        "sub_score": 0.5,
        "weight": 0.1
       }
@@ -4133,35 +4133,35 @@
       {
        "contribution": 0.2415,
        "key": "extrem_abweichung",
-       "name": "Abweichung der beiden Hochs",
+       "name": "Deviation between the two highs",
        "sub_score": 0.6899,
        "weight": 0.35
       },
       {
        "contribution": 0.25,
        "key": "tiefe",
-       "name": "Abstand Zwischentief",
+       "name": "Depth of the intermediate low",
        "sub_score": 1.0,
        "weight": 0.25
       },
       {
        "contribution": 0.15,
        "key": "abstand",
-       "name": "Abstand der beiden Hochs",
+       "name": "Distance between the two highs",
        "sub_score": 1.0,
        "weight": 0.15
       },
       {
        "contribution": 0.0515,
        "key": "vortrend",
-       "name": "Vorheriger Anstieg",
+       "name": "Prior advance",
        "sub_score": 0.3433,
        "weight": 0.15
       },
       {
        "contribution": 0.05,
        "key": "volumen",
-       "name": "Volumen am zweiten Hoch",
+       "name": "Volume at the second high",
        "sub_score": 0.5,
        "weight": 0.1
       }
@@ -4247,42 +4247,42 @@
       {
        "contribution": 0.2087,
        "key": "form",
-       "name": "Verlauf der Linien",
+       "name": "Course of the lines",
        "sub_score": 0.8349,
        "weight": 0.25
       },
       {
        "contribution": 0.2,
        "key": "verengung",
-       "name": "Verengung der Spanne",
+       "name": "Narrowing of the range",
        "sub_score": 1.0,
        "weight": 0.2
       },
       {
        "contribution": 0.2,
        "key": "anpassung",
-       "name": "Lage der Wendepunkte an den Linien",
+       "name": "Position of the turning points on the lines",
        "sub_score": 1.0,
        "weight": 0.2
       },
       {
        "contribution": 0.0,
        "key": "beruehrungen",
-       "name": "Berührungen je Linie",
+       "name": "Touches per line",
        "sub_score": 0.0,
        "weight": 0.15
       },
       {
        "contribution": 0.1,
        "key": "innerhalb",
-       "name": "Schlusskurse zwischen den Linien",
+       "name": "Closing prices between the lines",
        "sub_score": 1.0,
        "weight": 0.1
       },
       {
        "contribution": 0.05,
        "key": "volumen",
-       "name": "Volumenverlauf",
+       "name": "Volume trend",
        "sub_score": 0.5,
        "weight": 0.1
       }
@@ -4396,49 +4396,49 @@
       {
        "contribution": 0.25,
        "key": "stange",
-       "name": "Fahnenstange",
+       "name": "Flagpole",
        "sub_score": 1.0,
        "weight": 0.25
       },
       {
        "contribution": 0.15,
        "key": "ruecksetzer",
-       "name": "Rücksetzer in der Konsolidierung",
+       "name": "Retracement within the consolidation",
        "sub_score": 1.0,
        "weight": 0.15
       },
       {
        "contribution": 0.15,
        "key": "neigung",
-       "name": "Neigung der Konsolidierung",
+       "name": "Slope of the consolidation",
        "sub_score": 1.0,
        "weight": 0.15
       },
       {
        "contribution": 0.0702,
        "key": "form",
-       "name": "Zusammenlaufende Linien (Wimpel)",
+       "name": "Converging lines (pennant)",
        "sub_score": 0.4681,
        "weight": 0.15
       },
       {
        "contribution": 0.1,
        "key": "innerhalb",
-       "name": "Schlusskurse im Kanal",
+       "name": "Closing prices inside the channel",
        "sub_score": 1.0,
        "weight": 0.1
       },
       {
        "contribution": 0.07,
        "key": "dauer",
-       "name": "Dauer der Konsolidierung",
+       "name": "Duration of the consolidation",
        "sub_score": 0.7,
        "weight": 0.1
       },
       {
        "contribution": 0.05,
        "key": "volumen",
-       "name": "Volumen in der Konsolidierung",
+       "name": "Volume during the consolidation",
        "sub_score": 0.5,
        "weight": 0.1
       }
@@ -4539,49 +4539,49 @@
       {
        "contribution": 0.25,
        "key": "stange",
-       "name": "Fahnenstange",
+       "name": "Flagpole",
        "sub_score": 1.0,
        "weight": 0.25
       },
       {
        "contribution": 0.15,
        "key": "ruecksetzer",
-       "name": "Rücksetzer in der Konsolidierung",
+       "name": "Retracement within the consolidation",
        "sub_score": 1.0,
        "weight": 0.15
       },
       {
        "contribution": 0.15,
        "key": "neigung",
-       "name": "Neigung der Konsolidierung",
+       "name": "Slope of the consolidation",
        "sub_score": 1.0,
        "weight": 0.15
       },
       {
        "contribution": 0.0846,
        "key": "form",
-       "name": "Zusammenlaufende Linien (Wimpel)",
+       "name": "Converging lines (pennant)",
        "sub_score": 0.5639,
        "weight": 0.15
       },
       {
        "contribution": 0.1,
        "key": "innerhalb",
-       "name": "Schlusskurse im Kanal",
+       "name": "Closing prices inside the channel",
        "sub_score": 1.0,
        "weight": 0.1
       },
       {
        "contribution": 0.05,
        "key": "dauer",
-       "name": "Dauer der Konsolidierung",
+       "name": "Duration of the consolidation",
        "sub_score": 0.5,
        "weight": 0.1
       },
       {
        "contribution": 0.05,
        "key": "volumen",
-       "name": "Volumen in der Konsolidierung",
+       "name": "Volume during the consolidation",
        "sub_score": 0.5,
        "weight": 0.1
       }
@@ -4682,42 +4682,42 @@
       {
        "contribution": 0.068,
        "key": "form",
-       "name": "Verlauf der Linien",
+       "name": "Course of the lines",
        "sub_score": 0.2721,
        "weight": 0.25
       },
       {
        "contribution": 0.2,
        "key": "verengung",
-       "name": "Verengung der Spanne",
+       "name": "Narrowing of the range",
        "sub_score": 1.0,
        "weight": 0.2
       },
       {
        "contribution": 0.2,
        "key": "anpassung",
-       "name": "Lage der Wendepunkte an den Linien",
+       "name": "Position of the turning points on the lines",
        "sub_score": 1.0,
        "weight": 0.2
       },
       {
        "contribution": 0.0,
        "key": "beruehrungen",
-       "name": "Berührungen je Linie",
+       "name": "Touches per line",
        "sub_score": 0.0,
        "weight": 0.15
       },
       {
        "contribution": 0.1,
        "key": "innerhalb",
-       "name": "Schlusskurse zwischen den Linien",
+       "name": "Closing prices between the lines",
        "sub_score": 1.0,
        "weight": 0.1
       },
       {
        "contribution": 0.0572,
        "key": "volumen",
-       "name": "Volumenverlauf",
+       "name": "Volume trend",
        "sub_score": 0.5722,
        "weight": 0.1
       }
@@ -4815,49 +4815,49 @@
       {
        "contribution": 0.0654,
        "key": "stange",
-       "name": "Fahnenstange",
+       "name": "Flagpole",
        "sub_score": 0.2615,
        "weight": 0.25
       },
       {
        "contribution": 0.0563,
        "key": "ruecksetzer",
-       "name": "Rücksetzer in der Konsolidierung",
+       "name": "Retracement within the consolidation",
        "sub_score": 0.3756,
        "weight": 0.15
       },
       {
        "contribution": 0.15,
        "key": "neigung",
-       "name": "Neigung der Konsolidierung",
+       "name": "Slope of the consolidation",
        "sub_score": 1.0,
        "weight": 0.15
       },
       {
        "contribution": 0.1497,
        "key": "form",
-       "name": "Parallele Linien (Flagge)",
+       "name": "Parallel lines (flag)",
        "sub_score": 0.9979,
        "weight": 0.15
       },
       {
        "contribution": 0.1,
        "key": "innerhalb",
-       "name": "Schlusskurse im Kanal",
+       "name": "Closing prices inside the channel",
        "sub_score": 1.0,
        "weight": 0.1
       },
       {
        "contribution": 0.03,
        "key": "dauer",
-       "name": "Dauer der Konsolidierung",
+       "name": "Duration of the consolidation",
        "sub_score": 0.3,
        "weight": 0.1
       },
       {
        "contribution": 0.0504,
        "key": "volumen",
-       "name": "Volumen in der Konsolidierung",
+       "name": "Volume during the consolidation",
        "sub_score": 0.5038,
        "weight": 0.1
       }
@@ -4952,49 +4952,49 @@
       {
        "contribution": 0.0131,
        "key": "stange",
-       "name": "Fahnenstange",
+       "name": "Flagpole",
        "sub_score": 0.0522,
        "weight": 0.25
       },
       {
        "contribution": 0.0821,
        "key": "ruecksetzer",
-       "name": "Rücksetzer in der Konsolidierung",
+       "name": "Retracement within the consolidation",
        "sub_score": 0.5471,
        "weight": 0.15
       },
       {
        "contribution": 0.15,
        "key": "neigung",
-       "name": "Neigung der Konsolidierung",
+       "name": "Slope of the consolidation",
        "sub_score": 1.0,
        "weight": 0.15
       },
       {
        "contribution": 0.0947,
        "key": "form",
-       "name": "Parallele Linien (Flagge)",
+       "name": "Parallel lines (flag)",
        "sub_score": 0.6315,
        "weight": 0.15
       },
       {
        "contribution": 0.1,
        "key": "innerhalb",
-       "name": "Schlusskurse im Kanal",
+       "name": "Closing prices inside the channel",
        "sub_score": 1.0,
        "weight": 0.1
       },
       {
        "contribution": 0.1,
        "key": "dauer",
-       "name": "Dauer der Konsolidierung",
+       "name": "Duration of the consolidation",
        "sub_score": 1.0,
        "weight": 0.1
       },
       {
        "contribution": 0.049,
        "key": "volumen",
-       "name": "Volumen in der Konsolidierung",
+       "name": "Volume during the consolidation",
        "sub_score": 0.4901,
        "weight": 0.1
       }
@@ -5089,42 +5089,42 @@
       {
        "contribution": 0.1862,
        "key": "form",
-       "name": "Verlauf der Linien",
+       "name": "Course of the lines",
        "sub_score": 0.7446,
        "weight": 0.25
       },
       {
        "contribution": 0.2,
        "key": "verengung",
-       "name": "Verengung der Spanne",
+       "name": "Narrowing of the range",
        "sub_score": 1.0,
        "weight": 0.2
       },
       {
        "contribution": 0.2,
        "key": "anpassung",
-       "name": "Lage der Wendepunkte an den Linien",
+       "name": "Position of the turning points on the lines",
        "sub_score": 1.0,
        "weight": 0.2
       },
       {
        "contribution": 0.0,
        "key": "beruehrungen",
-       "name": "Berührungen je Linie",
+       "name": "Touches per line",
        "sub_score": 0.0,
        "weight": 0.15
       },
       {
        "contribution": 0.1,
        "key": "innerhalb",
-       "name": "Schlusskurse zwischen den Linien",
+       "name": "Closing prices between the lines",
        "sub_score": 1.0,
        "weight": 0.1
       },
       {
        "contribution": 0.0572,
        "key": "volumen",
-       "name": "Volumenverlauf",
+       "name": "Volume trend",
        "sub_score": 0.5724,
        "weight": 0.1
       }
@@ -5222,42 +5222,42 @@
       {
        "contribution": 0.0851,
        "key": "kopf_ueberhang",
-       "name": "Kopf gegenüber den Schultern",
+       "name": "Head relative to the shoulders",
        "sub_score": 0.3402,
        "weight": 0.25
       },
       {
        "contribution": 0.1009,
        "key": "schulter_abweichung",
-       "name": "Symmetrie der Schultern",
+       "name": "Symmetry of the shoulders",
        "sub_score": 0.4038,
        "weight": 0.25
       },
       {
        "contribution": 0.0924,
        "key": "nacken_neigung",
-       "name": "Neigung der Nackenlinie",
+       "name": "Slope of the neckline",
        "sub_score": 0.6158,
        "weight": 0.15
       },
       {
        "contribution": 0.0796,
        "key": "zeit_symmetrie",
-       "name": "Zeitliche Symmetrie",
+       "name": "Time symmetry",
        "sub_score": 0.5305,
        "weight": 0.15
       },
       {
        "contribution": 0.0821,
        "key": "vortrend",
-       "name": "Vorheriger Rückgang",
+       "name": "Prior decline",
        "sub_score": 0.8207,
        "weight": 0.1
       },
       {
        "contribution": 0.0,
        "key": "volumen",
-       "name": "Volumen an der rechten Schulter",
+       "name": "Volume at the right shoulder",
        "sub_score": 0.0,
        "weight": 0.1
       }
@@ -5360,42 +5360,42 @@
       {
        "contribution": 0.2053,
        "key": "form",
-       "name": "Verlauf der Linien",
+       "name": "Course of the lines",
        "sub_score": 0.8212,
        "weight": 0.25
       },
       {
        "contribution": 0.1582,
        "key": "verengung",
-       "name": "Verengung der Spanne",
+       "name": "Narrowing of the range",
        "sub_score": 0.7911,
        "weight": 0.2
       },
       {
        "contribution": 0.1869,
        "key": "anpassung",
-       "name": "Lage der Wendepunkte an den Linien",
+       "name": "Position of the turning points on the lines",
        "sub_score": 0.9343,
        "weight": 0.2
       },
       {
        "contribution": 0.15,
        "key": "beruehrungen",
-       "name": "Berührungen je Linie",
+       "name": "Touches per line",
        "sub_score": 1.0,
        "weight": 0.15
       },
       {
        "contribution": 0.1,
        "key": "innerhalb",
-       "name": "Schlusskurse zwischen den Linien",
+       "name": "Closing prices between the lines",
        "sub_score": 1.0,
        "weight": 0.1
       },
       {
        "contribution": 0.0593,
        "key": "volumen",
-       "name": "Volumenverlauf",
+       "name": "Volume trend",
        "sub_score": 0.5929,
        "weight": 0.1
       }
@@ -5503,42 +5503,42 @@
       {
        "contribution": 0.1291,
        "key": "form",
-       "name": "Verlauf der Linien",
+       "name": "Course of the lines",
        "sub_score": 0.5164,
        "weight": 0.25
       },
       {
        "contribution": 0.2,
        "key": "verengung",
-       "name": "Verengung der Spanne",
+       "name": "Narrowing of the range",
        "sub_score": 1.0,
        "weight": 0.2
       },
       {
        "contribution": 0.2,
        "key": "anpassung",
-       "name": "Lage der Wendepunkte an den Linien",
+       "name": "Position of the turning points on the lines",
        "sub_score": 1.0,
        "weight": 0.2
       },
       {
        "contribution": 0.0,
        "key": "beruehrungen",
-       "name": "Berührungen je Linie",
+       "name": "Touches per line",
        "sub_score": 0.0,
        "weight": 0.15
       },
       {
        "contribution": 0.1,
        "key": "innerhalb",
-       "name": "Schlusskurse zwischen den Linien",
+       "name": "Closing prices between the lines",
        "sub_score": 1.0,
        "weight": 0.1
       },
       {
        "contribution": 0.0813,
        "key": "volumen",
-       "name": "Volumenverlauf",
+       "name": "Volume trend",
        "sub_score": 0.8134,
        "weight": 0.1
       }
@@ -5636,42 +5636,42 @@
       {
        "contribution": 0.1761,
        "key": "form",
-       "name": "Verlauf der Linien",
+       "name": "Course of the lines",
        "sub_score": 0.7042,
        "weight": 0.25
       },
       {
        "contribution": 0.2,
        "key": "verengung",
-       "name": "Verengung der Spanne",
+       "name": "Narrowing of the range",
        "sub_score": 1.0,
        "weight": 0.2
       },
       {
        "contribution": 0.2,
        "key": "anpassung",
-       "name": "Lage der Wendepunkte an den Linien",
+       "name": "Position of the turning points on the lines",
        "sub_score": 1.0,
        "weight": 0.2
       },
       {
        "contribution": 0.0,
        "key": "beruehrungen",
-       "name": "Berührungen je Linie",
+       "name": "Touches per line",
        "sub_score": 0.0,
        "weight": 0.15
       },
       {
        "contribution": 0.1,
        "key": "innerhalb",
-       "name": "Schlusskurse zwischen den Linien",
+       "name": "Closing prices between the lines",
        "sub_score": 1.0,
        "weight": 0.1
       },
       {
        "contribution": 0.0467,
        "key": "volumen",
-       "name": "Volumenverlauf",
+       "name": "Volume trend",
        "sub_score": 0.4668,
        "weight": 0.1
       }
@@ -5769,35 +5769,35 @@
       {
        "contribution": 0.2211,
        "key": "extrem_abweichung",
-       "name": "Abweichung der beiden Hochs",
+       "name": "Deviation between the two highs",
        "sub_score": 0.6318,
        "weight": 0.35
       },
       {
        "contribution": 0.25,
        "key": "tiefe",
-       "name": "Abstand Zwischentief",
+       "name": "Depth of the intermediate low",
        "sub_score": 1.0,
        "weight": 0.25
       },
       {
        "contribution": 0.15,
        "key": "abstand",
-       "name": "Abstand der beiden Hochs",
+       "name": "Distance between the two highs",
        "sub_score": 1.0,
        "weight": 0.15
       },
       {
        "contribution": 0.0267,
        "key": "vortrend",
-       "name": "Vorheriger Anstieg",
+       "name": "Prior advance",
        "sub_score": 0.1781,
        "weight": 0.15
       },
       {
        "contribution": 0.0787,
        "key": "volumen",
-       "name": "Volumen am zweiten Hoch",
+       "name": "Volume at the second high",
        "sub_score": 0.7871,
        "weight": 0.1
       }
@@ -5883,49 +5883,49 @@
       {
        "contribution": 0.0122,
        "key": "stange",
-       "name": "Fahnenstange",
+       "name": "Flagpole",
        "sub_score": 0.0488,
        "weight": 0.25
       },
       {
        "contribution": 0.1416,
        "key": "ruecksetzer",
-       "name": "Rücksetzer in der Konsolidierung",
+       "name": "Retracement within the consolidation",
        "sub_score": 0.9443,
        "weight": 0.15
       },
       {
        "contribution": 0.15,
        "key": "neigung",
-       "name": "Neigung der Konsolidierung",
+       "name": "Slope of the consolidation",
        "sub_score": 1.0,
        "weight": 0.15
       },
       {
        "contribution": 0.019,
        "key": "form",
-       "name": "Zusammenlaufende Linien (Wimpel)",
+       "name": "Converging lines (pennant)",
        "sub_score": 0.1267,
        "weight": 0.15
       },
       {
        "contribution": 0.1,
        "key": "innerhalb",
-       "name": "Schlusskurse im Kanal",
+       "name": "Closing prices inside the channel",
        "sub_score": 1.0,
        "weight": 0.1
       },
       {
        "contribution": 0.1,
        "key": "dauer",
-       "name": "Dauer der Konsolidierung",
+       "name": "Duration of the consolidation",
        "sub_score": 1.0,
        "weight": 0.1
       },
       {
        "contribution": 0.0435,
        "key": "volumen",
-       "name": "Volumen in der Konsolidierung",
+       "name": "Volume during the consolidation",
        "sub_score": 0.4349,
        "weight": 0.1
       }
@@ -6037,5 +6037,5 @@
    ]
   }
  },
- "params_hash": "6e2e8bf1"
+ "params_hash": "67066dee"
 }

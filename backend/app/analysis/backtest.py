@@ -1,18 +1,18 @@
-"""Muster-Backtest (Workstream 3C): reines numpy, ohne I/O, deterministisch.
+"""Pattern backtest (workstream 3C): pure numpy, no I/O, deterministic.
 
-Ablauf je Aktie, ohne Blick in die Zukunft (walk-forward):
-1. Für t = Start, Start + Schritt, ... läuft die Mustererkennung nur auf den Kerzen bis einschließlich t
-   (höchstens `window_bars` Kerzen). Jede Erkennung wird mit dem ersten t gemerkt, an dem sie sichtbar war.
-2. Der Status (bestätigt/ungültig) wird mit denselben Regeln wie in der Engine (`evaluate_status`) auf den
-   Kerzen nach dem Musterende ausgewertet.
-3. Ein Fall ist eine bestätigte Erkennung. Ausgangspunkt ist der Schlusskurs an der späteren der beiden Kerzen
-   "Bestätigung" und "erstmals sichtbar". Treffer: ein Schlusskurs innerhalb der nächsten `horizon_bars`
-   Kerzen liegt mindestens `min_move_pct` % in der Richtung des Musters.
-4. Basisrate: derselbe Test für jeden Handelstag derselben Aktie im ausgewerteten Zeitraum, in derselben
-   Richtung. Sie wird wie die Fälle gewichtet (je Fall die Basisrate seiner Aktie und Richtung).
+Procedure per stock, without look-ahead (walk-forward):
+1. For t = start, start + step, ... the pattern detection runs only on the candles up to and including t
+   (at most `window_bars` candles). Each detection is remembered with the first t at which it was visible.
+2. The status (confirmed/invalid) is evaluated with the same rules as in the engine (`evaluate_status`) on
+   the candles after the pattern end.
+3. A case is a confirmed detection. The starting point is the closing price at the later of the two candles
+   "confirmation" and "first visible". Hit: a closing price within the next `horizon_bars` candles is at
+   least `min_move_pct` % in the direction of the pattern.
+4. Base rate: the same test for every trading day of the same stock in the evaluated period, in the same
+   direction. It is weighted like the cases (for each case the base rate of its stock and direction).
 
-Kerzenfolgen mit einem Tagessprung über `max_daily_jump_pct` % (z. B. nicht bereinigte Aktiensplits) werden
-nicht ausgewertet und als ausgeschlossen gezählt. Es wird nichts geschätzt: ohne Fälle bleibt die Quote leer."""
+Candle sequences with a daily jump above `max_daily_jump_pct` % (e.g. unadjusted stock splits) are not
+evaluated and are counted as excluded. Nothing is estimated: without cases the rate stays empty."""
 import copy
 import dataclasses
 import math
@@ -32,12 +32,12 @@ Move = Literal["aufwärts", "abwärts"]
 Z95 = 1.959963984540054
 
 SURVIVORSHIP_NOTE = (
-    "Die Aktienauswahl besteht aus heutigen Indexmitgliedern. Unternehmen, die früher im Index waren und "
-    "ausgeschieden oder vom Markt verschwunden sind, fehlen (Survivorship Bias); das kann die Ergebnisse verzerren."
+    "The stock selection consists of current index members. Companies that used to be in the index and "
+    "dropped out or disappeared from the market are missing (survivorship bias); this can distort the results."
 )
 DEPENDENCE_NOTE = (
-    "Fälle derselben Aktie können sich zeitlich überschneiden und sind nicht unabhängig; das 95-%-Intervall "
-    "(Wilson) ist daher eher zu schmal."
+    "Cases of the same stock can overlap in time and are not independent; the 95% interval "
+    "(Wilson) is therefore likely too narrow."
 )
 
 
@@ -45,9 +45,9 @@ DEPENDENCE_NOTE = (
 class BacktestConfig:
     horizon_bars: int = 20
     min_move_pct: float = 5.0
-    window_bars: int = 500  # Kerzen je Erkennungslauf (breiteste Muster: 250 Kerzen plus Vorlauf)
-    step_bars: int = 5  # Abstand der Erkennungsläufe; ein Fall beginnt nie vor seiner Sichtbarkeit
-    warmup_bars: int = 250  # erster Erkennungslauf nach so vielen Kerzen
+    window_bars: int = 500  # candles per detection run (widest patterns: 250 candles plus lead-in)
+    step_bars: int = 5  # distance between detection runs; a case never starts before it was visible
+    warmup_bars: int = 250  # first detection run after this many candles
     max_daily_jump_pct: float = 40.0
 
     def as_params(self) -> dict[str, float | int]:
@@ -56,7 +56,7 @@ class BacktestConfig:
 
 @dataclass(frozen=True)
 class SeenDetection:
-    """Eine Erkennung in Indizes der vollständigen Reihe."""
+    """A detection in indices of the full series."""
     pattern_type: str
     direction: str
     start_idx: int
@@ -73,9 +73,9 @@ class Case:
     pattern_type: str
     direction: Move
     entry_idx: int
-    hit: bool | None  # None: zu wenige Kerzen danach (noch offen)
-    return_pct: float | None  # Veränderung nach horizon_bars Kerzen in Musterrichtung
-    excluded: bool = False  # Tagessprung im Auswertungsfenster
+    hit: bool | None  # None: too few candles afterwards (still open)
+    return_pct: float | None  # change after horizon_bars candles in pattern direction
+    excluded: bool = False  # daily jump in the evaluation window
 
 
 @dataclass(frozen=True)
@@ -100,7 +100,7 @@ class InstrumentResult:
     eval_from_idx: int
     detections: list[SeenDetection] = field(default_factory=list)
     cases: list[Case] = field(default_factory=list)
-    base: dict[str, BaseStats] = field(default_factory=dict)  # je Richtung
+    base: dict[str, BaseStats] = field(default_factory=dict)  # per direction
     jump_count: int = 0
 
 
@@ -110,7 +110,7 @@ def slice_bars(bars: Bars, lo: int, hi: int) -> Bars:
 
 
 def _shift(det: Detection, off: int) -> Detection:
-    """Kopie mit Indizes der vollständigen Reihe und zurückgesetztem Status."""
+    """Copy with indices of the full series and reset status."""
     d = copy.copy(det)
     d.start_idx, d.end_idx, d.formed_idx = det.start_idx + off, det.end_idx + off, det.formed_idx + off
     d.deadline_idx = det.deadline_idx + off
@@ -130,8 +130,8 @@ def _overlaps(a: SeenDetection, start: int, end: int) -> bool:
 
 
 def walk_forward(bars: Bars, timeframe: str, params: Params, cfg: BacktestConfig) -> list[SeenDetection]:
-    """Alle Erkennungen, die bei schrittweiser Auswertung jemals sichtbar waren, je Muster einmal (überlappt eine
-    spätere Erkennung desselben Typs eine frühere um mindestens die Hälfte, gilt sie als dasselbe Muster)."""
+    """All detections that were ever visible during step-by-step evaluation, once per pattern (if a later detection
+    of the same type overlaps an earlier one by at least half, it counts as the same pattern)."""
     n = len(bars)
     first = max(cfg.warmup_bars, MIN_BARS) - 1
     if n <= first:
@@ -159,7 +159,7 @@ def walk_forward(bars: Bars, timeframe: str, params: Params, cfg: BacktestConfig
 
 
 def jump_mask(close: FloatArray, max_jump_pct: float) -> np.ndarray:
-    """jump[i] = True, wenn der Schlusskurs von i-1 auf i um mehr als max_jump_pct % springt."""
+    """jump[i] = True if the closing price jumps by more than max_jump_pct % from i-1 to i."""
     out = np.zeros(len(close), dtype=bool)
     if len(close) > 1:
         out[1:] = np.abs(close[1:] / close[:-1] - 1.0) * 100.0 > max_jump_pct
@@ -167,7 +167,7 @@ def jump_mask(close: FloatArray, max_jump_pct: float) -> np.ndarray:
 
 
 def _has_jump(jumps: np.ndarray, lo: int, hi: int) -> bool:
-    """Sprung zwischen den Kerzen lo..hi (Sprünge auf Kerze lo+1 bis hi)."""
+    """Jump between candles lo..hi (jumps onto candles lo+1 to hi)."""
     return bool(jumps[lo + 1 : hi + 1].any())
 
 
@@ -203,13 +203,13 @@ def cases_from(detections: list[SeenDetection], close: FloatArray, jumps: np.nda
 
 
 def base_stats(close: FloatArray, jumps: np.ndarray, from_idx: int, cfg: BacktestConfig) -> dict[str, BaseStats]:
-    """Derselbe Treffertest für jeden Handelstag from_idx .. n-1-horizon (ohne Tage mit Sprung im Fenster)."""
+    """The same hit test for every trading day from_idx .. n-1-horizon (excluding days with a jump in the window)."""
     h, n = cfg.horizon_bars, len(close)
     last = n - 1 - h
     if last < from_idx:
         return {"aufwärts": BaseStats(0, 0, 0.0), "abwärts": BaseStats(0, 0, 0.0)}
     starts = np.arange(from_idx, last + 1)
-    win = np.lib.stride_tricks.sliding_window_view(close, h + 1)[starts]  # Zeile: Kerze t .. t+h
+    win = np.lib.stride_tricks.sliding_window_view(close, h + 1)[starts]  # row: candle t .. t+h
     jwin = np.lib.stride_tricks.sliding_window_view(jumps, h + 1)[starts][:, 1:]
     ok = ~jwin.any(axis=1)
     win = win[ok]
@@ -238,12 +238,12 @@ def backtest_instrument(symbol: str, bars: Bars, timeframe: str = "1d", params: 
     return res
 
 
-# ---------- Zusammenfassung je Mustertyp ----------
+# ---------- Summary per pattern type ----------
 
 def wilson(k: int, n: int, z: float = Z95) -> tuple[float, float]:
-    """95-%-Konfidenzintervall nach Wilson für eine Trefferquote k/n."""
+    """95% Wilson confidence interval for a hit rate k/n."""
     if n == 0:
-        raise ValueError("n muss größer als 0 sein")
+        raise ValueError("n must be greater than 0")
     p = k / n
     denom = 1 + z * z / n
     center = (p + z * z / (2 * n)) / denom
@@ -276,37 +276,52 @@ class PatternSummary:
     note: str
 
 
-def _verdict(hit: float, lo: float, hi: float, base: float) -> str:
-    rng = f"95-%-Intervall {share(lo)} bis {share(hi)}"
+def verdict(hit: float, lo: float, hi: float, base: float) -> str:
+    rng = f"95% interval {share(lo)} to {share(hi)}"
     if lo > base:
-        return f"Die Trefferquote ({share(hit)}) liegt über der Basisrate ({share(base)}); das {rng} schließt sie aus."
+        return f"The hit rate ({share(hit)}) is above the base rate ({share(base)}); the {rng} excludes it."
     if hi < base:
-        return (f"Die Trefferquote ({share(hit)}) liegt unter der Basisrate ({share(base)}); das {rng} liegt "
-                "vollständig darunter.")
-    return f"Das {rng} überdeckt die Basisrate ({share(base)})."
+        return (f"The hit rate ({share(hit)}) is below the base rate ({share(base)}); the {rng} lies "
+                "entirely below it.")
+    return f"The {rng} covers the base rate ({share(base)})."
+
+
+SCENARIO_OUTCOMES = {
+    "ausbruch_oben": "a breakout to the upside followed",
+    "ausbruch_unten": "a breakout to the downside followed",
+    "bestaetigung": "the pattern was confirmed",
+    "scheitern": "the pattern became invalid before it was confirmed",
+}
+NO_CASES_NOTE = ("No evaluable confirmed case of this pattern occurred in the backtest period. "
+                 "No hit rate is estimated.")
+
+
+def scenario_text(kind: str, share_value: float | None, n: int) -> str:
+    """Wording of a historical scenario share; also used to render stored runs in the current language."""
+    if share_value is None or n == 0:
+        return "There was no completed detection of this pattern in the backtest period."
+    return f"In {share(share_value)} of {n} cases detected in real time, {SCENARIO_OUTCOMES[kind]}."
 
 
 def _scenarios(pattern_type: str, dets: list[SeenDetection]) -> dict[str, dict[str, float | int | str | None]]:
-    """Anteile unter den Erkennungen, die noch in Bildung waren, als sie erstmals sichtbar wurden, und deren
-    Ausgang bis zum Datenende feststeht."""
+    """Shares among the detections that were still forming when they first became visible and whose
+    outcome is settled by the end of the data."""
     pool = [d for d in dets if d.status_at_seen == "in_bildung" and d.status != "in_bildung"]
     n = len(pool)
 
-    def entry(count: int, what: str) -> dict[str, float | int | str | None]:
+    def entry(count: int, kind: str) -> dict[str, float | int | str | None]:
         if n == 0:
-            return {"share": None, "sample_size": 0,
-                    "text": "Im Backtest-Zeitraum gab es keine abgeschlossene Erkennung dieses Musters."}
-        return {"share": round(count / n, 4), "sample_size": n,
-                "text": f"In {share(count / n)} von {n} in Echtzeit erkannten Fällen {what}."}
+            return {"share": None, "sample_size": 0, "text": scenario_text(kind, None, 0)}
+        return {"share": round(count / n, 4), "sample_size": n, "text": scenario_text(kind, count / n, n)}
 
     confirmed = [d for d in pool if d.status == "bestaetigt"]
     invalid = n - len(confirmed)
     if pattern_type == "dreieck_symmetrisch":
         up = sum(1 for d in confirmed if d.breakout_direction == "aufwärts")
-        return {"ausbruch_oben": entry(up, "folgte ein Ausbruch nach oben"),
-                "ausbruch_unten": entry(len(confirmed) - up, "folgte ein Ausbruch nach unten")}
-    return {"bestaetigung": entry(len(confirmed), "wurde das Muster bestätigt"),
-            "scheitern": entry(invalid, "wurde das Muster ungültig, bevor es bestätigt wurde")}
+        return {"ausbruch_oben": entry(up, "ausbruch_oben"),
+                "ausbruch_unten": entry(len(confirmed) - up, "ausbruch_unten")}
+    return {"bestaetigung": entry(len(confirmed), "bestaetigung"),
+            "scheitern": entry(invalid, "scheitern")}
 
 
 def summarize(pattern_type: str, results: list[InstrumentResult]) -> PatternSummary:
@@ -335,8 +350,7 @@ def summarize(pattern_type: str, results: list[InstrumentResult]) -> PatternSumm
         mean_return_pct=None, median_return_pct=None, base_mean_return_pct=None, cases_open=open_,
         cases_excluded=excluded, detections_seen=seen, symbols_with_cases=len(symbols),
         scenarios=_scenarios(pattern_type, dets), verdict_text=None,
-        note="Im Backtest-Zeitraum trat kein auswertbarer bestätigter Fall dieses Musters auf. "
-             "Es wird keine Trefferquote geschätzt.")
+        note=NO_CASES_NOTE)
     if n == 0:
         return out
     hit_rate = k / n
@@ -350,6 +364,6 @@ def summarize(pattern_type: str, results: list[InstrumentResult]) -> PatternSumm
     out.mean_return_pct = round(float(np.mean(rets)), 3)
     out.median_return_pct = round(float(np.median(rets)), 3)
     out.base_mean_return_pct = round(float(np.mean(base_rets)), 3) if base_rets else None
-    out.verdict_text = None if base is None else _verdict(hit_rate, lo, hi, base)
+    out.verdict_text = None if base is None else verdict(hit_rate, lo, hi, base)
     out.note = DEPENDENCE_NOTE
     return out

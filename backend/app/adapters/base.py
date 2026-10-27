@@ -1,10 +1,10 @@
-"""Adapter-Schnittstellen. Pro Datenquelle genau ein Adapter (Phase 1B/2 implementieren sie).
+"""Adapter interfaces. Exactly one adapter per data source (phases 1B/2 implement them).
 
-Regeln für jede Implementierung:
-- Jeder zurückgegebene Datensatz trägt source_key und fetched_at (Grundregel 2).
-- Fehlt der API-Schlüssel oder ist die Quelle nicht erreichbar, wird das über health() gemeldet
-  und es werden KEINE Ersatzdaten erfunden (Grundregel 6).
-- Rate-Limits, Retry/Backoff und Circuit-Breaker liegen im Adapter, ein Ausfall bleibt lokal.
+Rules for every implementation:
+- Every returned record carries source_key and fetched_at (core rule 2).
+- If the API key is missing or the source is unreachable, this is reported via health()
+  and NO substitute data is invented (core rule 6).
+- Rate limits, retry/backoff and circuit breaker live in the adapter; an outage stays local.
 """
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -18,7 +18,7 @@ Timeframe = Literal["1m", "5m", "1h", "1d"]
 
 @dataclass(frozen=True)
 class AdapterMetadata:
-    """Alles, was die Seite 'Quellen' anzeigt. Sie wird ausschließlich hieraus erzeugt."""
+    """Everything the 'Sources' page shows. It is generated exclusively from this."""
 
     key: str
     name: str
@@ -26,8 +26,8 @@ class AdapterMetadata:
     description: str
     homepage: str
     terms_url: str
-    update_interval: str  # z. B. "Live per WebSocket", "alle 5 Min."
-    delay_text: str  # z. B. "15 Min. verzögert", "Handelsende"
+    update_interval: str  # e.g. "Live via WebSocket", "every 5 min."
+    delay_text: str  # e.g. "15 min. delayed", "end of trading"
     requires_key: bool
     is_official: bool = True
 
@@ -85,14 +85,14 @@ class NewsRecord:
     external_id: str
     url: str
     title: str
-    excerpt: str  # max. ~300 Zeichen, nie der Volltext
+    excerpt: str  # max. ~300 characters, never the full text
     published_at: datetime
     fetched_at: datetime
     source_key: str
     language: str | None = None
-    publisher: str | None = None  # ursprünglicher Verlag/Domain, falls der Anbieter Meldungen weiterreicht
-    # Vom Anbieter gelieferte Symbole (Herkunft "provider_tag"). Konvention: US-Symbole unverändert ("AAPL"),
-    # XETRA mit Suffix ".DE" ("SAP.DE"). Leer, wenn der Anbieter keine Zuordnung liefert.
+    publisher: str | None = None  # original publisher/domain, if the provider passes news on
+    # Symbols supplied by the provider (origin "provider_tag"). Convention: US symbols unchanged ("AAPL"),
+    # XETRA with suffix ".DE" ("SAP.DE"). Empty if the provider supplies no assignment.
     symbols: tuple[str, ...] = ()
 
 
@@ -103,10 +103,10 @@ class SourceAdapter(ABC):
     @abstractmethod
     def health(self) -> Health: ...
 
-    disabled_reason = "API-Schlüssel nicht gesetzt"
+    disabled_reason = "API key not set"
 
     def is_configured(self) -> bool:
-        """False, wenn ein nötiger API-Schlüssel fehlt. Dann Status 'disabled' mit disabled_reason."""
+        """False if a required API key is missing. Then status 'disabled' with disabled_reason."""
         return True
 
 
@@ -127,7 +127,7 @@ class PriceAdapter(SourceAdapter):
 
 @dataclass(frozen=True)
 class NewsTarget:
-    """Ein beobachtetes Instrument (aus den Watchlists). Adapter nutzen Symbol, Name oder ISIN je nach Anbieter."""
+    """An observed instrument (from the watchlists). Adapters use symbol, name or ISIN depending on the provider."""
 
     symbol: str
     exchange: str
@@ -137,15 +137,15 @@ class NewsTarget:
 
 class NewsAdapter(SourceAdapter):
     supported_exchanges: tuple[str, ...] = ("XNYS", "XNAS", "XETR")
-    poll_seconds: int = 600  # Abrufintervall im Worker
-    # True: Meldungen ohne belegte Instrument-Zuordnung werden verworfen (verrauschte Quellen wie GDELT)
+    poll_seconds: int = 600  # retrieval interval in the worker
+    # True: news without a proven instrument assignment is discarded (noisy sources like GDELT)
     require_match: bool = False
 
     @abstractmethod
     def fetch_news(self, symbols: list[str], since: datetime) -> list[NewsRecord]: ...
 
     def fetch_news_for(self, targets: list[NewsTarget], since: datetime) -> list[NewsRecord]:
-        """Standard: nach Symbolen der unterstützten Börsen abrufen. Adapter, die Namen oder eine andere
-        Symbolschreibweise brauchen (GDELT, Marketaux), überschreiben diese Methode."""
+        """Default: fetch by symbols of the supported exchanges. Adapters that need names or another
+        symbol notation (GDELT, Marketaux) override this method."""
         symbols = [t.symbol for t in targets if t.exchange in self.supported_exchanges]
         return self.fetch_news(symbols, since) if symbols else []

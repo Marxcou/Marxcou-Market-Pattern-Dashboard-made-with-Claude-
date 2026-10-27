@@ -1,1 +1,1 @@
-"""Reine Analysefunktionen (numpy, kein I/O, deterministisch). Persistenz und Abruf liegen in analysis_service.py."""
+"""Pure analysis functions (numpy, no I/O, deterministic). Persistence and retrieval live in analysis_service.py."""

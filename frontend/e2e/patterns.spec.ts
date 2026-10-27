@@ -8,18 +8,18 @@ test.beforeEach(async ({ page, app }) => {
 
 test("Doppelboden wird gelistet und mit allen Pflichtangaben erklärt", async ({ page }) => {
   const list = page.getByTestId("pattern-list");
-  await expect(list.getByRole("button", { name: /Doppelboden/ })).toBeVisible();
-  await list.getByRole("button", { name: /Doppelboden/ }).click();
+  await expect(list.getByRole("button", { name: /Double bottom/ })).toBeVisible();
+  await list.getByRole("button", { name: /Double bottom/ }).click();
 
   const panel = page.getByTestId("pattern-panel");
   await expect(panel).toBeVisible();
   // Name, Lage im Chart mit Zeitraum, Status
-  await expect(panel.getByRole("heading", { name: "Doppelboden" })).toBeVisible();
+  await expect(panel.getByRole("heading", { name: "Double bottom" })).toBeVisible();
   await expect(panel.getByTestId("pattern-range")).toContainText(/Lage im Chart: \d{2}\.\d{2}\.\d{4} bis \d{2}\.\d{2}\.\d{4}/);
   await expect(panel.getByTestId("pattern-status")).toContainText("Bestätigt");
   // Erklärtext in einfachen Worten: ohne Schlüssel bzw. mit Demodaten als Vorlage gekennzeichnet, nie als KI ausgegeben
   const ai = panel.getByTestId("ai-explanation");
-  await expect(ai.getByTestId("ai-explanation-text")).toContainText("Doppelboden");
+  await expect(ai.getByTestId("ai-explanation-text")).toContainText("Double bottom");
   await expect(ai.getByTestId("ai-explanation-label")).toContainText("Vorlage, ohne KI");
   await expect(ai.getByTestId("ai-explanation-reason")).toContainText("Kein KI-Text");
   // erfüllte Kriterien mit tatsächlichen Werten
@@ -41,7 +41,7 @@ test("Doppelboden wird gelistet und mit allen Pflichtangaben erklärt", async ({
   // Verfahren, Parameter, Datenbasis mit Quelle
   await panel.getByText("Verfahren, Parameter und Datenbasis").click();
   await expect(panel.getByText(/Parameter-Kennung/)).toBeVisible();
-  await expect(panel.getByText("Quelle: Demo-Kursquelle (Beispieldaten)")).toBeVisible();
+  await expect(panel.getByText("Quelle: Demo price source (sample data)")).toBeVisible();
   // Grundregel 1
   expect(findForbidden(await panel.innerText())).toBeNull();
 });

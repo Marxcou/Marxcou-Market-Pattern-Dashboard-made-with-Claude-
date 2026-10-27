@@ -1,12 +1,12 @@
-"""Duplikate erkennen: URL-Normalisierung plus Titelähnlichkeit (Jaccard über Wortmengen) innerhalb von 48 Stunden.
-Beim Datenvolumen dieser Anwendung (einige hundert Meldungen pro Tag) genügt der exakte Jaccard-Vergleich; MinHash
-wäre nur eine Beschleunigung ohne anderes Ergebnis."""
+"""Detect duplicates: URL normalization plus title similarity (Jaccard over word sets) within 48 hours.
+At the data volume of this application (a few hundred items per day) the exact Jaccard comparison is enough; MinHash
+would only be a speed-up with no different result."""
 import re
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 CLUSTER_WINDOW_HOURS = 48
 JACCARD_THRESHOLD = 0.7
-MIN_TOKENS = 4  # kürzere Titel gelten nur bei identischer Wortmenge als Duplikat
+MIN_TOKENS = 4  # shorter titles only count as duplicates with an identical word set
 
 _TRACKING = re.compile(r"^(utm_.*|fbclid|gclid|mc_.*|ref|cmp|cid|src|source|guccounter|taid|ocid|xtor)$", re.I)
 _WORD = re.compile(r"[\wäöüß]+", re.IGNORECASE)
@@ -28,7 +28,7 @@ def normalize_url(url: str) -> str:
 
 def title_tokens(title: str) -> frozenset[str]:
     t = title
-    stripped = _SUFFIX.sub("", t)  # ' - Reuters', ' | CNBC' am Ende entfernen, wenn der Rest lang genug bleibt
+    stripped = _SUFFIX.sub("", t)  # remove ' - Reuters', ' | CNBC' at the end if the rest stays long enough
     if len(_WORD.findall(stripped)) >= 4:
         t = stripped
     return frozenset(w.lower() for w in _WORD.findall(t) if w.lower() not in STOPWORDS and len(w) > 1)

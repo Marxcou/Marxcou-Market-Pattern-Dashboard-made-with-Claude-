@@ -1,5 +1,5 @@
-"""Kerzen laden: je Zeitstempel (bei 1d je Kalendertag) genau eine Kerze, bevorzugt nach SOURCE_PRIORITY.
-Gemeinsam genutzt von /bars und den Analysen, damit beide dieselben Kerzen sehen."""
+"""Load candles: exactly one candle per timestamp (for 1d per calendar day), preferably by SOURCE_PRIORITY.
+Shared by /bars and the analyses so both see the same candles."""
 from datetime import UTC, datetime
 
 from sqlalchemy import select
@@ -34,6 +34,6 @@ def load_bars(db: Session, instrument_id: int, timeframe: str, start: datetime |
 
 def closed_only(rows: list[tuple[PriceBar, Source]], timeframe: str,
                 now: datetime) -> list[tuple[PriceBar, Source]]:
-    """Nur abgeschlossene Kerzen: Beginn + Dauer <= jetzt. Die laufende Kerze ändert sich noch."""
+    """Completed candles only: start + duration <= now. The running candle still changes."""
     delta = TIMEFRAME_DELTA[timeframe]
     return [(b, s) for b, s in rows if aware(b.ts_utc) + delta <= now]

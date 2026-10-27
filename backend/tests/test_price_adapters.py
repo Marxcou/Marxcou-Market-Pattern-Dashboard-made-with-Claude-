@@ -94,7 +94,7 @@ def test_stooq_parses_csv_and_rejects_non_csv():
 
 def test_yahoo_is_off_unless_enabled(monkeypatch):
     assert YahooAdapter().is_configured() is False
-    assert YahooAdapter().metadata().is_official is False and "inoffiziell" in YahooAdapter().metadata().name
+    assert YahooAdapter().metadata().is_official is False and "unofficial" in YahooAdapter().metadata().name
     monkeypatch.setenv("YAHOO_ENABLED", "true")
     get_settings.cache_clear()
     assert YahooAdapter().is_configured() is True
@@ -194,7 +194,7 @@ def test_retry_then_success_and_no_retry_on_auth_error():
         return httpx.Response(401)
 
     h2 = ResilientHttp(base_url="https://x", transport=mock(denied), **NOSLEEP)
-    with pytest.raises(SourceError, match="Schlüssel"):
+    with pytest.raises(SourceError, match="check key"):
         h2.request("GET", "/")
     assert m["c"] == 1
 

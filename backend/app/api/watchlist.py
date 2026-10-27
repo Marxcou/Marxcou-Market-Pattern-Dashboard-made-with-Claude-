@@ -30,7 +30,7 @@ def list_watchlist(db: DB, user: CurrentUser) -> list[InstrumentWithQuote]:
 @router.post("", status_code=201)
 def add(body: WatchlistAdd, bg: BackgroundTasks, db: DB, user: CurrentUser) -> dict[str, int]:
     if db.get(Instrument, body.instrument_id) is None:
-        raise HTTPException(404, "Instrument nicht gefunden")
+        raise HTTPException(404, "Instrument not found")
     if db.get(WatchlistItem, (user.id, body.instrument_id)) is None:
         pos = db.scalar(select(func.coalesce(func.max(WatchlistItem.position), -1) + 1)
                         .where(WatchlistItem.user_id == user.id)) or 0

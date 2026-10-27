@@ -1,9 +1,9 @@
-"""Investor-Relations-Feeds einzelner Unternehmen (RSS/Atom der IR-Seite): Quelle "ir_feeds", ein Feed je Aktie.
-Es werden nur Überschrift, ein kurzer Auszug und der Link zur Originalseite übernommen (kein Volltext).
+"""Investor relations feeds of individual companies (RSS/Atom of the IR page): source "ir_feeds", one feed per stock.
+Only the headline, a short excerpt and the link to the original page are taken over (no full text).
 
-Standardmäßig aus: Feed-Adresse und Nutzungsbedingungen jeder IR-Seite müssen vor der Freischaltung geprüft werden.
-Freischalten per .env: IR_FEEDS=AAPL|https://.../feed.xml,SAP.DE|https://.../rss.xml (Symbol|Adresse, nur https).
-Die Zuordnung zur Aktie ist belegt, weil der Feed ausdrücklich dem konfigurierten Unternehmen gehört."""
+Off by default: the feed address and terms of use of each IR page must be checked before enabling.
+Enable via .env: IR_FEEDS=AAPL|https://.../feed.xml,SAP.DE|https://.../rss.xml (symbol|address, https only).
+The assignment to the stock is proven because the feed explicitly belongs to the configured company."""
 import logging
 from datetime import UTC, datetime
 from typing import Any
@@ -19,8 +19,8 @@ log = logging.getLogger(__name__)
 
 
 def parse_ir_feeds_checked(raw: str) -> tuple[dict[str, str], int]:
-    """'SYM|https://url,SYM2|https://url2' -> ({'SYM': url}, Anzahl ungültiger Einträge).
-    Ungültig: ohne Symbol, kein https, kein gültiger Hostname."""
+    """'SYM|https://url,SYM2|https://url2' -> ({'SYM': url}, number of invalid entries).
+    Invalid: without symbol, not https, not a valid hostname."""
     out: dict[str, str] = {}
     invalid = 0
     for part in raw.split(","):
@@ -42,7 +42,7 @@ def parse_ir_feeds(raw: str) -> dict[str, str]:
 class IrFeedsAdapter(ProbedHealth, NewsAdapter):
     key = "ir_feeds"
     poll_seconds = 900
-    disabled_reason = "IR_FEEDS nicht gesetzt (Feed-Adresse und Nutzungsbedingungen der IR-Seite zuerst prüfen)"
+    disabled_reason = "IR_FEEDS not set (check the feed address and terms of use of the IR page first)"
 
     def __init__(self, feeds: dict[str, str] | None = None, transport: httpx.BaseTransport | None = None,
                  **kw: Any) -> None:
@@ -50,11 +50,11 @@ class IrFeedsAdapter(ProbedHealth, NewsAdapter):
         if feeds is None:
             self._feeds, self._invalid = parse_ir_feeds_checked(get_settings().ir_feeds)
             if self._invalid:
-                log.warning("IR_FEEDS: %d ungültige(r) Eintrag/Einträge ignoriert (Format Symbol|https://Adresse)",
+                log.warning("IR_FEEDS: %d invalid entry/entries ignored (format symbol|https://address)",
                             self._invalid)
                 if not self._feeds:
-                    self.disabled_reason = ("IR_FEEDS ungültig (erwartet: SYMBOL|https://adresse, mehrere durch "
-                                            "Komma getrennt); Quelle deaktiviert")
+                    self.disabled_reason = ("IR_FEEDS invalid (expected: SYMBOL|https://address, several separated by "
+                                            "comma); source disabled")
         else:
             self._feeds = feeds
         self.http = ResilientHttp(base_url="", headers={"User-Agent": "Marktmuster-Dashboard (Informationstool)"},
@@ -63,14 +63,14 @@ class IrFeedsAdapter(ProbedHealth, NewsAdapter):
     def metadata(self) -> AdapterMetadata:
         n = len(self._feeds)
         return AdapterMetadata(
-            key=self.key, name="Investor-Relations-Feeds", kind="news",
-            description="Meldungen von den Investor-Relations-Seiten einzelner Unternehmen (nur Feeds, die "
-            f"ausdrücklich konfiguriert wurden; aktuell {n}"
-            + (f", {self._invalid} ungültige Einträge in IR_FEEDS ignoriert" if self._invalid else "")
-            + "). Nur Überschrift, kurzer Auszug und Link zur "
-            "Originalseite.",
-            homepage="", terms_url="", update_interval="alle 15 Min. (Watchlist-Aktien mit Feed)",
-            delay_text="Minuten nach Veröffentlichung", requires_key=False, is_official=True)
+            key=self.key, name="Investor relations feeds", kind="news",
+            description="News from the investor relations pages of individual companies (only feeds that "
+            f"were explicitly configured; currently {n}"
+            + (f", {self._invalid} invalid entries in IR_FEEDS ignored" if self._invalid else "")
+            + "). Only headline, short excerpt and link to the "
+            "original page.",
+            homepage="", terms_url="", update_interval="every 15 min. (watchlist stocks with a feed)",
+            delay_text="minutes after publication", requires_key=False, is_official=True)
 
     def is_configured(self) -> bool:
         return bool(self._feeds)
@@ -90,7 +90,7 @@ class IrFeedsAdapter(ProbedHealth, NewsAdapter):
         errors: list[str] = []
         todo = [(k, u) for k, u in self._feeds.items() if k in wanted]
         for key, url in todo:
-            try:  # ein defekter Feed darf die übrigen nicht blockieren
+            try:  # a broken feed must not block the others
                 resp = self.http.request("GET", url)
                 records = parse_feed(resp.content, self.key, None, datetime.now(UTC))
             except SourceError as exc:

@@ -45,4 +45,4 @@ def test_bars_carry_source_and_empty_state_is_explicit(client):
 
 def test_meta_has_disclaimer(client):
     m = client.get("/api/meta").json()
-    assert m["demo_mode"] is False and "keine Anlageberatung" in m["disclaimer"]
+    assert m["demo_mode"] is False and "investment advice" in m["disclaimer"]
