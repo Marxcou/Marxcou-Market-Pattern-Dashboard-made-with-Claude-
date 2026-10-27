@@ -1,4 +1,4 @@
-"""Ende-zu-Ende: Kerzen in der DB -> Prognose-Job -> /forecast. Nur Korridor, Backtest-Werte nur aus einem Lauf."""
+"""End to end: candles in the DB -> forecast job -> /forecast. Corridor only, backtest values only from a run."""
 from datetime import UTC, datetime, timedelta
 
 import numpy as np
@@ -32,7 +32,7 @@ def seed(n=400, symbol="SAP", demo=False):
             db.add(PriceBar(instrument_id=inst.id, timeframe="1d", ts_utc=d, source_id=src.id, open=float(c),
                             high=float(c) * 1.01, low=float(c) * 0.99, close=float(c), volume=1000.0,
                             fetched_at=NOW, is_demo=demo))
-        # laufende Kerze von heute: darf nie eingehen
+        # running candle of today: must never be included
         db.add(PriceBar(instrument_id=inst.id, timeframe="1d", ts_utc=datetime(2026, 9, 29, tzinfo=UTC),
                         source_id=src.id, open=1, high=1000, low=1, close=1, volume=1e9, fetched_at=NOW))
         db.commit()
@@ -76,7 +76,7 @@ def test_forecast_endpoint(client):
     assert stats == {"forecasts": 2, "backtests": 2}
     body = client.get(f"/api/instruments/{iid}/forecast").json()
     assert body["empty_reason"] is None and body["currency"] == "EUR"
-    assert body["based_on_until"] == LAST_DAY.isoformat() and body["last_close"] == last  # ohne laufende Kerze
+    assert body["based_on_until"] == LAST_DAY.isoformat() and body["last_close"] == last  # without the running candle
     assert body["data_basis"]["bar_count"] == 400 and body["data_basis"]["sources"][0]["key"] == "stooq"
     steps = body["steps"]
     assert len(steps) == 20 and steps[0]["ts"] == "2026-09-29T00:00:00+00:00"
@@ -90,14 +90,14 @@ def test_forecast_endpoint(client):
     assert [c["nominal"] for c in bt["coverage"]] == [0.5, 0.8, 0.95]
     assert {m["key"] for m in bt["metrics"]} == {"median_abs_error", "pinball_loss"}
     assert bt["verdict_text"] and "price stays the same" in bt["verdict_text"]
-    assert bt["better_than_naive"] is None  # 400 Kerzen ergeben weniger als 30 Prüfzeitpunkte
+    assert bt["better_than_naive"] is None  # 400 candles give fewer than 30 check points
     assert [h["horizon_bars"] for h in bt["by_horizon"]] == [5, 10, 20]
     assert bt["universe"] == "SAP (XETR), own history" and bt["is_demo"] is False
     comp = body["comparison"][0]
     assert comp["method_key"] == "arima_1_1_0" and len(comp["steps"]) == 20
     assert comp["backtest"]["status"] == "berechnet"
 
-    # Mittlerer Verlauf = 50-%-Quantil des Korridors, mit den Median-Fehlern aus dem Backtest je Horizont
+    # Central path = 50% quantile of the corridor, with the median errors from the backtest per horizon
     ml = body["median_line"]
     assert ml["quantile"] == "50" and "median" in ml["description"] and "not an expected price" in ml["description"]
     assert [e["horizon_bars"] for e in ml["errors"]] == [5, 10, 20]
@@ -105,7 +105,7 @@ def test_forecast_endpoint(client):
     for e in ml["errors"]:
         mae = next(m for m in by_h[e["horizon_bars"]]["metrics"] if m["key"] == "median_abs_error")
         assert e["model"] == mae["model"] and e["naive"] == mae["naive"] and e["sample_size"] > 0
-    # Beispielpfade: fünf echte simulierte Pfade, aufsteigend nach Endwert, innerhalb der Horizont-Schritte
+    # Example paths: five real simulated paths, ascending by end value, within the horizon steps
     ex = body["example_paths"]
     assert [p["percentile"] for p in ex] == [10, 30, 50, 70, 90]
     assert all(len(p["steps"]) == 20 and p["steps"][0]["ts"] == steps[0]["ts"] for p in ex)
@@ -148,7 +148,7 @@ def test_pattern_scenarios_use_simulated_paths(client):
     assert "simulated paths" in up["model_probability_text"] and " above " in up["model_probability_text"]
     assert up["historical"] is None and "does not know the pattern" in ps[0]["note"]
 
-    # Niveau ändert sich nach der Prognose: keine alte Zahl anzeigen
+    # Level changes after the forecast: do not show an old number
     with SessionLocal() as db:
         d = db.get(PatternDetection, did)
         d.scenarios = [{**d.scenarios[0], "trigger_level": last * 1.08}, d.scenarios[1]]

@@ -1,5 +1,5 @@
-// Startet das Backend für die Ende-zu-Ende-Tests: frische SQLite-DB, Migrationen, Demo-Daten, dann uvicorn.
-// Plattformunabhängig (Node), damit der Lauf unter Linux (CI) und Windows gleich ist.
+// Starts the backend for the end-to-end tests: fresh SQLite DB, migrations, demo data, then uvicorn.
+// Platform independent (Node) so the run is the same on Linux (CI) and Windows.
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -22,10 +22,10 @@ const env = {
   ADMIN_EMAIL: E2E_ADMIN.email,
   ADMIN_PASSWORD: E2E_ADMIN.password,
   SESSION_SECRET: "e2e-only-secret-not-for-production-use-0123456789",
-  // Keine Schlüssel der Umgebung durchreichen: die Tests dürfen nie echte Anbieter ansprechen.
+  // Do not pass on keys from the environment: the tests must never contact real providers.
   YAHOO_ENABLED: "false",
-  // Hermetisch: jeder Ausgangsverkehr (GDELT-Statusabruf, OpenFIGI-Suche, ...) läuft ins Leere und scheitert sofort als
-  // Quellenfehler. Die Tests dürfen nie echte Anbieter erreichen, auch nicht ohne Schlüssel.
+  // Hermetic: all outgoing traffic (GDELT status fetch, OpenFIGI search, ...) goes nowhere and fails immediately as a
+  // source error. The tests must never reach real providers, not even without a key.
   HTTP_PROXY: "http://127.0.0.1:9", HTTPS_PROXY: "http://127.0.0.1:9", ALL_PROXY: "http://127.0.0.1:9",
   http_proxy: "http://127.0.0.1:9", https_proxy: "http://127.0.0.1:9", all_proxy: "http://127.0.0.1:9",
   NO_PROXY: "127.0.0.1,localhost", no_proxy: "127.0.0.1,localhost",

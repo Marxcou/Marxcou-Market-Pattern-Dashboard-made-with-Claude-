@@ -3,8 +3,8 @@ import { api } from "../lib/api";
 import { formatDateTime, formatNumber } from "../lib/format";
 import { getLang, useI18n } from "../lib/i18n";
 
-// Erklärtext zu einer Erkennung oder Prognose (Vertrag: docs/api-contract.md, "Erklärtexte"). Der Text entsteht im
-// Backend nur aus den berechneten Werten und ist je nach Herkunft als KI-Text oder als Vorlage gekennzeichnet.
+// Explanation text for a detection or forecast (contract: docs/api-contract.md, "Explanation texts"). The text is created in the
+// backend only from the calculated values and is labeled as AI text or as template depending on its origin.
 export interface ExplanationResponse {
   text: string; source: "ki" | "vorlage"; label: string; model_name: string | null; model_version: string | null;
   generated_at: string; cost_usd: number; fallback_reason: string | null;

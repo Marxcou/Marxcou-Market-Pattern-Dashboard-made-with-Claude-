@@ -68,7 +68,7 @@ def test_finnhub_news_maps_fields_and_tags_symbol():
         ])
 
     recs = FinnhubNewsAdapter(transport=mock(handler), **NOSLEEP).fetch_news(["AAPL"], SINCE)
-    assert len(recs) == 1  # die alte Meldung liegt vor `since`
+    assert len(recs) == 1  # the old item lies before `since`
     r = recs[0]
     assert (r.title, r.symbols, r.publisher) == ("Apple beats estimates", ("AAPL",), "Reuters")
     assert r.source_key == "finnhub_news"
@@ -96,7 +96,7 @@ def test_sec_edgar_builds_links_and_requires_contact_email(monkeypatch):
 
     a = SecEdgarAdapter(transport=mock(handler), **NOSLEEP)
     recs = a.fetch_news(["AAPL", "UNBEKANNT"], SINCE)
-    assert len(recs) == 1  # S-8 gehört nicht zu den beobachteten Formularen
+    assert len(recs) == 1  # S-8 is not one of the observed forms
     assert recs[0].url == "https://www.sec.gov/Archives/edgar/data/320193/000032019326000010/a8k.htm"
     assert "Form 8-K" in recs[0].title and "2.02,9.01" in recs[0].excerpt and recs[0].symbols == ("AAPL",)
     monkeypatch.setenv("SEC_EDGAR_CONTACT_EMAIL", "")
@@ -135,13 +135,13 @@ def test_daily_counter_survives_a_restart_and_resets_next_day():
     handler = lambda r: httpx.Response(200, json={"data": []})  # noqa: E731
     MarketauxAdapter(transport=mock(handler), **NOSLEEP).fetch_news(["AAPL"], SINCE)
     assert calls_today("marketaux") == 1
-    restarted = MarketauxAdapter(transport=mock(handler), **NOSLEEP)  # neuer Prozess: Zähler kommt aus der Datenbank
+    restarted = MarketauxAdapter(transport=mock(handler), **NOSLEEP)  # new process: the counter comes from the database
     restarted.fetch_news(["AAPL"], SINCE)
     assert calls_today("marketaux") == 2
     with SessionLocal() as db:
         db.add(ApiUsage(source_key="marketaux", day=datetime.now(UTC).date() - timedelta(days=1), calls=90))
         db.commit()
-    assert calls_today("marketaux") == 2  # gestrige Zählung zählt nicht
+    assert calls_today("marketaux") == 2  # yesterday's count does not count
     with SessionLocal() as db:
         db.get(ApiUsage, ("marketaux", datetime.now(UTC).date())).calls = 90
         db.commit()
@@ -226,7 +226,7 @@ def test_sec_edgar_invalid_contact_email_disables_source_instead_of_crashing(mon
     monkeypatch.setenv("SEC_EDGAR_CONTACT_EMAIL", bad)
     get_settings.cache_clear()
     try:
-        a = SecEdgarAdapter()  # früher: UnicodeEncodeError beim Aufbau des User-Agent
+        a = SecEdgarAdapter()  # formerly: UnicodeEncodeError when building the User-Agent
         assert not a.is_configured()
         assert "invalid" in a.disabled_reason
     finally:
@@ -255,7 +255,7 @@ def test_invalid_env_values_never_stop_adapter_loading_and_sync(monkeypatch):
             rows = {r.key: r for r in db.query(Source)}
         assert rows["sec_edgar"].status == "disabled" and rows["alpaca"].status == "disabled"
         assert "invalid" in rows["sec_edgar"].last_error or "invalid characters" in rows["alpaca"].last_error
-        assert "openfigi" in rows  # läuft ohne Schlüssel weiter, nicht versteckt
+        assert "openfigi" in rows  # keeps running without a key, not hidden
     finally:
         registry.clear()
         get_settings.cache_clear()

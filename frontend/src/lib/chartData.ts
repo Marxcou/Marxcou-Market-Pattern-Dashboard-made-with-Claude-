@@ -4,7 +4,7 @@ export type AlignedPoint = { time: UTCTimestamp; value: number } | { time: UTCTi
 
 export const toTime = (iso: string) => Math.floor(new Date(iso).getTime() / 1000) as UTCTimestamp;
 
-// Hängt einen Zeitpunkt an die letzte Kerze, die nicht nach ihm beginnt. Liegt er vor der ersten Kerze, gibt es keine Position (kein Raten).
+// Attaches a time point to the last candle that does not start after it. If it lies before the first candle there is no position (no guessing).
 export function snapTime(barTimes: number[], iso: string): number | null {
   const t = toTime(iso);
   if (barTimes.length === 0 || t < barTimes[0]) return null;
@@ -16,7 +16,7 @@ export function snapTime(barTimes: number[], iso: string): number | null {
   return barTimes[lo];
 }
 
-// Eine Indikatorlinie auf die Kerzenzeiten legen: Werte, die es nicht gibt (Einschwingphase), bleiben leer statt ergänzt zu werden.
+// Align an indicator line to the candle times: values that do not exist (warm-up period) stay empty instead of being filled in.
 export function alignSeries(timestamps: string[], values: (number | null)[] | undefined, barTimes: number[]): AlignedPoint[] {
   const byTime = new Map<number, number>();
   if (values) timestamps.forEach((ts, i) => { const v = values[i]; if (v != null) byTime.set(toTime(ts), v); });
@@ -26,11 +26,11 @@ export function alignSeries(timestamps: string[], values: (number | null)[] | un
   });
 }
 
-// Wert einer Geraden durch zwei Punkte zum Zeitpunkt t (Sekunden).
+// Value of a straight line through two points at time t (seconds).
 export const priceOnLine = (a: { t: number; price: number }, b: { t: number; price: number }, t: number) =>
   b.t === a.t ? b.price : a.price + ((b.price - a.price) * (t - a.t)) / (b.t - a.t);
 
-// Punkte für eine Linienserie: aufsteigend und ohne doppelte Zeiten (letzter Wert gewinnt).
+// Points for a line series: ascending and without duplicate times (last value wins).
 export function ascendingUnique(points: { time: number; value: number }[]): { time: UTCTimestamp; value: number }[] {
   const m = new Map<number, number>();
   for (const p of points) m.set(p.time, p.value);

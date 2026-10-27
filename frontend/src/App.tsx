@@ -17,7 +17,7 @@ function RequireAuth({ children }: { children: JSX.Element }) {
   const { t } = useI18n();
   if (loading) return <div role="status" aria-label={t("common.loading")} className="space-y-3"><Skeleton className="h-7 w-1/3" /><Skeleton className="h-24 w-full" /></div>;
   if (!me) return <Navigate to="/login" replace />;
-  // Einmalpasswort: bis zum Passwortwechsel ist nur die Kontoseite erreichbar.
+  // One-time password: until the password is changed only the account page is reachable.
   if (me.user.must_change_password) return <Account forced />;
   return children;
 }

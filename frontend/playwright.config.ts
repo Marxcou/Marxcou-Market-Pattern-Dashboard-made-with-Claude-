@@ -1,10 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
 
-// Ende-zu-Ende-Tests laufen gegen das gebaute Frontend (vite preview) und ein echtes Backend mit frischer SQLite-DB,
-// die e2e/start-backend.mjs mit gekennzeichneten Demo-Daten füllt (DEMO_MODE=true). Keine echten Marktdaten,
-// keine API-Schlüssel, kein Netzwerkzugriff auf Anbieter.
+// End-to-end tests run against the built frontend (vite preview) and a real backend with a fresh SQLite DB
+// that e2e/start-backend.mjs fills with labeled demo data (DEMO_MODE=true). No real market data,
+// no API keys, no network access to providers.
 const PORT = Number(process.env.E2E_WEB_PORT ?? 4173);
-const API_PORT = Number(process.env.E2E_API_PORT ?? 8000); // vite.config.ts leitet /api und /ws an Port 8000
+const API_PORT = Number(process.env.E2E_API_PORT ?? 8000); // vite.config.ts forwards /api and /ws to port 8000
 
 export default defineConfig({
   testDir: "./e2e",
@@ -14,7 +14,7 @@ export default defineConfig({
   workers: 1,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : "list",
-  // Die Oberfläche startet auf Englisch; diese Tests prüfen die deutsche Fassung (Sprachwahl "lang" im localStorage).
+  // The interface starts in English; these tests check the German version (language choice "lang" in localStorage).
   use: {
     baseURL: `http://localhost:${PORT}`, locale: "de-DE", timezoneId: "Europe/Berlin", trace: "retain-on-failure",
     storageState: { cookies: [], origins: [{ origin: `http://localhost:${PORT}`, localStorage: [{ name: "lang", value: "de" }] }] },

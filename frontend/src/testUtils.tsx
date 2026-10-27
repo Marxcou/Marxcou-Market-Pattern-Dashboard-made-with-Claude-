@@ -6,7 +6,7 @@ import { App } from "./App";
 import { AuthProvider } from "./lib/auth";
 import { LanguageProvider } from "./lib/i18n";
 
-// Die Oberflächentests prüfen die deutschen Texte; die Sprache wird deshalb fest auf Deutsch gestellt.
+// The UI tests check the German texts; the language is therefore fixed to German.
 const GermanUi = ({ children }: { children: ReactNode }) => <LanguageProvider lang="de">{children}</LanguageProvider>;
 export const render = (ui: ReactElement, options?: RenderOptions) => rtlRender(ui, { wrapper: GermanUi, ...options });
 
@@ -14,7 +14,7 @@ export const SOURCE = { key: "alpaca", name: "Alpaca", homepage: "https://alpaca
 export const INSTRUMENT = { id: 1, symbol: "AAPL", name: "Apple Inc.", isin: "US0378331005", exchange: "XNAS", currency: "USD" };
 export const ME = { user: { id: 1, email: "a@b.de", display_name: "Luca", role: "admin" }, csrf_token: "t" };
 
-// Stellt fetch auf feste Antworten je Pfad (ohne Query-String) um; eine Zahl steht für einen HTTP-Status.
+// Replaces fetch with fixed responses per path (without query string); a number stands for an HTTP status.
 export function mockApi(routes: Record<string, unknown>) {
   vi.stubGlobal("fetch", vi.fn(async (url: string) => {
     const key = url.replace(/^\/api/, "").split("?")[0];

@@ -1,5 +1,5 @@
-"""Phase 5A: Handelszeiten, Aufräumen der Ereignis-Warteschlange, Überspringen unveränderter Berechnungen,
-Fehlerisolation der Worker-Jobs."""
+"""Phase 5A: trading hours, cleanup of the event queue, skipping unchanged calculations,
+error isolation of the worker jobs."""
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
@@ -29,11 +29,11 @@ def test_session_windows_per_exchange_and_time_zone():
     # XETRA in Berlin-Zeit: 09:00 MESZ = 07:00 UTC, 17:30 MESZ = 15:30 UTC
     assert session_active("XETR", utc(2026, 9, 29, 7, 0))
     assert session_active("XETR", utc(2026, 9, 29, 15, 45))
-    assert not session_active("XETR", utc(2026, 9, 29, 5, 30))  # 07:30 MESZ, vor der Vorhandelsphase
+    assert not session_active("XETR", utc(2026, 9, 29, 5, 30))  # 07:30 CEST, before the pre-market phase
     assert not session_active("XETR", utc(2026, 9, 29, 16, 40))
     assert session_active("XETR", utc(2026, 1, 13, 8, 0))  # Winter: 09:00 MEZ
     assert not session_active("XETR", utc(2026, 9, 26, 10, 0))
-    assert session_active("XXXX", utc(2026, 9, 26, 10, 0))  # unbekannte Börse: nie stillschweigend pausieren
+    assert session_active("XXXX", utc(2026, 9, 26, 10, 0))  # unknown exchange: never pause silently
 
 
 def test_price_jobs_do_nothing_outside_the_session(client, monkeypatch):
@@ -95,10 +95,10 @@ def test_pattern_scan_skips_unchanged_bars_but_not_new_ones(client):
         again = scan_instrument(db, inst, "1d", now=NOW + timedelta(minutes=5), skip_unchanged=True)
         assert again == {"new": 0, "updated": 0, "removed": 0, "zones": 0}
         assert db.get(PatternScan, (iid, "1d")).computed_at == stamp  # nichts neu berechnet
-        # ohne Flag wird immer gerechnet (Tests und manuelle Läufe)
+        # without the flag it always calculates (tests and manual runs)
         scan_instrument(db, inst, "1d", now=NOW + timedelta(minutes=5))
         assert db.get(PatternScan, (iid, "1d")).computed_at != stamp
-        # neue Kerze: wieder rechnen
+        # new candle: calculate again
         later = NOW + timedelta(days=2)
         scan_instrument(db, inst, "1d", now=later, skip_unchanged=True)
         assert db.get(PatternScan, (iid, "1d")).bar_count > 0

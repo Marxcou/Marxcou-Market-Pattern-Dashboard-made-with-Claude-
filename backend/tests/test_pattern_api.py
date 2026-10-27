@@ -1,4 +1,4 @@
-"""Ende-zu-Ende: Kerzen in der DB -> Mustererkennung (Worker) -> Endpunkte, Ereignisse, Backtest-Verweis."""
+"""End to end: candles in the DB -> pattern detection (worker) -> endpoints, events, backtest reference."""
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
@@ -10,7 +10,7 @@ from tests.conftest import login
 from tests.synthetic import path
 
 NOW = datetime(2026, 9, 29, 12, 0, tzinfo=UTC)
-# Doppelboden 30..60, Nackenlinie bei 110,22, bestätigt an Kerze 72; danach Seitwärtsphase bis Kerze 150
+# Double bottom 30..60, neckline at 110.22, confirmed at candle 72; then a sideways phase until candle 150
 ANCHORS = [(0, 120), (30, 100), (45, 110), (60, 100.3), (80, 118), (100, 125), (150, 124)]
 
 
@@ -32,7 +32,7 @@ def seed(anchors=ANCHORS, symbol="SAP", exchange="XETR"):
             db.add(PriceBar(instrument_id=inst.id, timeframe="1d", ts_utc=d, source_id=src.id,
                             open=float(bars.open[i]), high=float(bars.high[i]), low=float(bars.low[i]),
                             close=float(bars.close[i]), volume=1000.0, fetched_at=NOW))
-        # laufende Kerze von heute: darf nie ausgewertet werden
+        # running candle of today: must never be evaluated
         db.add(PriceBar(instrument_id=inst.id, timeframe="1d", ts_utc=datetime(2026, 9, 29, tzinfo=UTC),
                         source_id=src.id, open=1, high=1000, low=1, close=1, volume=1e9, fetched_at=NOW))
         db.commit()
@@ -55,7 +55,7 @@ def test_scan_and_patterns_endpoint(client):
     assert stats["new"] >= 1
     body = client.get(f"/api/instruments/{iid}/patterns").json()
     assert body["empty_reason"] is None and body["computed_at"]
-    assert body["data_basis"]["bar_count"] == len(days)  # ohne die laufende Kerze
+    assert body["data_basis"]["bar_count"] == len(days)  # without the running candle
     assert body["data_basis"]["sources"][0]["key"] == "stooq"
     det = next(d for d in body["detections"] if d["pattern_type"] == "doppelboden")
     assert det["status"] == "bestaetigt" and det["status_label"] == "Confirmed"
@@ -66,7 +66,7 @@ def test_scan_and_patterns_endpoint(client):
     assert det["confidence"]["method"] and det["confidence"]["breakdown"]
     assert {s["kind"] for s in det["scenarios"]} == {"bestaetigung", "scheitern"}
     assert all(s["historical"] is None for s in det["scenarios"])
-    # Grundregel 3/6: ohne Backtest keine Zahl, sondern ausdrücklich "nicht berechnet"
+    # Grundregel 3/6: without a backtest no number, but explicitly "not calculated"
     bt = det["backtest"]
     assert bt["status"] == "nicht_berechnet" and bt["hit_rate"] is None and bt["sample_size"] is None
     assert "not been calculated" in bt["note"]
@@ -118,7 +118,7 @@ def test_rescan_is_idempotent_and_publishes_only_fresh_changes(client):
     with SessionLocal() as db:
         ids = sorted(db.scalars(select(PatternDetection.id).where(PatternDetection.instrument_id == iid)))
         events = [e for e in db.scalars(select(Event)) if e.payload.get("category") == "pattern"]
-    # Doppelboden wurde vor vielen Kerzen bestätigt: kein Live-Ereignis (kein Sturm beim ersten Lauf)
+    # Double bottom was confirmed many candles ago: no live event (no flood on the first run)
     assert events == []
     stats = run_scan(iid)
     assert stats["new"] == 0 and stats["removed"] == 0
@@ -127,7 +127,7 @@ def test_rescan_is_idempotent_and_publishes_only_fresh_changes(client):
 
 
 def test_fresh_status_change_publishes_event(client):
-    # Serie endet zwei Kerzen nach dem Überschreiten der Nackenlinie
+    # Series ends two candles after the neckline was crossed
     iid, days = seed([(0, 120), (30, 100), (45, 110), (60, 100.3), (72, 110.9), (73, 111.5)])
     run_scan(iid)
     with SessionLocal() as db:

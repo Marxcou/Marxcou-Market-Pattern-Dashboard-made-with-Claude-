@@ -1,5 +1,5 @@
-// Sprungleiste im Kopf der Instrumentseite: alle Bereiche (Chart, Muster, Prognose, ...) mit einem Tipp erreichbar.
-// Die Zähler stammen aus den bereits geladenen Analysen; fehlt eine Zahl, wird keine angezeigt (kein Ersatzwert).
+// Jump bar at the top of the instrument page: every section (chart, patterns, forecast, ...) is one tap away.
+// The counters come from the analyses already loaded; if a number is missing none is shown (no substitute value).
 export interface SectionItem { id: string; label: string; count?: number }
 
 export function SectionNav({ items }: { items: SectionItem[] }) {

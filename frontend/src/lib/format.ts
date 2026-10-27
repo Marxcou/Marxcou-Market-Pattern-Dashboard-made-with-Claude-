@@ -1,4 +1,4 @@
-// Alle Zahlen- und Datumsformate zentral: Sprache der Oberfläche (en-US oder de-DE), Zeitzone Europe/Berlin (Zeitstempel liegen als UTC vor).
+// All number and date formats in one place: interface language (en-US or de-DE), time zone Europe/Berlin (timestamps are stored as UTC).
 import { getLocale } from "./i18n";
 
 const TZ = "Europe/Berlin";
@@ -18,10 +18,10 @@ export const formatDateTime = (iso: string) =>
 export const formatDate = (iso: string) =>
   new Intl.DateTimeFormat(getLocale(), { dateStyle: "medium", timeZone: TZ }).format(new Date(iso));
 
-// Anteil (0 bis 1) als Prozentangabe ohne Vorzeichen, z. B. 0,62 -> "62 %".
+// Share (0 to 1) as a percentage without sign, e.g. 0.62 -> "62%".
 export const formatShare = (fraction: number, digits = 0) =>
   `${new Intl.NumberFormat(getLocale(), { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(fraction * 100)} %`;
 
-// Prozentwert, der schon in Prozent vorliegt (z. B. Rendite -4,1), mit Vorzeichen.
+// Percentage value that is already in percent (e.g. return -4.1), with sign.
 export const formatPercentPoints = (pct: number) =>
   `${new Intl.NumberFormat(getLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 1, signDisplay: "exceptZero" }).format(pct)} %`;

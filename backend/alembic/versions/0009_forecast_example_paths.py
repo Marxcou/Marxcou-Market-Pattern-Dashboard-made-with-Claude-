@@ -1,4 +1,4 @@
-"""forecasts.example_paths: Beispielpfade der Simulation neben dem Korridor
+"""forecasts.example_paths: example paths of the simulation next to the corridor
 
 Revision ID: 0009
 Revises: 0008

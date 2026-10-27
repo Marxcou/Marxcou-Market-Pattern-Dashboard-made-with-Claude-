@@ -1,9 +1,10 @@
-"""Erzeugt die festen Kerzen-Fixtures (CSV) der Muster-Regressionstests. Nur bei bewusst geänderten Fixtures ausführen:
+"""Creates the fixed candle fixtures (CSV) of the pattern regression tests. Only run when fixtures are
+deliberately changed:
 
     cd backend && python -m tests.regression.make_fixtures
 
-Die CSV-Dateien sind die Wahrheit der Tests; dieses Skript dokumentiert nur, wie sie entstanden (synthetische
-Stützpunktverläufe, keine echten Marktdaten; Zufallsreihe mit festem Startwert)."""
+The CSV files are the truth of the tests; this script only documents how they came about (synthetic
+anchor-point paths, no real market data; random series with a fixed start value)."""
 import csv
 from pathlib import Path
 
@@ -41,11 +42,11 @@ ANCHORS: dict[str, list[tuple[int, float]]] = {
     "flagge_abwaerts": [(0, 120), (40, 120), (48, 100), (60, 104), (62, 103), (70, 94), (80, 92)],
     "wimpel_aufwaerts": WIMPEL_AUF,
     "wimpel_abwaerts": mirror(WIMPEL_AUF),
-    # Doppelboden, der vor der Bestätigung scheitert (Kurs fällt unter den Extrempunkt)
+    # double bottom that fails before confirmation (price falls below the extreme)
     "doppelboden_gescheitert": [(0, 120), (30, 100), (45, 110), (60, 100.3), (70, 104), (85, 90), (100, 88)],
-    # Doppelboden noch in Bildung (Serie endet vor dem Überschreiten der Nackenlinie)
+    # double bottom still forming (series ends before the neckline is crossed)
     "doppelboden_in_bildung": [(0, 120), (30, 100), (45, 110), (60, 100.3), (70, 106)],
-    # Negativfälle: nichts darf erkannt werden
+    # negative cases: nothing may be detected
     "seitwaerts_flach": [(0, 100), (120, 100)],
     "trend_steigend": [(0, 50), (120, 150)],
 }
@@ -61,7 +62,7 @@ def write(name: str, bars) -> None:  # type: ignore[no-untyped-def]
 
 
 def random_walk(n: int = 300, seed: int = 42):  # type: ignore[no-untyped-def]
-    """Alltagsähnliche Reihe mit festem Startwert: Zufallsbewegung mit leichtem Wellenanteil."""
+    """Everyday-like series with a fixed start value: random walk with a slight wave component."""
     rng = np.random.default_rng(seed)
     close = 100 * np.exp(np.cumsum(rng.normal(0.0003, 0.012, n) + 0.004 * np.sin(np.arange(n) / 11)))
     anchors = [(i, float(c)) for i, c in enumerate(close)]

@@ -16,18 +16,18 @@ function initialLang(): Lang {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored === "en" || stored === "de") return stored;
-  } catch { /* localStorage nicht verfügbar */ }
+  } catch { /* localStorage not available */ }
   return DEFAULT_LANG;
 }
 
-// Aktuelle Sprache auch außerhalb von React (Formatierer, API-Schicht, Bibliotheksfunktionen).
+// Current language also outside React (formatters, API layer, library functions).
 let currentLang: Lang = DEFAULT_LANG;
 export const getLang = () => currentLang;
 export const getLocale = () => (currentLang === "de" ? "de-DE" : "en-US");
 
 export type TFn = (key: MessageKey, vars?: Record<string, string | number>) => string;
 
-// Fehlt ein Schlüssel in der Sprache, fällt tr() auf Englisch und zuletzt auf den Schlüssel zurück (sichtbar statt leer).
+// If a key is missing in the language, tr() falls back to English and finally to the key (visible instead of empty).
 export function translate(lang: Lang, key: string, vars?: Record<string, string | number>): string {
   let s = DICTS[lang][key] ?? DICTS.en[key] ?? key;
   for (const [k, v] of Object.entries(vars ?? {})) s = s.replaceAll(`{${k}}`, String(v));
@@ -63,7 +63,7 @@ export function useI18n(): I18n {
 export function LanguageSwitch() {
   const { lang, setLang, t } = useI18n();
   const qc = useQueryClient();
-  // Das Backend liefert Texte in der angefragten Sprache (Accept-Language): alle geladenen Daten neu abrufen.
+  // The backend delivers texts in the requested language (Accept-Language): reload all loaded data.
   const choose = (l: Lang) => { if (l === lang) return; setLang(l); void qc.invalidateQueries({ predicate: (q) => q.queryKey[0] !== "me" }); };
   return (
     <div role="group" aria-label={t("lang.label")} className="flex text-xs">

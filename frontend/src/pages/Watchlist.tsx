@@ -19,7 +19,7 @@ export function Watchlist() {
     mutationFn: (id: number) => api(`/watchlist/${id}`, { method: "DELETE" }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["watchlist"] }),
   });
-  // Auf Minuten gerundet, damit der Query-Key stabil bleibt.
+  // Rounded to minutes so the query key stays stable.
   const since = new Date(Math.floor((Date.now() - 86_400_000) / 60_000) * 60_000).toISOString();
   const counts = useNewsCounts(since);
   const patternCounts = usePatternCounts();
@@ -38,7 +38,7 @@ export function Watchlist() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {list.data?.map((i) => <InstrumentCard key={i.id} item={i} onRemove={() => remove.mutate(i.id)}
           newsCount={counts.data && !counts.data.empty_reason ? (counts.data.counts[String(i.id)] ?? 0) : undefined}
-          // Fehlt das Instrument in der Antwort, wurde es noch nicht ausgewertet: "nicht verfügbar" statt einer unwahren 0
+          // If the instrument is missing in the response it has not been evaluated yet: "not available" instead of a false 0
           patternCount={patternCounts.data && !patternCounts.data.empty_reason ? patternCounts.data.counts[String(i.id)] : undefined}
           patternReason={patternCounts.isError ? t("common.backendDown") : patternCounts.data?.empty_reason}
           newsReason={counts.isError ? t("common.backendDown") : counts.data?.empty_reason} />)}

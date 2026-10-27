@@ -1,6 +1,6 @@
 import type { IChartApi } from "lightweight-charts";
 
-// Hält den sichtbaren Zeitbereich mehrerer Diagramme (Kurs, RSI, MACD) synchron. Alle Diagramme bekommen je Kerze einen Zeitpunkt (ggf. leer), damit die logischen Indizes übereinstimmen.
+// Keeps the visible time range of several charts (price, RSI, MACD) in sync. All charts get a time point per candle (possibly empty) so the logical indices match.
 export class ChartGroup {
   private charts = new Set<IChartApi>();
   private busy = false;

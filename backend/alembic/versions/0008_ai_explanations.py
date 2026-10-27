@@ -1,4 +1,4 @@
-"""ai_explanations: zwischengespeicherte Erklärtexte (KI oder Vorlage)
+"""ai_explanations: cached explanation texts (AI or template)
 
 Revision ID: 0008
 Revises: 0007

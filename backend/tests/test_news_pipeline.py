@@ -49,13 +49,13 @@ def rec(source, ext, title, url, minutes=0, symbols=(), excerpt="", language="en
 
 @pytest.fixture()
 def env(monkeypatch, client):
-    """Registrierte Quellen, Instrumente (AAPL, SAP) und eine Watchlist des Admins."""
+    """Registered sources, instruments (AAPL, SAP) and a watchlist of the admin."""
     for k in ("FINNHUB_API_KEY", "MARKETAUX_API_KEY", "ANTHROPIC_API_KEY"):
         monkeypatch.setenv(k, "")
     get_settings.cache_clear()
     registry.clear()
     monkeypatch.setattr("app.sentiment_service._DIRECT_FAILED", set())
-    offline = httpx.MockTransport(lambda r: httpx.Response(200, json={"articles": []}))  # kein echtes Netz in Tests
+    offline = httpx.MockTransport(lambda r: httpx.Response(200, json={"articles": []}))  # no real network in tests
     fin, mar, gd = FinnhubNewsAdapter(), MarketauxAdapter(), GdeltAdapter(transport=offline, sleep=lambda _s: None)
     for a in (fin, mar, gd, LexiconSentimentSource(), ClaudeSentimentSource()):
         registry.register(a)
@@ -85,7 +85,7 @@ def test_title_similarity_ignores_publisher_suffix_and_word_order_noise():
     b = title_tokens("Apple beats quarterly estimates as iPhone sales climb | CNBC")
     c = title_tokens("Apple unveils new headquarters design in Cupertino")
     assert similar(a, b) and not similar(a, c)
-    assert not similar(title_tokens("Apple Q3"), title_tokens("Apple Q4"))  # kurze Titel: nur bei Gleichheit
+    assert not similar(title_tokens("Apple Q3"), title_tokens("Apple Q4"))  # short titles: only if equal
 
 
 def test_matcher_priorities_and_conservative_matching():
@@ -96,9 +96,9 @@ def test_matcher_priorities_and_conservative_matching():
     assert m.match(rec("x", "3", "Wertpapier US0378331005 im Fokus", "https://a")) == {1: "isin"}
     assert m.match(rec("x", "4", "Why $AAPL rallies", "https://a")) == {1: "ticker"}
     assert m.match(rec("x", "5", "Apple hebt Prognose an", "https://a")) == {1: "name"}
-    assert m.match(rec("x", "6", "It is what it is", "https://a")) == {}  # zu kurzes Tickersymbol
-    assert m.match(rec("x", "7", "Pineapple prices fall", "https://a")) == {}  # nur ganze Wörter
-    # ein US-Tag "SAP" ist nicht XETRA-SAP; die Zuordnung kommt hier nur über den Ticker im Titel
+    assert m.match(rec("x", "6", "It is what it is", "https://a")) == {}  # ticker symbol too short
+    assert m.match(rec("x", "7", "Pineapple prices fall", "https://a")) == {}  # whole words only
+    # a US tag "SAP" is not XETRA SAP; the assignment here only comes from the ticker in the title
     assert m.match(rec("x", "8", "SAP is an ERP giant", "https://a", symbols=["SAP"])) == {2: "ticker"}
 
 
@@ -128,7 +128,7 @@ def test_ingest_merges_duplicates_across_sources_and_keeps_every_source(env):
         assert again["already_known"] == 1 and db.scalar(select(NewsItem.id).limit(1)) is not None
         assert len(db.scalars(select(NewsItem)).all()) == 4
         types = [e.type for e in db.scalars(select(Event))]
-        assert types.count("news") == 3  # je Ereignis-Cluster das letzte; Cluster 1 zweimal (neu, erweitert)
+        assert types.count("news") == 3  # the last one per event cluster; cluster 1 twice (new, extended)
 
 
 def test_non_web_links_are_discarded(env):
@@ -278,10 +278,10 @@ def test_run_adapter_end_to_end_and_error_isolation(env, monkeypatch):
         "url": "https://a.example/1", "source": "Reuters"}])), sleep=lambda _s: None)
     down = FinnhubNewsAdapter(transport=httpx.MockTransport(lambda r: httpx.Response(500)), sleep=lambda _s: None)
     with SessionLocal() as db:
-        assert run_adapter(db, down) is None  # Fehler bleibt lokal, kein Absturz, nichts gespeichert
+        assert run_adapter(db, down) is None  # error stays local, no crash, nothing stored
         assert db.scalar(select(NewsItem.id)) is None
         assert run_adapter(db, ok)["new_items"] == 1
-        assert db.scalars(select(Sentiment)).one().label == "positiv"  # Watchlist: nur AAPL wird abgefragt
+        assert db.scalars(select(Sentiment)).one().label == "positiv"  # watchlist: only AAPL is queried
 
 
 def _seed_api(env):
@@ -420,7 +420,7 @@ def test_batch_mode_shows_lexicon_first_then_upgrades_when_batch_ends(env, monke
         assert db.scalars(select(Sentiment)).one().method == "lexicon"
         assert [r["custom_id"] for r in state["submitted"]] == ["c1"]
         assert sentiment_status(db)["pending_batches"] == 1 and sentiment_status(db)["claude_mode"] == "batch"
-        sentiment_pass(db)  # noch nicht fertig, und nichts wird doppelt eingereicht
+        sentiment_pass(db)  # not finished yet, and nothing is submitted twice
         assert db.scalars(select(Sentiment)).one().method == "lexicon"
         assert db.scalar(select(func.count()).select_from(SentimentBatch)) == 1
         state["ended"] = True
@@ -454,7 +454,7 @@ def test_expired_batch_items_are_submitted_again(env, monkeypatch):
     ingest_apple(env)
     with SessionLocal() as db:
         sentiment_pass(db)
-        sentiment_pass(db)  # Ergebnis: expired, im selben Durchlauf erneut eingereicht
+        sentiment_pass(db)  # result: expired, submitted again in the same pass
         assert db.scalar(select(func.count()).select_from(SentimentBatch)) == 2
 
 
@@ -497,4 +497,4 @@ def test_retention_off_and_minimum(env, monkeypatch):
     assert retention_days() == 0
     monkeypatch.setenv("NEWS_RETENTION_DAYS", "3")
     get_settings.cache_clear()
-    assert retention_days() == 14  # nie unter dem Abruffenster der Quellen
+    assert retention_days() == 14  # never below the fetch window of the sources

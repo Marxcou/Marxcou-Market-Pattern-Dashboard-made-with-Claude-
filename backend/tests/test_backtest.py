@@ -1,5 +1,5 @@
-"""Muster-Backtest (3C) mit synthetischen Kursreihen, deren Ergebnis bekannt ist. Diese Zahlen landen nie in
-der echten Datenbank: der Job speichert nur, was eine echte Kursquelle geliefert hat."""
+"""Pattern backtest (3C) with synthetic price series whose result is known. These numbers never end up in
+the real database: the job only stores what a real price source delivered."""
 import json
 from datetime import UTC, datetime, timedelta
 
@@ -34,9 +34,9 @@ from tests.synthetic import path
 from tests.test_pattern_api import run_scan, seed
 
 CFG = BacktestConfig(warmup_bars=60, window_bars=200, step_bars=1)
-# Doppelboden 30..60 (Nackenlinie ~110), danach Anstieg auf 125: Treffer
+# Double bottom 30..60 (neckline ~110), then a rise to 125: hit
 RISE = [(0, 120), (30, 100), (45, 110), (60, 100.3), (80, 125), (150, 124)]
-# derselbe Doppelboden, nach der Bestätigung Rückgang auf 96: kein Treffer
+# the same double bottom, a drop to 96 after confirmation: no hit
 FAIL = [(0, 120), (30, 100), (45, 110), (60, 100.3), (73, 111), (90, 96), (150, 97)]
 
 
@@ -66,7 +66,7 @@ def test_confirmed_double_bottom_then_rise_is_a_hit():
     r = backtest_instrument("X.XETR", path(RISE), "1d", None, CFG)
     db = next(d for d in r.detections if d.pattern_type == "doppelboden")
     assert db.status == "bestaetigt" and db.status_at_seen == "in_bildung"
-    assert db.first_seen_idx > db.end_idx  # erst sichtbar, nachdem die Wendepunkte feststehen
+    assert db.first_seen_idx > db.end_idx  # only visible after the turning points are fixed
     case = next(c for c in r.cases if c.pattern_type == "doppelboden")
     assert case.entry_idx == max(db.confirmed_idx or 0, db.first_seen_idx)
     assert case.hit is True and case.return_pct is not None and case.return_pct > 5
@@ -79,12 +79,12 @@ def test_confirmed_double_bottom_then_drop_is_no_hit():
 
 
 def test_walk_forward_has_no_lookahead():
-    """Was bis zum Tag T sichtbar war, hängt nicht von späteren Kerzen ab: Lauf auf der ganzen Reihe und auf
-    der bei T abgeschnittenen Reihe liefern bis T dieselben Erkennungen mit demselben Sichtbarkeitstag."""
+    """What was visible up to day T does not depend on later candles: a run on the whole series and on
+    the series cut off at T give the same detections up to T with the same visibility day."""
     bars = random_walk(7)
     cfg = BacktestConfig(warmup_bars=250, window_bars=300, step_bars=5)
     full = walk_forward(bars, "1d", default_params(), cfg)
-    t_cut = 249 + 5 * 60  # liegt auf dem Raster der Erkennungsläufe
+    t_cut = 249 + 5 * 60  # lies on the grid of the detection runs
     cut = walk_forward(slice_bars(bars, 0, t_cut + 1), "1d", default_params(), cfg)
 
     def key(d: SeenDetection) -> tuple[str, int, int, int, str]:
@@ -113,7 +113,7 @@ def test_base_rate_counts_every_trading_day():
 
 
 def test_windows_with_price_jump_are_excluded():
-    close = np.concatenate((np.full(50, 100.0), np.full(50, 40.0)))  # z. B. nicht bereinigter Split
+    close = np.concatenate((np.full(50, 100.0), np.full(50, 40.0)))  # e.g. unadjusted split
     jumps = jump_mask(close, 40)
     assert jumps.sum() == 1
     stats = base_stats(close, jumps, 0, BacktestConfig(horizon_bars=10))
@@ -155,10 +155,10 @@ def test_open_and_excluded_cases_do_not_count():
     assert s.sample_size == 2 and s.cases_open == 1 and s.cases_excluded == 1
 
 
-# ---------- Job mit Datenbank ----------
+# ---------- Job with database ----------
 
 class FakeStooq(PriceAdapter):
-    """Liefert vorgegebene Kerzen wie ein Kursadapter (im Test statt des Netzwerks)."""
+    """Delivers predefined candles like a price adapter (in the test instead of the network)."""
     key = "stooq"
     supported_exchanges = ("XETR", "XNAS", "XNYS")
 
@@ -167,7 +167,7 @@ class FakeStooq(PriceAdapter):
 
     def metadata(self) -> AdapterMetadata:
         return AdapterMetadata(key="stooq", name="Stooq", kind="price", description="", homepage="https://stooq.com",
-                               terms_url="https://stooq.com/", update_interval="täglich", delay_text="Handelsende",
+                               terms_url="https://stooq.com/", update_interval="daily", delay_text="end of trading",
                                requires_key=True)
 
     def is_configured(self) -> bool:
@@ -217,7 +217,7 @@ def test_job_writes_one_run_per_pattern_with_source_and_api_shows_it(client, tmp
         empty = next(r for r in runs if r.subject == "wimpel_abwaerts")
         assert empty.sample_size == 0 and empty.hit_rate is None and empty.base_rate is None
 
-    # Die Musteransicht zeigt den Lauf (Lookup: neuester Lauf je Mustertyp, Zeitraster, Algorithmus-Version)
+    # The pattern view shows the run (lookup: newest run per pattern type, timeframe, algorithm version)
     iid, _ = seed()
     run_scan(iid)
     login(client)
@@ -228,7 +228,7 @@ def test_job_writes_one_run_per_pattern_with_source_and_api_shows_it(client, tmp
     assert bt["method"] and bt["mean_return_pct"] is not None
     assert det["scenarios"][0]["historical"]["sample_size"] == 2
 
-    # zweiter Lauf nutzt den Zwischenspeicher statt der Quelle
+    # second run uses the cache instead of the source
     calls = adapter.calls
     with SessionLocal() as db:
         load_universe(adapter, universe[:2], START, NOW, tmp_path, timedelta(days=7), 80)
@@ -247,7 +247,7 @@ def test_job_without_data_stores_nothing(client, tmp_path):
 
 
 def test_todays_running_bar_is_not_used(tmp_path):
-    series = _series(RISE, NOW + timedelta(days=1))  # letzte Kerze = heute (läuft noch)
+    series = _series(RISE, NOW + timedelta(days=1))  # last candle = today (still running)
     data = load_universe(FakeStooq({"SAP": series}), [("SAP", "XETR")], START, NOW, None, timedelta(days=7), 60)
     assert data.series[0].bars.ts[-1].date() < NOW.date()
 
@@ -287,12 +287,12 @@ def test_job_prefers_stooq_and_honours_source_option(monkeypatch, capsys):
     job_main(["--dry-run", "--symbols", "SAP.XETR", "--source", "yahoo"])
     assert used == ["stooq", "yahoo"]
     monkeypatch.setattr("app.backtest_job.YahooAdapter.is_configured", lambda self: False)
-    assert job_main(["--dry-run", "--source", "yahoo"]) == 2  # erzwungene Quelle nicht eingerichtet
+    assert job_main(["--dry-run", "--source", "yahoo"]) == 2  # forced source not set up
     assert "YAHOO_ENABLED=true" in capsys.readouterr().err
 
 
 def _yahoo_chart(series: list[tuple[datetime, float]]) -> dict[str, object]:
-    # Yahoo stempelt XETRA-Tageskerzen mit 07:00 UTC (Handelsbeginn), gmtoffset 7200 (Sommerzeit)
+    # Yahoo stamps XETRA daily candles with 07:00 UTC (start of trading), gmtoffset 7200 (summer time)
     ts = [int((t.replace(hour=0) + timedelta(hours=7)).timestamp()) for t, _ in series]
     c = [v for _, v in series]
     return {"chart": {"error": None, "result": [{

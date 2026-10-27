@@ -23,7 +23,7 @@ export function SearchBox({ watchedIds }: { watchedIds: Set<number> }) {
     mutationFn: (id: number) => api("/watchlist", { method: "POST", body: JSON.stringify({ instrument_id: id }) }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["watchlist"] });
-      // Zähler des neuen Instruments (Muster, Meldungen) nachladen, sonst zeigt die Karte bis zum nächsten Abruf 0
+      // reload the counters of the new instrument (patterns, news), otherwise the card shows 0 until the next fetch
       void qc.invalidateQueries({ queryKey: ["pattern-counts"] });
       void qc.invalidateQueries({ queryKey: ["news-counts"] });
     },

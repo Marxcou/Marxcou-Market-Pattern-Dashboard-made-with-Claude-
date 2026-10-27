@@ -1,4 +1,4 @@
-// Navigation und Layout: Tab-Leiste am Handy, Sprungleiste auf der Instrumentseite, kein seitliches Scrollen.
+// Navigation and layout: tab bar on mobile, jump bar on the instrument page, no horizontal scrolling.
 import { expect, test } from "./helpers/fixtures";
 
 test("Handy: Tab-Leiste führt zu allen Bereichen, Hinweis bleibt sichtbar, kein seitliches Scrollen", async ({ page }) => {

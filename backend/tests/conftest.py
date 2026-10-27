@@ -14,7 +14,7 @@ from app.main import app  # noqa: E402
 
 @pytest.fixture(autouse=True)
 def _no_network_adapters(monkeypatch):
-    """Tests laufen ohne echte Anbieter-Aufrufe; Adapter-Tests nutzen httpx.MockTransport."""
+    """Tests run without real provider calls; adapter tests use httpx.MockTransport."""
     monkeypatch.setattr("app.main.load_builtin_adapters", lambda: None)
 
 

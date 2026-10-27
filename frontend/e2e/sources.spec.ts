@@ -1,4 +1,4 @@
-// Grundregel 2: Seite "Quellen" mit Beschreibung, Intervall, Verzögerung und Status jeder Quelle.
+// Grundregel 2: "Sources" page with description, interval, delay and status of every source.
 import { expect, test } from "./helpers/fixtures";
 
 test.beforeEach(async ({ page }) => {
@@ -34,7 +34,7 @@ test("Quellen ohne Schlüssel erscheinen als deaktiviert mit Grund statt zu vers
 });
 
 test("nicht erreichbare Quelle wird als offline mit Grund gezeigt, nicht verschwiegen", async ({ page }) => {
-  // Der Testlauf hat keinen Netzzugang zu Anbietern (siehe start-backend.mjs): GDELT braucht keinen Schlüssel und fällt aus.
+  // The test run has no network access to providers (see start-backend.mjs): GDELT needs no key and fails.
   const gdelt = page.getByTestId("source-card").filter({ hasText: "GDELT" });
   await expect(gdelt.getByTestId("source-status")).toHaveText("offline");
   await expect(gdelt).toContainText("Letzter Fehler");

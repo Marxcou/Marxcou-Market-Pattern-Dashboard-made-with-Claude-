@@ -7,6 +7,6 @@ const proxy = { "/api": "http://localhost:8000", "/ws": { target: "ws://localhos
 export default defineConfig({
   plugins: [react()],
   server: { proxy },
-  preview: { proxy },  // Playwright prüft das fertige Bundle (vite preview) gegen das Backend
+  preview: { proxy },  // Playwright checks the finished bundle (vite preview) against the backend
   test: { environment: "jsdom", globals: true, exclude: ["e2e/**", "node_modules/**"] },
 });

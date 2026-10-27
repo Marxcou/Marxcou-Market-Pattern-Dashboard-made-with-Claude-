@@ -15,7 +15,7 @@ test("Meldungen sind zusammengeführt und nennen alle Quellen mit Link, Zeitpunk
   await expect(first).toContainText("Demo news source A (sample data)");
   await expect(first).toContainText("Demo news source B (sample data)");
   await expect(first).toContainText("veröffentlicht");
-  // Stimmung mit Begründung, Zitat und Methode/Modell
+  // sentiment with rationale, quote and method/model
   await first.getByTestId("sentiment").locator("summary").click();
   await expect(first.getByTestId("sentiment")).toContainText("Methode: Wörterbuch (Demo lexicon (sample data)");
   await expect(first.getByTestId("sentiment")).toContainText("third-quarter figures");

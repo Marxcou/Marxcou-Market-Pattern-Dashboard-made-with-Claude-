@@ -15,7 +15,7 @@ test("Chart zeigt Kurs, Kennzeichnung als Beispieldaten, letzten Datenpunkt und 
   await expect(tip.getByText("Verzögerung:")).toBeVisible();
   await expect(tip.getByText("Abgerufen:")).toBeVisible();
   await expect(tip.getByRole("link", { name: "Nutzungsbedingungen" })).toBeVisible();
-  // Lightweight Charts rendert in ein Canvas
+  // Lightweight Charts renders into a canvas
   await expect(page.getByTestId("price-chart").locator("canvas").first()).toBeVisible();
 });
 

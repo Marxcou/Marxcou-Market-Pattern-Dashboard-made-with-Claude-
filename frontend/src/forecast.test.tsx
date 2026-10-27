@@ -53,7 +53,7 @@ describe("Prognose-Panel (Grundregel 4)", () => {
     expect(within(screen.getByTestId("forecast-legend")).getAllByRole("listitem")).toHaveLength(3);
     const t = screen.getByTestId("horizon-table").textContent ?? "";
     expect(t).toContain("95 %"); expect(t).toContain("80 %"); expect(t).toContain("50 %");
-    expect(t).toContain("147,00"); expect(t).toContain("157,00"); // 95-%-Bereich am Ende: 152 ± 5
+    expect(t).toContain("147,00"); expect(t).toContain("157,00"); // 95% range at the end: 152 ± 5
     expect(t).not.toMatch(/Median/);
     expect(screen.getByTestId("forecast-note").textContent).toContain("keine Einzelprognose");
     expect(screen.getByTestId("forecast-basis").textContent).toContain("Block-Bootstrap");
@@ -65,7 +65,7 @@ describe("Prognose-Panel (Grundregel 4)", () => {
     const t = screen.getByTestId("median-error-table").textContent ?? "";
     expect(t).toContain("5 Handelstagen"); expect(t).toContain("± 4,10 %"); expect(t).toContain("± 4,30 %"); expect(t).toContain("142 Prognosen");
     expect(screen.getByTestId("forecast-line-legend").textContent).toContain("Mittlerer Verlauf (Median)");
-    // kein Endwert der Linie als Einzelzahl: der Median am Horizont (152,00) erscheint nirgends im Panel
+    // no end value of the line as a single number: the median at the horizon (152,00) appears nowhere in the panel
     expect(screen.getByTestId("forecast-panel").textContent).not.toContain("152,00");
   });
   it("nennt fehlende Backtest-Fehler der Linie ausdrücklich", () => {
@@ -178,7 +178,7 @@ describe("Chart-Seite Phase 4", () => {
     await waitFor(() => expect(screen.getByTestId("price-chart").textContent).toContain("3 Beispielpfade"));
     fireEvent.click(screen.getByRole("checkbox", { name: "Mittlerer Verlauf" }));
     await waitFor(() => expect(screen.getByTestId("price-chart").textContent).toContain("Median aus"));
-    // ohne Korridor keine Linien: der Median wird nie allein gezeigt
+    // no lines without the corridor: the median is never shown alone
     fireEvent.click(screen.getByRole("checkbox", { name: "Mittlerer Verlauf" }));
     fireEvent.click(screen.getByRole("checkbox", { name: "Prognosekorridor" }));
     await waitFor(() => expect(screen.getByTestId("price-chart").textContent).toContain("0 Prognoseschritte, 0 Szenario-Niveaus, 0 Muster, Median aus, 0 Beispielpfade"));
