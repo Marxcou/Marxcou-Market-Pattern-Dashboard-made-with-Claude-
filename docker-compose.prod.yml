@@ -1,7 +1,7 @@
-# Serverbetrieb mit öffentlicher HTTPS-Adresse (Weg B).
+# Server operation with a public HTTPS address (path B).
 # Start: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
-# Voraussetzung in .env: DOMAIN=meindashboard.de, COOKIE_SECURE=true, APP_ENV=production
-# Nur Caddy ist von außen erreichbar (Port 80/443). Die App selbst hat keinen Host-Port.
+# Prerequisite in .env: DOMAIN=mydashboard.example, COOKIE_SECURE=true, APP_ENV=production
+# Only Caddy is reachable from outside (ports 80/443). The app itself has no host port.
 services:
   caddy:
     image: caddy:2-alpine

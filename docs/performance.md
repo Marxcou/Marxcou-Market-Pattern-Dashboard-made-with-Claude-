@@ -1,40 +1,40 @@
-# Messungen Phase 5A
+# Measurements Phase 5A
 
-Erzeugt mit `cd backend && python scripts/bench.py` (synthetische Daten in einer temporären SQLite-Datei, nur zur Messung).
-Umgebung: Cloud-Container, ein Prozess, 40 Instrumente (35 auf Watchlists von 5 Nutzern), 20.000 Meldungen,
-200.000 Einträge in `events`. Die Zahlen sind Größenordnungen, kein Versprechen für andere Rechner.
+Produced with `cd backend && python scripts/bench.py` (synthetic data in a temporary SQLite file, for measuring only).
+Environment: cloud container, one process, 40 instruments (35 on the watchlists of 5 users), 20,000 news items,
+200,000 entries in `events`. The numbers are orders of magnitude, not a promise for other machines.
 
-## Worker-Jobs (laufen alle 5 bis 15 Minuten)
+## Worker jobs (run every 5 to 15 minutes)
 
-| Job | Lauf mit neuen Daten | Lauf ohne neue Kerzen, vorher | nachher |
+| Job | Run with new data | Run without new candles, before | after |
 |---|---|---|---|
-| Mustererkennung | 12,5 s | 12,5 s | 1,8 s |
-| Analysen (Ereignisse, Bewegungen) | 18,4 s | 9,1 s | 2,2 s |
-| Prognosen | 13,6 s | 1,1 s (hatte schon einen Hash-Vergleich) | 1,1 s |
+| Pattern detection | 12.5 s | 12.5 s | 1.8 s |
+| Analyses (events, moves) | 18.4 s | 9.1 s | 2.2 s |
+| Forecasts | 13.6 s | 1.1 s (already had a hash comparison) | 1.1 s |
 
-Der Rest von etwa 2 s je Job ist das Laden der Kerzen (`load_bars`). Ein weiterer Hebel wäre ein billiger
-Vorab-Check per SQL; bei dieser Größe lohnt er sich nicht.
+The remaining roughly 2 s per job is loading the candles (`load_bars`). A further lever would be a cheap
+pre-check in SQL; at this size it is not worth it.
 
-## API (Median über 5 Aufrufe, ein Nutzer)
+## API (median of 5 calls, one user)
 
-Alle gemessenen Endpunkte antworten unter 100 ms (Kerzen 1m mit 2000 Werten 83 ms, Indikatoren mit fünf
-Indikatoren 58 ms, Muster 49 ms, Watchlist mit 15 Instrumenten 14 ms, Nachrichtenliste 9 ms). Die Query-Pläne
-der Hauptabfragen (Nachrichtenliste, Zähler, Kerzen, Ereignisse) nutzen vorhandene Indizes, es fehlt kein Index.
+All measured endpoints respond in under 100 ms (1m candles with 2,000 values 83 ms, indicators with five
+indicators 58 ms, patterns 49 ms, watchlist with 15 instruments 14 ms, news list 9 ms). The query plans
+of the main queries (news list, counters, candles, events) use existing indexes; no index is missing.
 
-## Frontend-Bundle
+## Frontend bundle
 
-`npm run build`: 450 kB JavaScript (141 kB gzip), 12,6 kB CSS. Kein Handlungsbedarf.
+`npm run build`: 450 kB JavaScript (141 kB gzip), 12.6 kB CSS. No action needed.
 
-## Umgesetzt
+## Done
 
-- Muster- und Analyse-Job überspringen unveränderte Kerzen.
-- Kurs- und Intraday-Job pausieren je Instrument außerhalb der Handelszeit seiner Börse (`app/market_hours.py`, US in New York, XETRA in Berlin).
-- `events` wird auf 24 Stunden gekürzt (bei 35 Instrumenten rund 50.000 Zeilen pro Tag). Nur `/ws` liest die Tabelle (`app/main.py`); alle angezeigten Werte kommen aus `quotes`, `price_bars`, `news_*`, `pattern_*`, `indicator_events`, `backtest_runs`, `forecasts`.
-- Fehlerisolation je Instrument in Kurs-, Intraday- und Tageskerzen-Job.
+- The pattern and analysis jobs skip unchanged candles.
+- The price and intraday jobs pause per instrument outside the trading hours of its exchange (`app/market_hours.py`, US in New York, XETRA in Berlin).
+- `events` is trimmed to 24 hours (about 50,000 rows per day with 35 instruments). Only `/ws` reads the table (`app/main.py`); all displayed values come from `quotes`, `price_bars`, `news_*`, `pattern_*`, `indicator_events`, `backtest_runs`, `forecasts`.
+- Error isolation per instrument in the price, intraday and daily candle jobs.
 
-## Bewusst nicht geändert
+## Deliberately not changed
 
-- Rate-Limits und Circuit-Breaker je Adapter existierten bereits (`app/adapters/http.py`); die Grenzwerte liegen unter
-  den Limits der freien Tarife (Alpaca 150/min, Finnhub 50/min, Yahoo 30/min).
-- WebSocket: jede offene Verbindung fragt einmal pro Sekunde `events` per Primärschlüssel ab; für einen Freundeskreis
-  reicht das.
+- Rate limits and circuit breakers per adapter already existed (`app/adapters/http.py`); the limits are below
+  the limits of the free tiers (Alpaca 150/min, Finnhub 50/min, Yahoo 30/min).
+- WebSocket: every open connection queries `events` by primary key once per second; for a circle of friends
+  that is enough.

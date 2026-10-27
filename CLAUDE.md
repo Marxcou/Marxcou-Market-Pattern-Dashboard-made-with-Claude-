@@ -1,42 +1,47 @@
-# Marktmuster-Dashboard (Informations-Tool, KEINE Anlageberatung)
+# Market Pattern Dashboard (information tool, NOT investment advice)
 
-Web-Dashboard: Live-Nachrichten, Live-Charts, regelbasierte Mustererkennung mit vollständiger Erklärung, Prognose-Szenarien mit Unsicherheitsbändern. Oberfläche auf Deutsch (de-DE, Europe/Berlin), Zeitstempel intern in UTC.
+Web dashboard: live news, live charts, rule-based pattern detection with full explanations, forecast scenarios with uncertainty bands. The UI is English by default with German available through a language switch (de-DE, Europe/Berlin); timestamps are stored in UTC.
 
-## Grundregeln (nicht verhandelbar, für jede Session und jeden Code-Stand)
+## Core rules (Grundregeln; non-negotiable, for every session and every code state)
 
-1. Keine Kauf- oder Verkaufsempfehlungen. Keine Begriffe wie "Kaufen", "Verkaufen", "Strong Buy", "Kursziel" oder Ampelsignale mit Handlungsaufforderung. Nur neutrale, beschreibende Sprache.
-2. Vollständige Quellentransparenz: jede Nachricht, jeder Kursdatenpunkt und jede Kennzahl mit Anbietername, Original-Link, Veröffentlichungs- und Abrufzeitpunkt. Eine Seite "Quellen" mit Beschreibung, Intervall, Verzögerung und Status jeder Quelle.
-3. Erklärpflicht bei Mustern: Name, Lage im Chart mit Zeitraum, erfüllte Kriterien mit tatsächlichen Werten, Konfidenz-Score mit Berechnungserklärung, mindestens zwei Szenarien mit Bestätigungs- und Ungültigkeitsniveau, historische Trefferquote aus Backtest mit Stichprobengröße.
-4. Unsicherheit sichtbar: Prognosen nur als Korridor mit Wahrscheinlichkeitsbereichen, Methode und Backtest-Fehlermaße einsehbar.
-5. Auf jeder Seite gut sichtbar: "Dieses Dashboard stellt keine Anlageberatung dar. Alle Analysen sind automatisiert, können fehlerhaft sein und dienen ausschließlich der Information."
-6. Keine erfundenen Daten. Fehlende Daten klar anzeigen. Beispieldaten nur im ausdrücklich gekennzeichneten Demo-Modus.
+1. No buy or sell recommendations. No terms like "buy", "sell", "strong buy", "price target" (German: "Kaufen", "Verkaufen", "Kursziel") and no traffic-light signals that call for action. Neutral, descriptive language only.
+2. Full source transparency: every news item, every price data point and every metric carries the provider name, original link, publication time and retrieval time. A "Sources" page describes the interval, delay and status of each source.
+3. Patterns must be explained: name, location in the chart with time span, criteria met with actual values, confidence score with an explanation of the calculation, at least two scenarios with a confirmation level and an invalidation level, historical hit rate from a backtest with sample size.
+4. Uncertainty is visible: forecasts only as a corridor with probability ranges; method and backtest error measures can be inspected.
+5. Visible on every page: "This dashboard does not constitute investment advice. All analyses are automated, may be incorrect and are for information only." (German: "Dieses Dashboard stellt keine Anlageberatung dar. Alle Analysen sind automatisiert, können fehlerhaft sein und dienen ausschließlich der Information.")
+6. No invented data. Missing data is shown clearly. Sample data only in the explicitly labeled demo mode.
 
-Arbeitsweise: Am Ende jeder Phase selbst prüfen, ob alle Grundregeln eingehalten sind (Ergebnis in `docs/grundregeln-check.md`). API-Schlüssel nur über `.env`, nie im Code und nie in Logs oder gespeicherten Statustexten (siehe unten).
+Working method: at the end of each phase, check yourself that all core rules are met (result in `docs/grundregeln-check.md`). API keys only via `.env`, never in code and never in logs or stored status texts (see below).
 
-## Wie die Regeln im Code durchgesetzt werden
+## How the rules are enforced in code
 
-- Regel 1: `backend/app/grundregeln.py` (Liste verbotener Begriffe) + `backend/tests/test_grundregeln.py` scannt Backend- und Frontend-Quelltexte in CI. Derselbe Filter läuft später zur Laufzeit auf KI-Texten.
-- Regel 2: `source_id` und `fetched_at` sind NOT NULL auf jeder Datentabelle; API-Antworten enthalten das `source`-Objekt. Die Quellen-Seite wird aus den Adapter-Metadaten erzeugt (`AdapterMetadata`).
-- Regel 3: Eine Erkennung darf nur mit Kriterienliste, Konfidenz-Aufschlüsselung, beiden Szenario-Niveaus und Backtest-Verweis gespeichert werden (Test pro Mustertyp, ab Phase 3).
-- Regel 4: Die Prognose-API liefert ausschließlich Quantilbänder (ab Phase 4).
-- Regel 5: Der Hinweis ist Teil des App-Layouts (`frontend/src/components/Layout.tsx`), Test prüft jede Route.
-- Regel 6: `DEMO_MODE` in `.env`; Demodaten tragen `is_demo=true`, Banner "DEMO-MODUS". Leere Zustände nennen Grund und letzten erfolgreichen Abruf (`empty_reason`).
+- Rule 1: `backend/app/grundregeln.py` (list of forbidden terms) + `backend/tests/test_grundregeln.py` scans backend and frontend sources in CI. The same filter runs at runtime on AI texts.
+- Rule 2: `source_id` and `fetched_at` are NOT NULL on every data table; API responses contain the `source` object. The Sources page is generated from the adapter metadata (`AdapterMetadata`).
+- Rule 3: A detection may only be stored with a criteria list, confidence breakdown, both scenario levels and a backtest reference (test per pattern type).
+- Rule 4: The forecast API returns quantile bands only.
+- Rule 5: The notice is part of the app layout (`frontend/src/components/Layout.tsx`); a test checks every route.
+- Rule 6: `DEMO_MODE` in `.env`; demo data carries `is_demo=true`, banner "DEMO MODE". Empty states name the reason and the last successful retrieval (`empty_reason`).
 
-## Schlüssel in Logs (Regel für jeden neuen Adapter)
+## Keys in logs (rule for every new adapter)
 
-- Schlüssel wenn möglich als HTTP-Header senden (z. B. Finnhub `X-Finnhub-Token`), nicht als URL-Parameter.
-- `backend/app/log_redaction.py` bereinigt jeden Log-Eintrag (auch Tracebacks) von konfigurierten Geheimwerten und URL-Parametern wie `token`, `apikey`, `api_token`, `key`; httpx/httpcore-Logging steht auf WARNING. Jeder Prozess-Einstieg ruft `install()` auf.
-- Statustexte, die in der DB landen oder auf der Quellen-Seite erscheinen, laufen durch `redact()`. Test: `backend/tests/test_log_redaction.py`.
+- Send keys as HTTP headers where possible (e.g. Finnhub `X-Finnhub-Token`), not as URL parameters.
+- `backend/app/log_redaction.py` cleans every log entry (including tracebacks) of configured secrets and URL parameters such as `token`, `apikey`, `api_token`, `key`; httpx/httpcore logging is set to WARNING. Every process entry point calls `install()`.
+- Status texts that end up in the DB or on the Sources page go through `redact()`. Test: `backend/tests/test_log_redaction.py`.
 
-## Struktur
+## Language
 
-- `backend/` FastAPI (`app/main.py`), Worker (`app/worker.py`), SQLAlchemy 2 + Alembic, Adapter (`app/adapters/`)
+- Documentation, code comments and identifiers are English. UI text lives in `frontend/src/lib/messages.ts` as `[English, German]` pairs; add both when adding a string.
+- Existing German domain identifiers (pattern types, status values such as `bestaetigt`, criterion keys, DB columns) are API identifiers and stay as they are; only user-visible text is translated.
+
+## Structure
+
+- `backend/` FastAPI (`app/main.py`), worker (`app/worker.py`), SQLAlchemy 2 + Alembic, adapters (`app/adapters/`)
 - `frontend/` Vite + React + TypeScript + Tailwind
-- `docs/api-contract.md` API-Vertrag zwischen Backend und Frontend
-- Analysecode ist reines Python (numpy/pandas) ohne I/O, deterministisch, mit versionierten Parametern.
+- `docs/api-contract.md` API contract between backend and frontend
+- Analysis code is pure Python (numpy/pandas) without I/O, deterministic, with versioned parameters.
 
-## Befehle
+## Commands
 
-- Alles starten: `docker compose up --build` (nach `cp .env.example .env`)
+- Start everything: `docker compose up --build` (after `cp .env.example .env`)
 - Backend: `cd backend && pip install -e ".[dev]" && pytest && ruff check . && mypy app`
 - Frontend: `cd frontend && npm ci && npm test && npm run build`

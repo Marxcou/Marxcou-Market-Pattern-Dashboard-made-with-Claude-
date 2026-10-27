@@ -14,7 +14,7 @@ jobs:
       - run: pip install -e ".[dev]"
       - run: ruff check .
       - run: mypy app
-      - run: pytest  # enthält den Grundregel-Check
+      - run: pytest  # includes the core-rules check
   frontend:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: frontend } }
@@ -27,7 +27,7 @@ jobs:
       - run: npm test
       - run: npm run build
   e2e:
-    # Playwright (Chromium) gegen das gebaute Frontend und ein echtes Backend mit gekennzeichneten Demo-Daten (DEMO_MODE)
+    # Playwright (Chromium) against the built frontend and a real backend with labeled demo data (DEMO_MODE)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

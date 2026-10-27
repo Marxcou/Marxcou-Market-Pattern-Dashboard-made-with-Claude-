@@ -1,164 +1,169 @@
-# Marktmuster-Dashboard
+# Market Pattern Dashboard (Marktmuster-Dashboard)
 
-Informations-Tool für Aktien: Nachrichten, Charts, Mustererkennung, Szenarien. **Keine Anlageberatung.** Die Grundregeln stehen in [CLAUDE.md](CLAUDE.md).
+Information tool for stocks: news, charts, pattern detection, scenarios. **Not investment advice.** The core rules (Grundregeln) are in [CLAUDE.md](CLAUDE.md).
 
-Stand: **Phase 1A + 1B (Foundation, Kursdaten-Backend) und Phase 2 Backend (News-Aggregator)**. Lauffähig sind Login, Nutzerverwaltung, Datenbank, API, Worker und die Oberfläche mit Hinweis, Dark Mode und deutschen Formaten. Das Backend holt Kursdaten (siehe unten); die Watchlist-/Chart-Oberfläche (1C) folgt in einem eigenen Pull Request.
+The interface is English by default and can be switched to German with the EN/DE switch in the header. The code uses a few German domain identifiers (for example pattern types such as `doppelboden` and status values such as `bestaetigt`); they are part of the API contract and are listed in `docs/api-contract.md`.
 
-## Nachrichten (Phase 2, Backend)
+Status: **Phase 1A + 1B (foundation, price data backend), Phase 2 backend (news aggregator), and the phases after it as described below.** Login, user management, database, API, worker and the interface with disclaimer, dark mode and localized number and date formats are running. The backend fetches price data (see below).
 
-Der Worker ruft je Quelle in eigenem Intervall Meldungen zu den Aktien aller Watchlists ab, ordnet sie Instrumenten zu (Anbieter-Symbol, ISIN, Ticker, Firmenname; der Grund steht je Zuordnung dabei), führt Duplikate zu Clustern zusammen (normalisierte URL, Titelähnlichkeit innerhalb von 48 Stunden, **alle** Quellen eines Clusters bleiben sichtbar) und bewertet die Stimmung mit Begründung und Modellangabe. Gespeichert werden nur Überschrift, ein Auszug von höchstens 300 Zeichen und der Link. Endpunkte: `/api/news`, `/api/instruments/{id}/news`, `/api/news/counts`, `/api/news/sentiment-status`, `/api/sources` (siehe `docs/api-contract.md`).
+## News (Phase 2, backend)
 
-| Quelle | Schlüssel in `.env` | Hinweis |
+For each source the worker fetches items about the stocks on all watchlists at that source's own interval, assigns them to instruments (provider symbol, ISIN, ticker, company name; the reason is stored with every assignment), merges duplicates into clusters (normalized URL, title similarity within 48 hours, **all** sources of a cluster stay visible) and rates the sentiment with a rationale and the model used. Only the headline, an excerpt of at most 300 characters and the link are stored. Endpoints: `/api/news`, `/api/instruments/{id}/news`, `/api/news/counts`, `/api/news/sentiment-status`, `/api/sources` (see `docs/api-contract.md`).
+
+| Source | Key in `.env` | Note |
 |---|---|---|
-| Finnhub Unternehmensnachrichten | `FINNHUB_API_KEY` (derselbe wie für Kurse) | nur US, alle 5 Min. |
-| SEC EDGAR | `SEC_EDGAR_CONTACT_EMAIL` | Pflichtmeldungen (8-K, 10-Q, 10-K, Form 4), Kontaktadresse ist Pflicht im User-Agent |
-| Marketaux | `MARKETAUX_API_KEY` | 100 Anfragen/Tag: Aktien werden reihum abgefragt, höchstens 90 Anfragen/Tag |
-| Alpha Vantage News (optional) | `ALPHAVANTAGE_API_KEY` | 25 Anfragen/Tag, höchstens 20 genutzt |
-| GDELT | keiner | verrauscht: Meldungen ohne Firmenname oder Ticker im Titel werden verworfen |
-| Investor-Relations-Feeds | `IR_FEEDS` | **standardmäßig aus**: Adresse und Nutzungsbedingungen je IR-Seite zuerst prüfen |
-| RSS-Feeds, EQS | `RSS_ENABLED_FEEDS`, `EQS_RSS_URL` | **standardmäßig aus**: Adresse und Nutzungsbedingungen zuerst prüfen |
+| Finnhub company news | `FINNHUB_API_KEY` (same as for prices) | US only, every 5 min |
+| SEC EDGAR | `SEC_EDGAR_CONTACT_EMAIL` | Mandatory filings (8-K, 10-Q, 10-K, Form 4); a contact address is required in the User-Agent |
+| Marketaux | `MARKETAUX_API_KEY` | 100 requests/day: stocks are queried in rotation, at most 90 requests/day |
+| Alpha Vantage News (optional) | `ALPHAVANTAGE_API_KEY` | 25 requests/day, at most 20 used |
+| GDELT | none | noisy: items without a company name or ticker in the title are discarded |
+| Investor relations feeds | `IR_FEEDS` | **off by default**: check the address and terms of use of each IR page first |
+| RSS feeds, EQS | `RSS_ENABLED_FEEDS`, `EQS_RSS_URL` | **off by default**: check the address and terms of use first |
 
-Quellen ohne Schlüssel bzw. ohne Freischaltung erscheinen auf der Seite Quellen als "deaktiviert" mit Grund; ein Ausfall einer Quelle beeinträchtigt die anderen nicht.
+Sources without a key or without activation appear on the Sources page as "disabled" with the reason; the failure of one source does not affect the others.
 
-**Stimmung:** Immer verfügbar ist ein regelbasiertes Wortlisten-Verfahren (Deutsch/Englisch, ohne Kosten). Mit `ANTHROPIC_API_KEY` bewertet Claude Haiku 4.5 die Meldungen und muss die auslösenden Formulierungen wörtlich zitieren; das Backend prüft jedes Zitat gegen den Text und fällt bei Abweichung auf das Lexikon zurück. `CLAUDE_MONTHLY_BUDGET_USD` (Standard 10) ist eine harte Obergrenze: vor jedem Aufruf wird der Verbrauch des Monats plus der Höchstwert des Aufrufs geprüft. Danach gilt das Lexikon, sichtbar in `/api/news/sentiment-status` und auf der Seite Quellen. Bitte zusätzlich ein Ausgabenlimit in der Anthropic-Konsole setzen.
+**Sentiment:** A rule-based word list method (German/English, free of charge) is always available. With `ANTHROPIC_API_KEY`, Claude Haiku 4.5 rates the items and must quote the triggering phrases verbatim; the backend checks every quote against the text and falls back to the word list on any mismatch. `CLAUDE_MONTHLY_BUDGET_USD` (default 10) is a hard cap: before every call the month's spending plus the call's maximum cost is checked. After that the word list applies, visible in `/api/news/sentiment-status` and on the Sources page. Please also set a spending limit in the Anthropic console.
 
-**Erklärtexte "In einfachen Worten":** Zu jeder Mustererkennung und zur Prognose zeigt das Dashboard einen kurzen Text, der die berechneten Werte verständlich zusammenfasst. Mit `ANTHROPIC_API_KEY` schreibt ihn Claude Sonnet 5.5 ausschließlich aus diesen Werten (Kriterien, Konfidenz, Szenarien, Backtest, Korridor); er ist als "KI-generiert" mit Modell und Zeit gekennzeichnet und wird je Datenstand einmal erzeugt und gespeichert. Danach prüft das Backend jeden Text: Länge, Wortliste aus `grundregeln.py`, keine Links, jede Zahl und jedes Datum muss in den Werten vorkommen. Fällt der Text durch, es gibt keinen Schlüssel, das Monatslimit ist erreicht oder es sind Demodaten, steht stattdessen eine deterministische Vorlage, ausdrücklich als "Vorlage, ohne KI" mit Grund. Die Kosten zählen gegen dasselbe `CLAUDE_MONTHLY_BUDGET_USD` wie die Stimmung (Größenordnung: rund 1 Cent je Text).
+**Explanation texts "In plain words":** For every pattern detection and for the forecast, the dashboard shows a short text that summarizes the calculated values in plain language. With `ANTHROPIC_API_KEY`, Claude Sonnet 5.5 writes it solely from those values (criteria, confidence, scenarios, backtest, corridor); it is labeled "AI-generated" with model and time, and is generated and stored once per data state. The backend then checks every text: length, word list from `grundregeln.py`, no links, and every number and date must appear in the values. If the text fails the check, there is no key, the monthly limit is reached or the data is demo data, a deterministic template is shown instead, explicitly labeled "Template, no AI" with the reason. The cost counts against the same `CLAUDE_MONTHLY_BUDGET_USD` as sentiment (roughly 1 cent per text).
 
-**Claude per Batch-API (Standard, `CLAUDE_USE_BATCH=true`):** Neue Meldungen erscheinen sofort mit der Lexikon-Stimmung; Claude wird parallel per Batch-API (halber Preis) angefragt und ersetzt sie, sobald das Ergebnis da ist (meist Minuten, spätestens nach 24 Stunden). Die Prüfung der Zitate ist dieselbe wie bei Einzelaufrufen. Für offene Batches wird der Höchstbetrag gegen das Monatslimit vorgemerkt. Nicht belegbare Antworten bleiben beim Lexikon und werden nicht erneut angefragt; abgelaufene Anfragen werden erneut eingereicht. Mit `CLAUDE_USE_BATCH=false` gilt der frühere Einzelaufruf.
+**Claude via the Batch API (default, `CLAUDE_USE_BATCH=true`):** New items appear immediately with the word-list sentiment; Claude is queried in parallel through the Batch API (half price) and replaces it as soon as the result arrives (usually minutes, at most 24 hours). The quote check is the same as for single calls. For open batches the maximum amount is reserved against the monthly limit. Answers that cannot be verified stay with the word list and are not requested again; expired requests are resubmitted. With `CLAUDE_USE_BATCH=false` the former single call applies.
 
-**Tageskontingente:** Der Zähler für Marketaux und Alpha Vantage liegt in der Tabelle `api_usage` und übersteht Neustarts (Tageswechsel 00:00 UTC).
+**Daily quotas:** The counter for Marketaux and Alpha Vantage lives in the table `api_usage` and survives restarts (day changes at 00:00 UTC).
 
-**Aufbewahrung:** Ein täglicher Job löscht Cluster, deren letzte Meldung älter als `NEWS_RETENTION_DAYS` (Standard 90, Minimum 14, 0 = aus) ist, samt Meldungen, Zuordnung und Stimmung.
+**Retention:** A daily job deletes clusters whose latest item is older than `NEWS_RETENTION_DAYS` (default 90, minimum 14, 0 = off), together with their items, assignments and sentiment.
 
-## Indikatoren und Ereignisse (Phase 3A, Backend)
+## Indicators and events (Phase 3A, backend)
 
-Der Worker wertet für alle Watchlist-Instrumente (Zeitrahmen 1d und 1h, nur abgeschlossene Kerzen) alle 5 Minuten aus:
+Every 5 minutes the worker evaluates all watchlist instruments (timeframes 1d and 1h, completed candles only):
 
-- **Indikatoren für den Chart** (`GET /api/instruments/{id}/indicators`): SMA, EMA, RSI (Wilder), MACD, Bollinger-Bänder, on the fly aus den gespeicherten Kerzen berechnet. Formeln stehen in der Antwort und in `backend/app/analysis/indicators.py`.
-- **Indikator-Ereignisse** (`/indicator-events`): Golden/Death Cross (SMA 50/200), RSI-Divergenz, Bollinger-Ausbruch, Volumenspitze. Jedes Ereignis nennt Kriterien mit tatsächlichen Werten, Parameter, Algorithmus-Version und die Kursquellen. Eine historische Trefferquote gibt es dafür noch nicht (kommt mit dem Backtest); die Antwort sagt das ausdrücklich.
-- **Auffällige Kursbewegungen und Meldungen** (`/move-links`): Rendite- oder Volumen-Ausreißer (z-Wert ≥ 3 gegenüber den 60 Vorkerzen), zeitlich zugeordnet zu Meldungen desselben Instruments. Rein zeitlich, ohne Aussage über Ursache.
+- **Indicators for the chart** (`GET /api/instruments/{id}/indicators`): SMA, EMA, RSI (Wilder), MACD, Bollinger Bands, calculated on the fly from the stored candles. The formulas are in the response and in `backend/app/analysis/indicators.py`.
+- **Indicator events** (`/indicator-events`): golden/death cross (SMA 50/200), RSI divergence, Bollinger breakout, volume spike. Every event states its criteria with actual values, parameters, algorithm version and the price sources. There is no historical hit rate for them yet (it comes with the backtest); the response says so explicitly.
+- **Notable price moves and news** (`/move-links`): return or volume outliers (z-score ≥ 3 against the preceding 60 candles), assigned by time to items about the same instrument. Purely temporal, no statement about a cause.
 
-Parameter stehen in `backend/app/analysis/events.py` (`PARAMS`) und `moves.py`; Tests mit synthetischen Reihen in `backend/tests/test_indicator_events.py`. Vertrag: `docs/api-contract.md`.
+Parameters are in `backend/app/analysis/events.py` (`PARAMS`) and `moves.py`; tests with synthetic series are in `backend/tests/test_indicator_events.py`. Contract: `docs/api-contract.md`.
 
-## Mustererkennung (Phase 3B, Backend)
+## Pattern detection (Phase 3B, backend)
 
-Der Worker sucht alle 5 Minuten für alle Watchlist-Instrumente (1d und 1h, nur abgeschlossene Kerzen, bis 1.500 Kerzen) regelbasiert und deterministisch nach Chartmustern:
+Every 5 minutes the worker searches all watchlist instruments (1d and 1h, completed candles only, up to 1,500 candles) for chart patterns using deterministic rules:
 
-- **Muster:** Kopf-Schulter (auch invers), Doppelhoch/Doppelboden, Dreiecke (aufsteigend, absteigend, symmetrisch), Keile (steigend, fallend), Flaggen und Wimpel (nach Anstieg/Rückgang). Grundlage sind Wendepunkte per ZigZag mit ATR-Schwelle (`backend/app/analysis/pivots.py`).
-- **Unterstützungs- und Widerstandszonen** aus Häufungen von Wendepunkten (`backend/app/analysis/zones.py`).
-- **Erklärung je Erkennung:** Lage (Schlüsselpunkte, Linien, Zeitraum), jedes Kriterium mit Regel und tatsächlichem Wert, Konfidenz als gewichteter Mittelwert der Teilwerte mit Aufschlüsselung, Szenarien "Bestätigung"/"Scheitern" mit Kursniveau (keine Kursziele), Status (in Bildung, bestätigt, ungültig) mit Begründung.
-- **Historische Trefferquote:** kommt aus dem Muster-Backtest (siehe unten, Tabelle `backtest_runs`). Solange er nicht gelaufen ist, zeigt die API `"status": "nicht_berechnet"` ohne Zahlen.
+- **Patterns:** head and shoulders (also inverse), double top/double bottom, triangles (ascending, descending, symmetrical), wedges (rising, falling), flags and pennants (after a rise/decline). The basis is turning points found with a ZigZag with an ATR threshold (`backend/app/analysis/pivots.py`).
+- **Support and resistance zones** from clusters of turning points (`backend/app/analysis/zones.py`).
+- **Explanation per detection:** location (key points, lines, period), every criterion with its rule and actual value, confidence as the weighted mean of the sub-scores with a breakdown, scenarios "Confirmation"/"Failure" with price levels (not price forecasts), status (forming, confirmed, invalid) with a reason.
+- **Historical hit rate:** comes from the pattern backtest (see below, table `backtest_runs`). As long as it has not run, the API returns `"status": "nicht_berechnet"` (not calculated) without numbers.
 
-Alle Parameter mit Beschreibung stehen in `backend/app/analysis/params.py` und unter `GET /api/patterns/catalog`; jede Erkennung speichert die verwendeten Werte, `params_hash` und `algo_version`. Endpunkte: `GET /api/instruments/{id}/patterns`, `/api/patterns/{id}`, `/api/patterns/counts`. Tests mit synthetischen Kursreihen bekannten Ergebnisses: `backend/tests/test_patterns.py`, `test_pattern_api.py`.
+All parameters with descriptions are in `backend/app/analysis/params.py` and under `GET /api/patterns/catalog`; every detection stores the values used, `params_hash` and `algo_version`. Endpoints: `GET /api/instruments/{id}/patterns`, `/api/patterns/{id}`, `/api/patterns/counts`. Tests with synthetic price series with known results: `backend/tests/test_patterns.py`, `test_pattern_api.py`.
 
-## Muster-Backtest (Phase 3C)
+## Pattern backtest (Phase 3C)
 
-Die historische Trefferquote je Mustertyp wird mit echten Tagesdaten berechnet. Der Backtest ist ein einmaliger Job (nicht im Worker-Zeitplan) und nimmt die erste eingerichtete Tagesdatenquelle: **Stooq**, wenn `STOOQ_API_KEY` gesetzt ist, sonst **Yahoo Finance (inoffiziell)**, wenn `YAHOO_ENABLED=true` gesetzt ist. Mit `--source stooq` oder `--source yahoo` lässt sich die Quelle erzwingen. Ein Lauf nutzt genau eine Quelle; sie steht im Ergebnis (`metrics.source`, Text "Tagesdaten von …") und in der Musteransicht neben der Trefferquote. Ist keine Quelle eingerichtet oder liefert sie nichts, rechnet und speichert der Job nichts; bis zum ersten Lauf zeigt das Dashboard "nicht berechnet".
+The historical hit rate per pattern type is calculated with real daily data. The backtest is a one-off job (not part of the worker schedule) and uses the first configured daily data source: **Stooq** if `STOOQ_API_KEY` is set, otherwise **Yahoo Finance (unofficial)** if `YAHOO_ENABLED=true` is set. `--source stooq` or `--source yahoo` forces the source. A run uses exactly one source; it is stated in the result (`metrics.source`, text "Daily data from …") and in the pattern view next to the hit rate. If no source is configured or it returns nothing, the job calculates and stores nothing; until the first run the dashboard shows "not calculated".
 
-Yahoo ist inoffiziell: Es gibt keine dokumentierte API, der Abruf kann ohne Ankündigung ausfallen, und die Nutzungsbedingungen erlauben diese Nutzung nicht ausdrücklich. Die Kurse sind splitbereinigt, nicht dividendenbereinigt.
+Yahoo is unofficial: there is no documented API, retrieval can fail without notice, and its terms of use do not explicitly allow this use. Prices are split-adjusted, not dividend-adjusted.
 
 ```bash
-# erst mit zwei Werten ausprobieren, ohne etwas zu speichern
+# try two symbols first, without storing anything
 docker compose run --rm worker python -m app.backtest_job --symbols SAP.XETR,AAPL.XNAS --dry-run
-# vollständiger Lauf (DAX-Auswahl und 100 US-Werte ab 2010), Ergebnis landet in der Datenbank
+# full run (DAX selection and 100 US stocks since 2010), the result is stored in the database
 docker compose run --rm worker python -m app.backtest_job
 ```
 
-Ohne Docker: `cd backend && python -m app.backtest_job` (gleiche Optionen). Der vollständige Lauf lädt ca. 140 Tagesreihen (Stooq: 20 Abrufe je Minute, also ca. 7 Minuten; Yahoo: höchstens 30 je Minute) und rechnet ca. 1 CPU-Minute je Aktie, verteilt auf alle Kerne bis auf einen (`--workers`). Die geladenen Daten liegen 7 Tage im Zwischenspeicher `BACKTEST_CACHE_DIR`, ein zweiter Lauf fragt die Quelle also nicht erneut (getrennt je Quelle). Weitere Optionen: `--source`, `--start`, `--horizon` (Kerzen, Standard 20), `--min-move` (%, Standard 5), `--step`, `--window`, `--universe-file` (eigene Liste, je Zeile `SYMBOL,BÖRSE`), `python -m app.backtest_job --help`.
+Without Docker: `cd backend && python -m app.backtest_job` (same options). The full run downloads about 140 daily series (Stooq: 20 requests per minute, so about 7 minutes; Yahoo: at most 30 per minute) and needs about 1 CPU minute per stock, spread over all cores but one (`--workers`). The downloaded data is cached for 7 days in `BACKTEST_CACHE_DIR`, so a second run does not query the source again (kept separately per source). Further options: `--source`, `--start`, `--horizon` (candles, default 20), `--min-move` (%, default 5), `--step`, `--window`, `--universe-file` (your own list, one `SYMBOL,EXCHANGE` per line), `python -m app.backtest_job --help`.
 
-So wird gerechnet (`backend/app/analysis/backtest.py`):
+How it is calculated (`backend/app/analysis/backtest.py`):
 
-- **Ohne Blick in die Zukunft:** Die Mustererkennung läuft schrittweise (alle 5 Kerzen) nur auf den Kerzen bis zum jeweiligen Tag (höchstens 500). Ein Fall ist ein bestätigtes Muster. Ausgangspunkt ist der Schlusskurs am Tag der Bestätigung oder, falls das Muster erst später sichtbar war, an diesem späteren Tag.
-- **Treffer:** Ein Schlusskurs innerhalb von 20 Kerzen liegt mindestens 5 % in Richtung des Musters (beim symmetrischen Dreieck in Richtung des Ausbruchs).
-- **Basisrate:** derselbe Test für jeden Handelstag derselben Aktien im selben Zeitraum, gewichtet wie die Fälle. Das 95-%-Intervall der Trefferquote kommt aus der Wilson-Formel. Liegt seine untere Grenze nicht über der Basisrate, zeigt das Dashboard "Historisch nicht besser als Zufall".
-- **Szenarien:** Für "Bestätigung"/"Scheitern" (bzw. "Ausbruch nach oben/unten") zählt, wie oft Muster, die in Bildung erkannt wurden, später bestätigt oder ungültig wurden.
-- **Ausgeschlossen:** Zeiträume mit einem Tagessprung über 40 % (z. B. nicht bereinigte Aktiensplits) und Fälle, nach denen noch keine 20 Kerzen vorliegen. Beides wird gezählt und gespeichert.
-- **Offen gesagt:** Die Aktienauswahl sind heutige Indexmitglieder (Survivorship Bias). Fälle derselben Aktie überschneiden sich zeitlich, das Intervall ist daher eher zu schmal. Die DAX-Liste in `backend/app/backtest_universe.py` ist nach bestem Wissen (Stand 2025) und sollte vor dem Lauf geprüft werden.
+- **No look-ahead:** Pattern detection runs step by step (every 5 candles) using only the candles up to the respective day (at most 500). A case is a confirmed pattern. The starting point is the closing price on the day of confirmation or, if the pattern only became visible later, on that later day.
+- **Hit:** A closing price within 20 candles is at least 5 % in the direction of the pattern (for the symmetrical triangle, in the direction of the breakout).
+- **Base rate:** the same test for every trading day of the same stocks in the same period, weighted like the cases. The 95 % interval of the hit rate comes from the Wilson formula. If its lower bound is not above the base rate, the dashboard shows "Historically not better than chance".
+- **Scenarios:** For "Confirmation"/"Failure" (or "Breakout upward/downward") it counts how often patterns detected while forming later became confirmed or invalid.
+- **Excluded:** periods with a daily jump above 40 % (for example unadjusted stock splits) and cases with fewer than 20 candles after them. Both are counted and stored.
+- **Stated openly:** The stock selection consists of today's index members (survivorship bias). Cases of the same stock overlap in time, so the interval tends to be too narrow. The DAX list in `backend/app/backtest_universe.py` is to the best of our knowledge (as of 2025) and should be checked before the run.
 
-Jeder Lauf speichert je Mustertyp eine Zeile in `backtest_runs` mit Parametern, Zeitraum, Quelle, Abrufzeit, verwendeten und fehlenden Werten. Das Dashboard zeigt immer den neuesten Lauf. Tests mit synthetischen Kursreihen bekannten Ergebnisses: `backend/tests/test_backtest.py`.
-## Prognosen und Prognosegüte (Phase 4A, Backend)
+Every run stores one row per pattern type in `backtest_runs` with parameters, period, source, fetch time, values used and missing values. The dashboard always shows the latest run. Tests with synthetic price series with known results: `backend/tests/test_backtest.py`.
 
-Der Worker rechnet alle 15 Minuten für alle Watchlist-Instrumente (nur abgeschlossene Tageskerzen, ab 250 Kerzen) einen Prognose-Korridor über 20 Handelstage, aber nur neu, wenn sich Kerzen, Muster oder Backtest geändert haben:
+## Forecasts and forecast quality (Phase 4A, backend)
 
-- **Hauptmethode:** Monte-Carlo-Simulation per Block-Bootstrap (4.000 Pfade aus Blöcken von 10 historischen Tagesrenditen der letzten 750 Tage, Trend entfernt). Ergebnis sind Quantile (2,5/10/25/50/75/90/97,5 %) je Tag, also die Bänder 50/80/95 %. Der Median (50 %) wird als "mittlerer Verlauf" innerhalb des Korridors mitgeliefert, dazu fünf Beispielpfade aus der Simulation (Endwert am 10./30./50./70./90. Perzentil); eine Linie ohne Korridor gibt es nicht.
-- **Vergleich:** ARIMA(1,1,0) auf Log-Kursen (eigene numpy-Umsetzung, Kleinste-Quadrate, normalverteilte Fehler).
-- **Prognose-Backtest:** rollierender Ursprung auf der eigenen Historie (alle 5 Tage ein Prüfzeitpunkt, bis 300), ohne Vorgriff. Gemessen werden Abdeckung der Bänder, mittlerer absoluter Fehler des Medians und Pinball-Verlust, jeweils gegen die naive Referenz "Kurs bleibt gleich", für 5, 10 und 20 Tage. "Besser als naiv" gilt nur bei kleinerem Fehler und Diebold-Mariano-Test p < 0,05; sonst steht offen "nicht nachweisbar genauer". Ergebnisse liegen in `backtest_runs` (`kind = "forecast"`).
-- **Muster-Szenarien:** für Muster "in Bildung" der Anteil simulierter Pfade, die das Bestätigungs- bzw. Ungültigkeitsniveau zuerst erreichen, neben der historischen Quote aus dem Muster-Backtest. Die Simulation kennt das Muster nicht; das steht in der Antwort.
+Every 15 minutes the worker calculates a forecast corridor over 20 trading days for all watchlist instruments (completed daily candles only, from 250 candles), but only recalculates when candles, patterns or the backtest have changed:
 
-Code: `backend/app/analysis/forecast.py` (reines numpy, deterministischer Seed je Datenstand), `backend/app/forecast_service.py`, `backend/app/api/forecasts.py`. Endpunkte: `GET /api/instruments/{id}/forecast`, `GET /api/forecasts/methods`. Tests: `backend/tests/test_forecast.py`, `test_forecast_api.py`.
+- **Main method:** Monte Carlo simulation using a block bootstrap (4,000 paths made of blocks of 10 historical daily returns from the last 750 days, trend removed). The result is quantiles (2.5/10/25/50/75/90/97.5 %) per day, which gives the 50/80/95 % bands. The median (50 %) is delivered as the "median path" inside the corridor, plus five example paths from the simulation (end value at the 10th/30th/50th/70th/90th percentile); there is no line without a corridor.
+- **Comparison:** ARIMA(1,1,0) on log prices (own numpy implementation, least squares, normally distributed errors).
+- **Forecast backtest:** rolling origin on the instrument's own history (a test point every 5 days, up to 300), without look-ahead. It measures band coverage, mean absolute error of the median and pinball loss, each against the naive reference "price stays the same", for 5, 10 and 20 days. "Better than naive" only applies with a smaller error and a Diebold-Mariano test p < 0.05; otherwise it says openly "not demonstrably more accurate". Results are stored in `backtest_runs` (`kind = "forecast"`).
+- **Pattern scenarios:** for patterns that are forming, the share of simulated paths that reach the confirmation or invalidation level first, next to the historical rate from the pattern backtest. The simulation does not know the pattern; the response says so.
 
-## Prognosekorridor im Frontend (Phase 4B)
+Code: `backend/app/analysis/forecast.py` (pure numpy, deterministic seed per data state), `backend/app/forecast_service.py`, `backend/app/api/forecasts.py`. Endpoints: `GET /api/instruments/{id}/forecast`, `GET /api/forecasts/methods`. Tests: `backend/tests/test_forecast.py`, `test_forecast_api.py`.
 
-Auf der Chart-Seite (Tageskerzen) lässt sich der **Prognosekorridor** zuschalten: drei verschachtelte Wahrscheinlichkeitsbereiche (50, 80 und 95 %) hinter der letzten Kerze, nie eine Linie ohne Korridor. Im Korridor zeigt eine gestrichelte Linie den **mittleren Verlauf** (Median je Tag, Schalter "Mittlerer Verlauf", standardmäßig an); das Panel nennt dazu, wie weit der tatsächliche Kurs im Backtest nach 5, 10 und 20 Tagen im Mittel von dieser Linie entfernt lag, neben der Referenz "Kurs bleibt gleich". Mit "Beispielpfade" erscheinen fünf einzelne simulierte Verläufe, blass und als Beispiele beschriftet. Weil der Trend der Vergangenheit bewusst entfernt wird, verläuft der Median meist nahe am letzten Schlusskurs. Darunter das Panel mit den Werten am Ende des Horizonts (5, 10 oder 20 Kerzen), "Wie wird das berechnet?" (Methode, Annahmen, Grenzen, Parameter), der **Prognosegüte** aus dem Backtest (Abdeckung der Bänder, Fehlermaße gegen die naive Referenz "Kurs bleibt gleich", Stichprobe, Signifikanztest) und dem Vergleichsverfahren ARIMA. Wird ein Muster gewählt, erscheinen seine Bestätigungs- und Ungültigkeitsniveaus als Linien bis zum Ende des Korridors, dazu Lage im Korridor, simulierte Pfadanteile und die historische Quote aus dem Muster-Backtest nebeneinander. Fehlt die Prognose oder der Backtest, steht das mit Grund da; ist die Methode nicht nachweisbar besser als die Referenz, steht auch das. Code: `frontend/src/components/ForecastPanel.tsx`, `frontend/src/lib/forecast.ts`, Tests `frontend/src/forecast.test.tsx`; Vertrag: `docs/api-contract.md`, Abschnitt "Phase 4A".
+## Forecast corridor in the frontend (Phase 4B)
 
-## Kursdaten (Phase 1B)
+On the chart page (daily candles) the **forecast corridor** can be switched on: three nested probability ranges (50, 80 and 95 %) behind the last candle, never a line without a corridor. Inside the corridor a dashed line shows the **median path** (median per day, switch "Median path", on by default); the panel also states how far the actual price was from this line on average in the backtest after 5, 10 and 20 days, next to the reference "price stays the same". With "Example paths" five individual simulated paths appear, pale and labeled as examples. Because the trend of the past is removed on purpose, the median usually runs close to the last closing price. Below it is the panel with the values at the end of the horizon (5, 10 or 20 candles), "How is this calculated?" (method, assumptions, limits, parameters), the **forecast quality** from the backtest (band coverage, error measures against the naive reference "price stays the same", sample, significance test) and the comparison method ARIMA. If a pattern is selected, its confirmation and invalidation levels appear as lines up to the end of the corridor, together with their position in the corridor, simulated path shares and the historical rate from the pattern backtest side by side. If the forecast or the backtest is missing, that is stated with the reason; if the method is not demonstrably better than the reference, that is stated too. Code: `frontend/src/components/ForecastPanel.tsx`, `frontend/src/lib/forecast.ts`, tests `frontend/src/forecast.test.tsx`; contract: `docs/api-contract.md`, section "Phase 4A".
 
-| Quelle | Umfang | Schlüssel in `.env` |
+## Price data (Phase 1B)
+
+| Source | Scope | Key in `.env` |
 |---|---|---|
-| Alpaca (IEX) | US: Live-Kurse per WebSocket, Kerzen 1m/5m/1h/1d | `ALPACA_API_KEY_ID`, `ALPACA_API_SECRET_KEY` |
-| Finnhub | US: Kurs als Ausweichquelle | `FINNHUB_API_KEY` |
-| Stooq | Tagesdaten US und XETRA | `STOOQ_API_KEY` |
-| Yahoo Finance (inoffiziell) | Tagesdaten US und XETRA, wenn Stooq fehlt | `YAHOO_ENABLED=true` (kein Schlüssel) |
-| OpenFIGI | Suche nach Ticker, Name, ISIN | optional `OPENFIGI_API_KEY` |
+| Alpaca (IEX) | US: live prices via WebSocket, candles 1m/5m/1h/1d | `ALPACA_API_KEY_ID`, `ALPACA_API_SECRET_KEY` |
+| Finnhub | US: price as a fallback source | `FINNHUB_API_KEY` |
+| Stooq | Daily data US and XETRA | `STOOQ_API_KEY` |
+| Yahoo Finance (unofficial) | Daily data US and XETRA, if Stooq is missing | `YAHOO_ENABLED=true` (no key) |
+| OpenFIGI | Search by ticker, name, ISIN | optional `OPENFIGI_API_KEY` |
 
-Der Worker holt Daten nur für Aktien, die auf mindestens einer Watchlist stehen. Fehlt ein Schlüssel, zeigt `/api/sources` den Status `disabled`; es werden keine Ersatzdaten erzeugt. XETRA hat im kostenlosen Tarif nur Tagesdaten: 1T/1W zeigen dafür einen ausdrücklichen Hinweis. Kurse aus dem Alpaca-Live-Feed stammen von der IEX-Börse und können vom konsolidierten Kurs abweichen. Ein Ausfall einer Quelle bleibt lokal (Rate-Limit, Retry, Circuit-Breaker je Adapter).
+The worker only fetches data for stocks that are on at least one watchlist. If a key is missing, `/api/sources` shows the status `disabled`; no substitute data is generated. XETRA only has daily data on the free tier: 1D/1W show an explicit notice for it. Prices from the Alpaca live feed come from the IEX exchange and may differ from the consolidated price. The failure of one source stays local (rate limit, retry, circuit breaker per adapter).
 
-## Stabilität und Tempo (Phase 5A)
+## Stability and speed (Phase 5A)
 
-Gemessen mit `backend/scripts/bench.py` (40 Instrumente, 35 davon auf Watchlists, 1500 Tageskerzen, je Zeitraster mehrere tausend Kerzen, 20.000 Meldungen; Ergebnisse in `docs/performance.md`):
+Measured with `backend/scripts/bench.py` (40 instruments, 35 of them on watchlists, 1,500 daily candles, several thousand candles per timeframe, 20,000 items; results in `docs/performance.md`):
 
-- Die Worker-Jobs für Muster und Analysen rechnen nur noch neu, wenn es neue abgeschlossene Kerzen gibt (oder sich Parameter/Algorithmus-Version ändern). Ein Lauf ohne neue Kerzen dauert dadurch etwa 2 s statt 12 s (Muster) bzw. 9 s (Analysen). Die Erkennung ist deterministisch, das Ergebnis wäre identisch.
-- `quote_job` und `intraday_job` fragen je Instrument nur innerhalb der Handelszeit seiner Börse ab (`backend/app/market_hours.py`, jeweils eigene Zeitzone): US Mo bis Fr 04:00 bis 20:30 New York, XETRA Mo bis Fr 08:00 bis 18:30 Berlin. Feiertage sind nicht modelliert. Heute holt nur der US-Teil Intraday-Daten (XETRA hat im kostenlosen Tarif nur Tagesdaten, die stündlich unverändert laufen); die XETRA-Zeiten gelten, sobald ein Intraday-Anbieter dazukommt.
-- Die Ereignis-Warteschlange (`events`) wird im täglichen Aufräum-Job auf 24 Stunden gekürzt. Vorher wuchs sie mit jeder Kursaktualisierung unbegrenzt. Sie ist nur die Zustellung an offene WebSocket-Verbindungen (`/ws`) und keine Datenquelle: Kurse, Meldungen, Muster, Ereignisse und Backtests sind in ihren eigenen Tabellen mit Quelle und Abrufzeit gespeichert und werden nicht angetastet.
-- Ein Fehler bei einem Instrument stoppt in den Kurs-Jobs nicht mehr die übrigen Instrumente (wie schon bei Mustern, Analysen und Prognosen), er landet im Log.
+- The worker jobs for patterns and analyses now only recalculate when there are new completed candles (or when parameters or the algorithm version change). A run without new candles therefore takes about 2 s instead of 12 s (patterns) or 9 s (analyses). Detection is deterministic, so the result would be identical.
+- `quote_job` and `intraday_job` only query each instrument during the trading hours of its exchange (`backend/app/market_hours.py`, each with its own time zone): US Mon to Fri 04:00 to 20:30 New York, XETRA Mon to Fri 08:00 to 18:30 Berlin. Holidays are not modeled. Today only the US part fetches intraday data (XETRA only has daily data on the free tier, which would run hourly unchanged); the XETRA hours apply as soon as an intraday provider is added.
+- The event queue (`events`) is trimmed to 24 hours in the daily cleanup job. Before that it grew without limit with every price update. It is only the delivery channel to open WebSocket connections (`/ws`) and not a data source: prices, news, patterns, events and backtests are stored in their own tables with source and fetch time and are not touched.
+- An error with one instrument no longer stops the other instruments in the price jobs (as was already the case for patterns, analyses and forecasts); it goes to the log.
 
-## Starten (Docker Compose)
+## Getting started (Docker Compose)
 
-Voraussetzung: Docker mit Compose.
+Requirement: Docker with Compose.
 
 ```bash
-cp .env.example .env        # .env liegt im Projektwurzelverzeichnis, neben docker-compose.yml
-# In .env mindestens SESSION_SECRET, ADMIN_EMAIL und ADMIN_PASSWORD setzen, dann API-Schlüssel eintragen
+cp .env.example .env        # .env lives in the project root, next to docker-compose.yml
+# In .env set at least SESSION_SECRET, ADMIN_EMAIL and ADMIN_PASSWORD, then enter the API keys
 docker compose up --build
 ```
 
-**Hinweis zu `.env`:** Schreibe keine Kommentare hinter einen Wert (`KEY=   # Text`). Docker Compose übernimmt den Kommentar sonst als Wert. Kommentare gehören in eine eigene Zeile darüber. Wenn du deine `.env` aus einer älteren `.env.example` kopiert hast, entferne solche Kommentare oder kopiere die Vorlage neu. Das Backend behandelt Werte, die mit `#` beginnen, als nicht gesetzt (Warnung im Log), und ungültige `IR_FEEDS`/`EQS_RSS_URL` erscheinen auf der Seite Quellen als "ungültig, deaktiviert".
+**Note on `.env`:** Do not put comments after a value (`KEY=   # text`). Docker Compose would otherwise take the comment as the value. Put comments on a separate line above. If you copied your `.env` from an older `.env.example`, remove such comments or copy the template again. The backend treats values that start with `#` as unset (warning in the log), and invalid `IR_FEEDS`/`EQS_RSS_URL` appear on the Sources page as "invalid, disabled".
 
-Dann im Browser `http://localhost:8080` öffnen (Port über `WEB_PORT`). Der erste Admin wird beim Start aus `ADMIN_EMAIL`/`ADMIN_PASSWORD` angelegt. Das geschieht nur beim allerersten Start, solange noch kein Admin existiert; die Platzhalter aus `.env.example` (`admin@example.com`, `change-me-now`) werden abgelehnt (Hinweis im Log des `api`-Containers). Ein vorhandener Admin wird nie automatisch überschrieben, auch nicht, wenn du das Passwort in der App geändert hast. Weicht `ADMIN_EMAIL` vom vorhandenen Admin ab, steht eine Warnung im Log.
+Then open `http://localhost:8080` in the browser (port via `WEB_PORT`). The first admin is created at startup from `ADMIN_EMAIL`/`ADMIN_PASSWORD`. This only happens on the very first start, as long as no admin exists; the placeholders from `.env.example` (`admin@example.com`, `change-me-now`) are rejected (notice in the log of the `api` container). An existing admin is never overwritten automatically, not even if you changed the password in the app. If `ADMIN_EMAIL` differs from the existing admin, a warning appears in the log.
 
-Hast du `.env` erst nach dem ersten Start angepasst und kommst nicht hinein, übernimmt dieser Befehl die Werte aus `.env` in die bestehende Datenbank (ohne sie zu löschen):
+If you changed `.env` only after the first start and cannot log in, this command applies the values from `.env` to the existing database (without deleting it):
 
 ```bash
 docker compose run --rm api python -m app.admin_cli
-``` Weitere Nutzer legt ein Admin an (`POST /api/users`); es gibt keine offene Registrierung.
+```
 
-### Benutzerverwaltung (Admin)
+Further users are created by an admin (`POST /api/users`); there is no open registration.
 
-Als Administrator erscheint im Menü **Benutzer**. Dort kannst du Konten anlegen (E-Mail, Anzeigename, Rolle), sperren und wieder entsperren und Passwörter zurücksetzen. Ablauf für einen Freund:
+### User management (admin)
 
-1. **Konto anlegen**: das Dashboard zeigt ein Einmalpasswort genau einmal an. Es wird nicht gespeichert und nicht per E-Mail verschickt (es gibt keinen Mailversand), gib es selbst weiter.
-2. Beim ersten Login muss der Freund ein eigenes Passwort festlegen (mindestens 10 Zeichen); bis dahin ist nur diese Seite erreichbar. Jeder Nutzer kann sein Passwort später unter seinem Namen oben rechts ändern; dabei werden seine anderen Sitzungen beendet.
-3. **Sperren** beendet sofort alle Sitzungen des Kontos, Anmeldung und Live-Verbindung sind danach nicht mehr möglich. **Passwort zurücksetzen** erzeugt ein neues Einmalpasswort und beendet ebenfalls alle Sitzungen.
-4. Der letzte aktive Admin und das eigene Konto lassen sich nicht sperren oder herabstufen.
+As an administrator the menu shows **Users**. There you can create accounts (email, display name, role), lock and unlock them and reset passwords. Procedure for a friend:
 
-API-Schlüssel stehen nur in der `.env` des Servers. Kein Endpunkt und keine Seite liefert sie an einen Browser (auch nicht an Admins); ein Test prüft das für alle GET-Routen. Manche kostenlose Datentarife erlauben nur private Nutzung, bitte vor dem Teilen die Nutzungsbedingungen prüfen (Seite "Quellen"). Das Claude-Budget gilt für alle Nutzer zusammen. Aktualisieren: `docker compose up --build` (die Migration `0008` läuft beim Start).
+1. **Create account**: the dashboard shows a one-time password exactly once. It is not stored and not sent by email (there is no mail delivery), so pass it on yourself.
+2. On first login the friend must set their own password (at least 10 characters); until then only that page is reachable. Every user can change their password later under their name at the top right; their other sessions are ended in the process.
+3. **Lock** ends all sessions of the account immediately; login and live connection are no longer possible afterwards. **Reset password** creates a new one-time password and also ends all sessions.
+4. The last active admin and your own account cannot be locked or demoted.
 
-### Windows: Zeilenenden
+API keys only exist in the server's `.env`. No endpoint and no page delivers them to a browser (not even to admins); a test checks this for all GET routes. Some free data tiers only allow private use, so please check the terms of use before sharing (Sources page). The Claude budget applies to all users together. To update: `docker compose up --build` (migration `0008` runs at startup).
 
-Die Datei `.gitattributes` erzwingt LF für Skripte und Konfigurationsdateien, die in den Linux-Containern laufen. Zusätzlich entfernt `backend/Dockerfile` beim Bauen eventuelle CRLF aus `entrypoint.sh`. Trat vorher `exec ./entrypoint.sh: no such file or directory` auf, in einem bestehenden Klon nach dem Pull einmal ausführen:
+### Windows: line endings
+
+The file `.gitattributes` enforces LF for scripts and configuration files that run in the Linux containers. In addition, `backend/Dockerfile` strips any CRLF from `entrypoint.sh` when building. If `exec ./entrypoint.sh: no such file or directory` occurred before, run this once in an existing clone after pulling:
 
 ```bash
 git pull
 git add --renormalize .
-git status                  # sollte nichts Relevantes zeigen
+git status                  # should show nothing relevant
 docker compose up --build -d
 ```
 
-Falls Dateien im Arbeitsverzeichnis weiterhin CRLF haben: `git rm --cached -r . && git reset --hard` (verwirft lokale, nicht committete Änderungen).
+If files in the working directory still have CRLF: `git rm --cached -r . && git reset --hard` (discards local, uncommitted changes).
 
-`.env` wird nie committet. Schlüssel gehören ausschließlich dorthin. Schlüssel erscheinen weder in Logs noch in Statustexten der Quellen-Seite: Logeinträge werden zentral bereinigt (`backend/app/log_redaction.py`), das HTTP-Client-Logging von httpx steht auf WARNING, und wo der Anbieter es unterstützt, geht der Schlüssel im Header statt in der URL. Wer die Logs vor der Umstellung geteilt hat oder Logs aus einer älteren Version aufbewahrt, sollte die betroffenen Schlüssel beim Anbieter erneuern.
+`.env` is never committed. Keys belong there exclusively. Keys appear neither in logs nor in status texts on the Sources page: log entries are sanitized centrally (`backend/app/log_redaction.py`), httpx's HTTP client logging is set to WARNING, and where the provider supports it the key goes in the header instead of the URL. Anyone who shared logs before this change or keeps logs from an older version should renew the affected keys with the provider.
 
-## Entwicklung ohne Docker
+## Development without Docker
 
 ```bash
 cd backend && pip install -e ".[dev]" && pytest && ruff check . && mypy app
@@ -167,25 +172,25 @@ cd frontend && npm ci && npm test && npm run build
 
 ## Tests (Phase 5B)
 
-Vier Ebenen, alle laufen in der CI (`.github/workflows/ci.yml`):
+Four levels, all run in CI (`.github/workflows/ci.yml`):
 
-| Ebene | Befehl | Was sie prüft |
+| Level | Command | What it checks |
 |---|---|---|
-| Backend-Einheiten | `cd backend && pytest` | Adapter, Pipeline, API, Indikatoren, Muster mit synthetischen Reihen bekannten Ergebnisses, Grundregel-Scan der Quelltexte |
-| Muster-Regression | `cd backend && pytest tests/regression` | Feste Kerzen-Fixtures (CSV) laufen durch die Mustererkennung; Muster, Zeitraum, Status, Kriterienwerte, Konfidenz, Szenario-Niveaus und Zonen sind in `tests/regression/golden/patterns.json` festgehalten |
-| Frontend-Einheiten | `cd frontend && npm test` | Komponenten und Seiten gegen einen gemockten API-Vertrag (Vitest) |
-| Ende-zu-Ende | `cd frontend && npm run e2e` | Playwright (Chromium) gegen das gebaute Frontend und ein echtes Backend |
+| Backend units | `cd backend && pytest` | Adapters, pipeline, API, indicators, patterns with synthetic series with known results, Grundregel scan of the source texts |
+| Pattern regression | `cd backend && pytest tests/regression` | Fixed candle fixtures (CSV) run through pattern detection; patterns, period, status, criteria values, confidence, scenario levels and zones are recorded in `tests/regression/golden/patterns.json` |
+| Frontend units | `cd frontend && npm test` | Components and pages against a mocked API contract (Vitest) |
+| End to end | `cd frontend && npm run e2e` | Playwright (Chromium) against the built frontend and a real backend |
 
-**Muster-Regressionstests.** Ändert sich ein Parameter oder eine Erkennungsregel, schlägt `test_golden_matches_current_engine` fehl und zeigt die Abweichung als Diff. Ist die Änderung gewollt: `cd backend && UPDATE_GOLDEN=1 pytest tests/regression`, den Diff von `golden/patterns.json` im PR prüfen und bei geänderten Regeln `ALGO_VERSION` in `backend/app/analysis/params.py` erhöhen. Die 17 Fixtures (13 Mustertypen, gescheiterter und noch nicht bestätigter Doppelboden, zwei Negativfälle ohne Muster, eine Zufallsreihe mit festem Startwert) sind erfundene Kerzen und stehen als CSV in `tests/regression/fixtures/`; `python -m tests.regression.make_fixtures` erzeugt sie neu (nur bei bewusster Änderung der Fixtures).
+**Pattern regression tests.** If a parameter or a detection rule changes, `test_golden_matches_current_engine` fails and shows the deviation as a diff. If the change is intended: `cd backend && UPDATE_GOLDEN=1 pytest tests/regression`, review the diff of `golden/patterns.json` in the PR and, if rules changed, increase `ALGO_VERSION` in `backend/app/analysis/params.py`. The 17 fixtures (13 pattern types, a failed and a not yet confirmed double bottom, two negative cases without a pattern, a random series with a fixed seed) are invented candles stored as CSV in `tests/regression/fixtures/`; `python -m tests.regression.make_fixtures` regenerates them (only when the fixtures are deliberately changed).
 
-**Ende-zu-Ende-Tests.** `npm run e2e` (im Ordner `frontend`, einmalig `npx playwright install chromium`) startet selbst ein Backend mit frischer SQLite-Datenbank unter `frontend/.e2e/` und baut und startet das Frontend (`vite preview`). Das Backend läuft mit `DEMO_MODE=true` und wird über `backend/app/e2e_seed.py` mit **gekennzeichneten Beispieldaten** gefüllt: zwei Instrumente "Demo ... (Beispieldaten)" mit erfundenen Kerzen (DEMOA mit bestätigtem Doppelboden, DEMOB mit Doppelboden in Bildung), zwei Meldungen aus zwei Demo-Quellen und ein fest eingetragener Muster-Backtest. Muster, Indikator-Ereignisse und Prognose entstehen mit denselben Diensten wie im Betrieb. Der Seed verweigert den Lauf ohne `DEMO_MODE=true`. Es gibt keine Schlüssel und keinen Zugriff auf echte Anbieter: das Backend bekommt einen ins Leere zeigenden Proxy, GDELT und OpenFIGI erscheinen deshalb auf der Seite Quellen als "offline". Mit `E2E_PYTHON=<Pfad zu python>` lässt sich der Python-Interpreter des Backends festlegen (Standard: `backend/.venv` oder `python`), mit `npx playwright test e2e/patterns.spec.ts` ein einzelner Test ausführen, mit `--ui` der Playwright-Inspektor öffnen.
+**End-to-end tests.** `npm run e2e` (in the `frontend` folder, run `npx playwright install chromium` once) starts a backend with a fresh SQLite database under `frontend/.e2e/` and builds and starts the frontend (`vite preview`). The backend runs with `DEMO_MODE=true` and is filled via `backend/app/e2e_seed.py` with **labeled sample data**: two instruments "Demo ... (sample data)" with invented candles (DEMOA with a confirmed double bottom, DEMOB with a double bottom in formation), two news items from two demo sources and a hard-coded pattern backtest. Patterns, indicator events and forecast are produced by the same services as in production. The seed refuses to run without `DEMO_MODE=true`. There are no keys and no access to real providers: the backend gets a proxy pointing nowhere, so GDELT and OpenFIGI appear as "offline" on the Sources page. With `E2E_PYTHON=<path to python>` you can set the backend's Python interpreter (default: `backend/.venv` or `python`), with `npx playwright test e2e/patterns.spec.ts` you can run a single test, and with `--ui` you can open the Playwright inspector.
 
-Abgedeckt sind: Anmeldung, Abmeldung und Einmalpasswort (`login.spec.ts`, `users.spec.ts`), Suche und Watchlist, Chart mit Zeiträumen und Indikatoren, Muster mit vollständiger Erklärung (Kriterien mit Werten, Konfidenz, Szenarien, Backtest), Prognosekorridor mit Methode und Fehlermaßen, Nachrichten mit Filtern und allen Quellen, Seite Quellen sowie in `grundregeln.spec.ts` auf jeder Seite der Hinweis (Grundregel 5), das Demo-Banner (Regel 6) und die Abwesenheit von Empfehlungsvokabeln (Regel 1; die Wortliste kommt aus `backend/app/grundregeln.py`). Die Anmeldung steht in `frontend/e2e/helpers/auth.ts`; ändert sich der Login, wird nur diese Datei angepasst.
+Covered: login, logout and one-time password (`login.spec.ts`, `users.spec.ts`), search and watchlist, chart with periods and indicators, patterns with a full explanation (criteria with values, confidence, scenarios, backtest), forecast corridor with method and error measures, news with filters and all sources, the Sources page, and in `grundregeln.spec.ts` on every page the disclaimer (Grundregel 5), the demo banner (rule 6) and the absence of recommendation vocabulary (rule 1; the word list comes from `backend/app/grundregeln.py`). The login is in `frontend/e2e/helpers/auth.ts`; if the login changes, only this file needs adjusting.
 
-## Serverbetrieb (Phase 5)
+## Server operation (Phase 5)
 
-Für den Dauerbetrieb auf einem Server (Tailscale oder öffentliche HTTPS-Adresse mit automatischem Zertifikat), Aktualisieren mit `./deploy/update.sh`, nächtliche Datenbank-Sicherung und Wiederherstellung: siehe [docs/betrieb.md](docs/betrieb.md). Mit `APP_ENV=production` startet die API nur mit eigenen Werten für `SESSION_SECRET` und `ADMIN_PASSWORD`.
+For continuous operation on a server (Tailscale or a public HTTPS address with an automatic certificate), updating with `./deploy/update.sh`, nightly database backup and restore: see [docs/operations.md](docs/operations.md). With `APP_ENV=production` the API only starts with its own values for `SESSION_SECRET` and `ADMIN_PASSWORD`.
 
-## Aufbau
+## Layout
 
-`backend/` (FastAPI, Worker, Alembic, Adapter), `frontend/` (mit `e2e/` für Playwright) (Vite, React, TypeScript, Tailwind), `docs/api-contract.md` (API-Vertrag), `docs/grundregeln-check.md` (Selbstprüfung je Phase).
+`backend/` (FastAPI, worker, Alembic, adapters), `frontend/` (with `e2e/` for Playwright) (Vite, React, TypeScript, Tailwind), `docs/api-contract.md` (API contract), `docs/grundregeln-check.md` (self-check per phase).
