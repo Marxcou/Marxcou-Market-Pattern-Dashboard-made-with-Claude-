@@ -1,4 +1,4 @@
-"""Ereigniserkennung auf synthetischen Kursreihen mit bekanntem Ergebnis."""
+"""Event detection on synthetic price series with a known result."""
 from datetime import UTC, datetime, timedelta
 
 import numpy as np
@@ -31,7 +31,7 @@ def test_golden_and_death_cross_found_exactly_once_each():
     assert len(golden) == 1 and len(death) == 1
     g, d = golden[0], death[0]
     assert g.index < d.index
-    # Erklärung: die Kriterien tragen die tatsächlichen Werte, die Vorkerze lag auf der anderen Seite
+    # Explanation: the criteria carry the actual values, the previous candle was on the other side
     assert g.values["sma_fast_prev"] <= g.values["sma_slow_prev"] and g.values["sma_fast"] > g.values["sma_slow"]
     assert d.values["sma_fast_prev"] >= d.values["sma_slow_prev"] and d.values["sma_fast"] < d.values["sma_slow"]
     assert g.direction == "up" and d.direction == "down"
@@ -78,7 +78,7 @@ def test_no_divergence_when_second_low_is_not_lower():
     flat = np.full(40, 120.0)
     leg1 = np.linspace(120, 100, 8)[1:]
     reb = np.linspace(100, 112, 10)[1:]
-    leg2 = np.linspace(112, 103, 20)[1:]  # höheres Tief im Kurs: keine Divergenz im Sinne der Regel
+    leg2 = np.linspace(112, 103, 20)[1:]  # higher low in the price: no divergence in the sense of the rule
     s = series(np.concatenate([flat, leg1, reb, leg2, np.linspace(103, 115, 12)]), spread=0.0)
     assert of_type(ev.detect_all(s), "rsi_divergence") == []
 
@@ -100,10 +100,10 @@ def test_volume_spike_and_negatives():
     found = of_type(ev.detect_all(series(np.full(31, 100.0), volume=vol)), "volume_spike")
     assert len(found) == 1 and found[0].index == 30 and found[0].direction is None
     assert found[0].values["ratio"] > 4 and found[0].values["z"] >= 3
-    # zu geringer Anstieg: kein Ereignis
+    # rise too small: no event
     vol2 = np.array([1000, 1100] * 15 + [1400], dtype=float)
     assert of_type(ev.detect_all(series(np.full(31, 100.0), volume=vol2)), "volume_spike") == []
-    # ohne Volumen der Quelle: keine Ereignisse, keine Erfindung
+    # without volume from the source: no events, nothing invented
     assert of_type(ev.detect_all(series(np.full(31, 100.0))), "volume_spike") == []
 
 

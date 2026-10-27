@@ -22,7 +22,7 @@ export function News() {
   const newsSources = (sources.data ?? []).filter((s) => s.kind === "news");
 
   const since = hours ? new Date(Date.now() - hours * 3_600_000).toISOString() : undefined;
-  // Auf Minuten runden, damit der Query-Key nicht bei jedem Render wechselt.
+  // Round to minutes so the query key does not change on every render.
   const stableSince = since ? since.slice(0, 16) + ":00Z" : undefined;
   const news = useNews({
     instrumentId: instrumentId ? Number(instrumentId) : undefined,

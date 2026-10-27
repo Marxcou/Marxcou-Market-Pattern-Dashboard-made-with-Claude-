@@ -84,9 +84,9 @@ def test_stooq_parses_csv_and_rejects_non_csv():
     a = StooqAdapter(transport=mock(lambda r: httpx.Response(200, text=csv_text)), **NOSLEEP)
     bars = a.fetch_bars("SAP", "XETR", "1d", T0, T1)
     assert [b.close for b in bars] == [10.5, 11.0] and bars[0].ts_utc == datetime(2026, 9, 24, tzinfo=UTC)
-    assert a.fetch_bars("SAP", "XETR", "1m", T0, T1) == []  # keine Intraday-Daten
+    assert a.fetch_bars("SAP", "XETR", "1m", T0, T1) == []  # no intraday data
     bad = StooqAdapter(transport=mock(lambda r: httpx.Response(200, text="Get your apikey: ...")), **NOSLEEP)
-    with pytest.raises(SourceError):  # Hinweistext darf nie als Kursdaten gelesen werden
+    with pytest.raises(SourceError):  # notice text must never be read as price data
         bad.fetch_bars("SAP", "XETR", "1d", T0, T1)
     empty = StooqAdapter(transport=mock(lambda r: httpx.Response(200, text="No data")), **NOSLEEP)
     assert empty.fetch_bars("SAP", "XETR", "1d", T0, T1) == []
@@ -112,7 +112,7 @@ def _chart(ts: list[int], close: list[float | None], offset: int = 7200) -> dict
 
 def test_yahoo_parses_daily_bars_to_trading_day_and_skips_gaps():
     seen = []
-    # 24.09. 07:00 UTC (XETRA-Handelsbeginn), 25.09. ohne Werte, 26.09. 07:00 UTC
+    # 24 Sep 07:00 UTC (XETRA start of trading), 25 Sep without values, 26 Sep 07:00 UTC
     ts = [int(datetime(2026, 9, d, 7, tzinfo=UTC).timestamp()) for d in (24, 25, 26)]
 
     def handler(req: httpx.Request) -> httpx.Response:
@@ -127,7 +127,7 @@ def test_yahoo_parses_daily_bars_to_trading_day_and_skips_gaps():
     assert seen[0].url.path == "/v8/finance/chart/SAP.DE" and seen[0].url.params["interval"] == "1d"
     assert int(seen[0].url.params["period1"]) == int(T0.timestamp())
     assert "Mozilla" in seen[0].headers["user-agent"]
-    assert a.fetch_bars("SAP", "XETR", "1m", T0, T1) == []  # keine Intraday-Daten
+    assert a.fetch_bars("SAP", "XETR", "1m", T0, T1) == []  # no intraday data
     # US: Handelsbeginn 13:30 UTC, gmtoffset -14400 -> derselbe Kalendertag
     us = YahooAdapter(transport=mock(lambda r: httpx.Response(200, json=_chart(
         [int(datetime(2026, 9, 24, 13, 30, tzinfo=UTC).timestamp())], [200.0], offset=-14400))), **NOSLEEP)
@@ -137,12 +137,12 @@ def test_yahoo_parses_daily_bars_to_trading_day_and_skips_gaps():
 def test_yahoo_unknown_symbol_is_empty_and_bad_answers_are_errors():
     gone = {"chart": {"result": None, "error": {"code": "Not Found", "description": "No data found"}}}
     a = YahooAdapter(transport=mock(lambda r: httpx.Response(404, json=gone)), **NOSLEEP)
-    with pytest.raises(SourceError):  # HTTP 404 ist ein Fehler der Quelle, nicht "keine Daten"
+    with pytest.raises(SourceError):  # HTTP 404 is an error of the source, not "no data"
         a.fetch_bars("NOPE", "XETR", "1d", T0, T1)
     ok_gone = YahooAdapter(transport=mock(lambda r: httpx.Response(200, json=gone)), **NOSLEEP)
     assert ok_gone.fetch_bars("NOPE", "XETR", "1d", T0, T1) == []
     html = YahooAdapter(transport=mock(lambda r: httpx.Response(200, text="<html>consent</html>")), **NOSLEEP)
-    with pytest.raises(SourceError):  # z. B. Zustimmungsseite: nie als Kursdaten deuten
+    with pytest.raises(SourceError):  # e.g. consent page: never interpret as price data
         html.fetch_bars("SAP", "XETR", "1d", T0, T1)
     other = {"chart": {"result": None, "error": {"code": "Unauthorized"}}}
     with pytest.raises(SourceError, match="Unauthorized"):
@@ -170,7 +170,7 @@ def test_openfigi_search_by_name_and_isin():
 
     a = OpenFigiAdapter(transport=mock(handler), **NOSLEEP)
     r = a.search_instruments("SAP")
-    # dedupliziert, nur XNYS/XNAS/XETR
+    # deduplicated, only XNYS/XNAS/XETR
     assert [(x.symbol, x.exchange, x.currency) for x in r] == [("SAP", "XETR", "EUR")]
     r = a.search_instruments("us0378331005")
     assert seen[-1][0] == "/v3/mapping" and r[0].isin == "US0378331005" and r[0].exchange == "XNAS"
@@ -206,7 +206,7 @@ def test_circuit_breaker_opens_and_recovers():
     for _ in range(2):
         with pytest.raises(SourceError):
             h.request("GET", "/")
-    with pytest.raises(SourceUnavailable):  # offen: kein weiterer Netzwerkzugriff
+    with pytest.raises(SourceUnavailable):  # open: no further network access
         h.request("GET", "/")
     assert h.breaker_open
     now["t"] += 31

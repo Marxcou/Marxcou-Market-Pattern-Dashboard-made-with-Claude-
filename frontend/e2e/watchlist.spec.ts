@@ -22,7 +22,7 @@ test("Suche findet per Ticker, Name und ISIN-Feld; Hinzufügen und Entfernen", a
   const added = page.getByTestId("instrument-card").filter({ hasText: DEMO_SYMBOL_2 });
   await expect(added).toBeVisible();
   await expect(hit.getByText("In Watchlist")).toBeVisible();
-  // das im Hintergrund berechnete Muster (in Bildung) erscheint als Zähler auf der Karte
+  // the pattern calculated in the background (forming) appears as a counter on the card
   await expect(added.getByTestId("pattern-count")).toContainText("Aktuell erkannte Muster: 1");
 
   await page.getByRole("button", { name: `${DEMO_SYMBOL_2} aus Watchlist entfernen` }).click();

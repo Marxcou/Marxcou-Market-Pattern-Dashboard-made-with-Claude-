@@ -1,7 +1,7 @@
 import { getLang } from "./i18n";
 
-// Dünne API-Schicht. Der Vertrag steht in docs/api-contract.md, die Typen hier spiegeln ihn.
-// Abfrageabstand, solange das Backend eine Erstberechnung meldet ("pending").
+// Thin API layer. The contract is in docs/api-contract.md, the types here mirror it.
+// Polling interval while the backend reports an initial calculation ("pending").
 export const PENDING_POLL_MS = 4_000;
 export interface SourceRef { key: string; name: string; homepage: string; terms_url: string; delay_text: string }
 export interface Instrument { id: number; symbol: string; name: string; isin: string | null; exchange: string; currency: string }
@@ -42,7 +42,7 @@ export interface SentimentStatus {
 }
 export interface NewsCounts { counts: Record<string, number>; empty_reason: string | null }
 
-// Phase 3. Die Typen spiegeln docs/api-contract.md, Abschnitte "Phase 3A" (Indikatoren) und "Phase 3B" (Muster).
+// Phase 3. The types mirror docs/api-contract.md, sections "Phase 3A" (indicators) and "Phase 3B" (patterns).
 export interface IndicatorLines { value?: (number | null)[]; macd?: (number | null)[]; signal?: (number | null)[]; histogram?: (number | null)[]; middle?: (number | null)[]; upper?: (number | null)[]; lower?: (number | null)[] }
 export interface IndicatorSeries {
   key: string; type: "sma" | "ema" | "rsi" | "macd" | "bollinger"; params: Record<string, number>; label: string; panel: "price" | "own";
@@ -108,8 +108,8 @@ export interface PatternsResponse {
 export interface PatternCounts { counts: Record<string, number>; empty_reason: string | null }
 
 // Phase 4. Die Typen spiegeln docs/api-contract.md, Abschnitt "Phase 4A".
-// Prognosen gibt es ausschließlich als Quantile je Schritt (Grundregel 4). Der mittlere Verlauf (Median) und die Beispielpfade
-// kommen nur zusammen mit dem Korridor und werden nie ohne ihn gezeichnet.
+// Forecasts exist only as quantiles per step (Grundregel 4). The central path (median) and the example paths
+// only come together with the corridor and are never drawn without it.
 export type QuantileKey = "2.5" | "10" | "25" | "50" | "75" | "90" | "97.5";
 export interface ForecastStep { step?: number; ts: string; quantiles: Record<QuantileKey, number> }
 export interface ForecastMethod { key: string; name: string; description: string; assumptions?: string[]; limitations?: string[]; params?: Record<string, unknown> }
@@ -141,7 +141,7 @@ export interface ForecastResponse {
 let csrfToken = "";
 export const setCsrfToken = (t: string) => { csrfToken = t; };
 
-// Fehler mit Serverklartext (detail), z. B. "Das aktuelle Passwort ist falsch"; message bleibt wie bisher.
+// Error with server plain text (detail), e.g. "The current password is wrong"; message stays as before.
 export class ApiError extends Error {
   constructor(message: string, public status: number, public detail: string) { super(message); }
 }
@@ -154,7 +154,7 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(`/api${path}`, { ...init, headers, credentials: "same-origin" });
   if (!res.ok) {
     let detail = "";
-    try { const body = await res.json(); if (typeof body?.detail === "string") detail = body.detail; } catch { /* kein JSON */ }
+    try { const body = await res.json(); if (typeof body?.detail === "string") detail = body.detail; } catch { /* not JSON */ }
     throw new ApiError(res.status === 401 ? "unauthorized" : `HTTP ${res.status}`, res.status, detail);
   }
   return res.status === 204 ? (undefined as T) : ((await res.json()) as T);

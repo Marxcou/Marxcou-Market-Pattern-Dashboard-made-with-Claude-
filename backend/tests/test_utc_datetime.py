@@ -1,7 +1,7 @@
-"""Zeitstempel sind in der Datenbank UTC und kommen aus der API mit Zeitzone zurück (Grundregel 2: richtige
-Veröffentlichungs- und Abrufzeitpunkte). SQLite speichert keine Zeitzone; ohne Umrechnung landete ein RSS-Zeitpunkt
-mit "+0200" zwei Stunden zu spät in der Datenbank, und die API lieferte Zeitpunkte ohne "Z", die der Browser als
-Ortszeit las."""
+"""Timestamps are UTC in the database and come back from the API with a time zone (Grundregel 2: correct
+publication and fetch times). SQLite stores no time zone; without conversion an RSS time
+with "+0200" ended up two hours too late in the database, and the API returned times without "Z",
+which the browser read as local time."""
 from datetime import UTC, datetime, timedelta, timezone
 
 from app.db import SessionLocal
@@ -35,6 +35,6 @@ def test_offset_is_converted_to_utc_and_read_back_with_timezone(client):
     assert quote["ts_utc"].endswith("Z")
     bar = client.get(f"/api/instruments/{iid}/bars").json()["bars"][0]
     assert bar["ts_utc"] == "2026-09-29T00:00:00Z"
-    # Filter mit Zeitzone werden vor dem Vergleich nach UTC umgerechnet (00:30 Berlin = 22:30 UTC am Vortag)
+    # Filters with a time zone are converted to UTC before comparing (00:30 Berlin = 22:30 UTC the day before)
     start = datetime(2026, 9, 29, 0, 30, tzinfo=BERLIN_SUMMER).isoformat()
     assert len(client.get(f"/api/instruments/{iid}/bars", params={"start": start}).json()["bars"]) == 1

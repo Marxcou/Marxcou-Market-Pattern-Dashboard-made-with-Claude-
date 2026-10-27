@@ -1,5 +1,5 @@
-"""Synthetische Kursreihen mit bekanntem Ergebnis für die Muster-Tests: stückweise lineare Verläufe durch
-Stützpunkte (Kerze, Kurs). Hoch/Tief liegen 0,2 % über/unter Eröffnung bzw. Schluss. Keine Zufallszahlen."""
+"""Synthetic price series with a known result for the pattern tests: piecewise linear paths through
+anchor points (candle, price). High/low lie 0.2% above/below open or close. No random numbers."""
 from datetime import UTC, datetime, timedelta
 
 import numpy as np

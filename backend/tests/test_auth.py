@@ -14,12 +14,12 @@ def test_wrong_password(client):
 def test_csrf_enforced_and_invite_only(client):
     csrf = login(client)
     body = {"email": "u@example.com", "display_name": "U", "password": "long-enough-pw"}
-    assert client.post("/api/users", json=body).status_code == 403  # kein CSRF-Token
+    assert client.post("/api/users", json=body).status_code == 403  # no CSRF token
     assert client.post("/api/users", json=body, headers={"X-CSRF-Token": csrf}).status_code == 201
     client.post("/api/auth/logout", headers={"X-CSRF-Token": csrf})
     csrf2 = login(client, "u@example.com", "long-enough-pw")
     r = client.post("/api/users", json={**body, "email": "x@example.com"}, headers={"X-CSRF-Token": csrf2})
-    assert r.status_code == 403  # normale Nutzer dürfen keine Konten anlegen
+    assert r.status_code == 403  # regular users may not create accounts
 
 
 def test_no_open_registration(client):

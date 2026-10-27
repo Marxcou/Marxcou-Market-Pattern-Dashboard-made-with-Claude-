@@ -1,5 +1,5 @@
-// Einmalpasswort-Ablauf aus Sicht eines neuen Nutzers (Konto vom Administrator angelegt). Die Verwaltungsoberfläche
-// selbst prüft ihr eigener Test; hier zählt, dass der Zugang eines Freundes von der Anmeldung bis zur Watchlist funktioniert.
+// One-time password flow from the point of view of a new user (account created by the administrator). The administration interface
+// is checked by its own test; what counts here is that a friend's access works from login to watchlist.
 import { expect, test } from "./helpers/fixtures";
 import { loginViaUi } from "./helpers/auth";
 
@@ -14,9 +14,9 @@ test("neues Konto: Einmalpasswort, Pflichtwechsel, eigene leere Watchlist", asyn
   const ctx = await browser.newContext({ baseURL: test.info().project.use.baseURL });
   const friend = await ctx.newPage();
   await loginViaUi(friend, { email, password: temp }, { newPassword: "eigenes-passwort-456" });
-  // eigene Watchlist: leer, obwohl die des Administrators gefüllt ist
+  // own watchlist: empty although the administrator's is filled
   await expect(friend.getByTestId("empty-watchlist")).toBeVisible();
-  await expect(friend.getByRole("link", { name: "Benutzer" })).toHaveCount(0); // kein Zugriff auf die Verwaltung
+  await expect(friend.getByRole("link", { name: "Benutzer" })).toHaveCount(0); // no access to administration
   await ctx.close();
 });
 

@@ -5,7 +5,7 @@ import { api, type Meta } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { LanguageSwitch, useI18n, type MessageKey } from "../lib/i18n";
 
-// Der Hinweis kommt aus dem Wörterbuch der gewählten Sprache und ist damit auch ohne /api/meta sichtbar (Grundregel 5).
+// The notice comes from the dictionary of the selected language and is therefore visible even without /api/meta (Grundregel 5).
 export function Disclaimer() {
   const { t } = useI18n();
   return (
@@ -15,7 +15,7 @@ export function Disclaimer() {
   );
 }
 
-// Schlichte, neutrale Symbole (keine Kauf-/Verkaufsanmutung): Umrisse ohne Farbe und ohne Pfeile.
+// Plain, neutral icons (nothing that suggests buying or selling): outlines without color and without arrows.
 const icon = (d: string) => (
   <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>
 );

@@ -1,4 +1,4 @@
-// Grundregeln für die Oberflächenprüfung. Die Liste verbotener Begriffe kommt aus dem Backend (einzige Quelle).
+// Grundregeln for checking the interface. The list of forbidden terms comes from the backend (single source).
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -14,7 +14,7 @@ export const DISCLAIMER_DE = "Dieses Dashboard stellt keine Anlageberatung dar. 
 const terms = /FORBIDDEN_TERMS = \[([\s\S]*?)\]/.exec(source)![1].match(/"([^"]+)"/g)!.map((t) => t.slice(1, -1));
 export const FORBIDDEN = new RegExp(`(?<![\\p{L}\\d])(${terms.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})(?![\\p{L}\\d])`, "iu");
 
-/** Erste verbotene Empfehlungsvokabel im Text oder null (Grundregel 1). */
+/** First forbidden recommendation term in the text, or null (Grundregel 1). */
 export function findForbidden(text: string): string | null {
   return FORBIDDEN.exec(text)?.[1] ?? null;
 }

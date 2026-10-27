@@ -16,7 +16,7 @@ function qs(f: NewsFilter, cursor?: string) {
   return p.toString();
 }
 
-// 404 heißt: Endpunkt noch nicht vorhanden. Das ist ein Leerzustand mit Grund, kein Fehler und kein Platzhalter (Grundregel 6).
+// 404 means: endpoint does not exist yet. That is an empty state with a reason, not an error and not a placeholder (Grundregel 6).
 async function orMissing<T extends { empty_reason: string | null }>(path: string, empty: T): Promise<T> {
   try {
     return await api<T>(path);

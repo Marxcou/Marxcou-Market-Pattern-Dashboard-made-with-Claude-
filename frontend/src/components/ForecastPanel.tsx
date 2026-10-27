@@ -7,7 +7,7 @@ import { SourceTip } from "./SourceTip";
 
 const money = (v: number, currency: string) => new Intl.NumberFormat(getLocale(), { style: "currency", currency }).format(v);
 
-// Grundregel 4: Prognosegüte im Vergleich zur naiven Referenz "Kurs bleibt gleich"; fehlt der Backtest, wird das ausdrücklich gesagt.
+// Grundregel 4: forecast quality compared with the naive reference "price stays the same"; if the backtest is missing, that is stated explicitly.
 export function ForecastBacktestBlock({ b }: { b: ForecastBacktest | null }) {
   const { t } = useI18n();
   if (!b || b.status !== "berechnet" || b.sample_size == null) {
@@ -69,7 +69,7 @@ export function ForecastBacktestBlock({ b }: { b: ForecastBacktest | null }) {
   );
 }
 
-// Mittlerer Verlauf (Grundregel 4): nur als Mitte des Korridors, immer mit dem Backtest-Fehler dieser Linie je Horizont.
+// Central path (Grundregel 4): only as the middle of the corridor, always with the backtest error of this line per horizon.
 function MedianLineBlock({ line, shown }: { line: ForecastMedianLine | null | undefined; shown: boolean }) {
   const { t } = useI18n();
   const errors = line?.errors ?? [];

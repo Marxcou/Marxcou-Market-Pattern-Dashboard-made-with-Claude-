@@ -58,7 +58,7 @@ export function PriceChart({ bars, kind, intraday, markers = [], onMarkerClick, 
     const chart = createChart(ref.current, baseChartOptions(intraday, 420));
     chartRef.current = chart;
     const barTimes = bars.map((b) => toTime(b.ts_utc));
-    // Erscheint oder verschwindet der Korridor, wird neu eingepasst, damit er nicht rechts außerhalb des Sichtbereichs liegt.
+    // When the corridor appears or disappears the view is refitted so it does not lie outside the visible range on the right.
     const barsKey = `${bars.length}:${bars[0]?.ts_utc}:${kind}:${validSteps(forecast).length > 0}`;
 
     let main: ISeriesApi<"Candlestick"> | ISeriesApi<"Line">;
@@ -72,19 +72,19 @@ export function PriceChart({ bars, kind, intraday, markers = [], onMarkerClick, 
       main = s;
     }
 
-    // Indikator-Linien im Kursfenster (Werte aus dem Backend, nichts wird ergänzt).
+    // Indicator lines in the price pane (values from the backend, nothing is filled in).
     for (const o of overlays) {
       const s = chart.addLineSeries({ color: o.color, lineWidth: 1, lineStyle: o.dashed ? LineStyle.Dashed : LineStyle.Solid, lastValueVisible: false, priceLineVisible: false, crosshairMarkerVisible: false });
       s.setData(o.data);
     }
 
-    // Unterstützungs- und Widerstandszonen als gestrichelte Ober- und Untergrenze.
+    // Support and resistance zones as dashed upper and lower bounds.
     for (const z of zones) {
       main.createPriceLine({ price: z.upper, color: "#94a3b8", lineStyle: LineStyle.Dashed, lineWidth: 1, axisLabelVisible: false, title: z.kind_label });
       main.createPriceLine({ price: z.lower, color: "#94a3b8", lineStyle: LineStyle.Dashed, lineWidth: 1, axisLabelVisible: false, title: "" });
     }
 
-    // Muster: Linie durch die Schlüsselpunkte, Begrenzungslinien; beim gewählten Muster zusätzlich Bestätigungs- und Ungültigkeitsniveau.
+    // Patterns: line through the key points, boundary lines; for the selected pattern also the confirmation and invalidation levels.
     const lastBarTime = barTimes[barTimes.length - 1];
     for (const p of patterns) {
       const sel = p.id === selectedPatternId;
@@ -111,8 +111,8 @@ export function PriceChart({ bars, kind, intraday, markers = [], onMarkerClick, 
       }
     }
 
-    // Prognosekorridor (Grundregel 4): Linien (Median, Beispielpfade) nur innerhalb der Bänder, nie allein. Jedes Band wird als Paar undurchsichtiger Flächen gezeichnet
-    // (oben füllen, unten mit der Farbe des äußeren Bereichs überdecken), damit sich die 50/80/95-%-Bereiche sauber verschachteln.
+    // Forecast corridor (Grundregel 4): lines (median, example paths) only inside the bands, never alone. Each band is drawn as a pair of opaque areas
+    // (fill the top, cover the bottom with the color of the outer band) so that the 50/80/95% ranges nest cleanly.
     const fsteps = validSteps(forecast);
     const lastBar = bars[bars.length - 1];
     if (fsteps.length > 0 && lastBar) {
@@ -125,14 +125,14 @@ export function PriceChart({ bars, kind, intraday, markers = [], onMarkerClick, 
       const [b95, b80, b50] = BANDS.map((b) => ({ up: future(bandSeries(fsteps, b).map((x) => ({ ts: x.ts, v: x.upper }))), lo: future(bandSeries(fsteps, b).map((x) => ({ ts: x.ts, v: x.lower }))) }));
       area(BAND_FILL[95], b95.up); area(BAND_FILL[80], b80.up); area(BAND_FILL[50], b50.up);
       area(BAND_FILL[80], b50.lo); area(BAND_FILL[95], b80.lo); area(BG, b95.lo);
-      // Beispielpfade dünn und blass, der mittlere Verlauf darüber gestrichelt. Keine Beschriftung am Endpunkt, damit er nicht wie ein Zielwert wirkt.
+      // Example paths thin and pale, the central path dashed on top. No label at the end point so it does not look like a target value.
       const line = (color: string, width: 1 | 2, dashed: boolean, data: { time: UTCTimestamp; value: number }[]) => {
         const s = chart.addLineSeries({ color, lineWidth: width, lineStyle: dashed ? LineStyle.Dashed : LineStyle.Solid, lastValueVisible: false, priceLineVisible: false, crosshairMarkerVisible: false });
         s.setData(data);
       };
       for (const p of validExamplePaths(examplePaths)) line(EXAMPLE_COLOR, 1, false, future(p.steps.map((s) => ({ ts: s.ts, v: s.close }))));
       if (medianLine) line(MEDIAN_COLOR, 2, true, future(medianSeries(fsteps)));
-      // Szenario-Niveaus des gewählten Musters laufen bis zum Ende des Horizonts, damit sie am Korridor ablesbar sind.
+      // Scenario levels of the selected pattern run to the end of the horizon so they can be read against the corridor.
       const end = toTime(fsteps[fsteps.length - 1].ts);
       if (end != null && end > start) {
         for (const l of scenarioLevels) {
@@ -142,7 +142,7 @@ export function PriceChart({ bars, kind, intraday, markers = [], onMarkerClick, 
       }
     }
 
-    // Marker: Nachrichten (nur zeitliches Zusammenfallen, keine Aussage über Ursache), Indikator-Ereignisse, Musterbeginn.
+    // Markers: news (only coinciding in time, no statement about cause), indicator events, pattern start.
     const newsByTime = new Map<number, number[]>();
     for (const m of markers) {
       const t = snapTime(barTimes, m.ts);
@@ -167,17 +167,17 @@ export function PriceChart({ bars, kind, intraday, markers = [], onMarkerClick, 
       const t = param.time as number;
       const ids = newsByTime.get(t);
       if (ids) clickRef.current?.(ids);
-      // Klick innerhalb des Zeitraums eines Musters wählt es aus (das zuletzt beginnende gewinnt).
+      // A click inside the period of a pattern selects it (the one starting last wins).
       const hit = patterns.filter((p) => toTime(p.start_ts) <= t && t <= toTime(p.end_ts)).sort((a, b) => toTime(a.start_ts) - toTime(b.start_ts)).pop();
       if (hit) patternClickRef.current?.(hit.id);
     });
 
-    // Volumen nur dort, wo die Quelle es liefert; fehlende Werte werden nicht ergänzt.
+    // Volume only where the source provides it; missing values are not filled in.
     const vol = chart.addHistogramSeries({ priceFormat: { type: "volume" }, priceScaleId: "vol", color: "#64748b" });
     chart.priceScale("vol").applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
     vol.setData(bars.filter((b) => b.volume != null).map((b) => ({ time: toTime(b.ts_utc), value: b.volume as number, color: b.close >= b.open ? "#065f46" : "#9f1239" })));
 
-    // Zoom bleibt beim Wechsel von Auswahl oder Indikatoren erhalten, solange es dieselben Kerzen sind.
+    // Zoom is kept when the selection or indicators change, as long as the candles are the same.
     const saved = rangeRef.current;
     if (saved && saved.key === barsKey) chart.timeScale().setVisibleLogicalRange(saved.range);
     else chart.timeScale().fitContent();

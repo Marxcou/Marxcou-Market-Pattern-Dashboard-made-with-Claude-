@@ -3,7 +3,7 @@ import { loginViaApi } from "./auth";
 import { DEMO_SYMBOL, findInstrument, setWatchlist, type DemoInstrument } from "./demo";
 
 interface Fixtures {
-  /** Angemeldete Seite; die Watchlist des Test-Kontos enthält nur DEMOA. */
+  /** Logged-in page; the watchlist of the test account contains only DEMOA. */
   app: { csrf: string; demo: DemoInstrument };
 }
 

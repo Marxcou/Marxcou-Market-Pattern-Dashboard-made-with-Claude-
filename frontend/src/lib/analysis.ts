@@ -5,7 +5,7 @@ import {
 } from "./api";
 
 
-// 404 heißt: Endpunkt noch nicht vorhanden. Das ist ein Leerzustand mit Grund, kein Fehler und kein Platzhalter (Grundregel 6).
+// 404 means: endpoint does not exist yet. That is an empty state with a reason, not an error and not a placeholder (Grundregel 6).
 async function orMissing<T extends { empty_reason: string | null }>(path: string, empty: T): Promise<T> {
   try {
     return await api<T>(path);
@@ -15,7 +15,7 @@ async function orMissing<T extends { empty_reason: string | null }>(path: string
   }
 }
 
-// Die Mustererkennung arbeitet nur auf Tages- und Stundenkerzen (Vertrag 3B).
+// Pattern detection only works on daily and hourly candles (contract 3B).
 export const patternTimeframe = (tfm: string) => (tfm === "1d" || tfm === "1h" ? tfm : null);
 
 export interface IndicatorToggle { key: string; label: string; labelKey?: MessageKey; param: string; panel: "price" | "own"; seriesKey: string }
@@ -29,7 +29,7 @@ export const INDICATOR_TOGGLES: IndicatorToggle[] = [
   { key: "macd", label: "MACD (12, 26, 9)", param: "macd=12,26,9", panel: "own", seriesKey: "macd_12_26_9" },
 ];
 
-// sma/ema mit mehreren Perioden werden zu einem kommaseparierten Parameter zusammengefasst.
+// sma/ema with several periods are combined into one comma-separated parameter.
 export function indicatorQuery(active: string[]): string {
   const groups = new Map<string, string[]>();
   for (const t of INDICATOR_TOGGLES) {
@@ -89,15 +89,15 @@ const EVENT_KEY: Record<IndicatorEventType, MessageKey> = {
 };
 export const eventName = (t: IndicatorEventType) => tr(EVENT_KEY[t]);
 
-// Status-Schlüssel kommen vom Backend ("in_bildung", "bestaetigt", "ungueltig"); unbekannte fallen auf status_label zurück.
+// Status keys come from the backend ("in_bildung", "bestaetigt", "ungueltig"); unknown ones fall back to status_label.
 export const statusText = (status: string, fallback: string) => {
   const key = `pattern.status.${status}` as MessageKey;
   const s = tr(key);
   return s === key ? fallback : s;
 };
 
-// Beim symmetrischen Dreieck (Richtung "offen") sind beide Niveaus Ausbruchsniveaus: ein Schlusskurs außerhalb einer der
-// Linien löst das Muster auf. Ungültig wird es erst, wenn die Spitze ohne Ausbruch erreicht wird oder die Frist abläuft.
+// For the symmetrical triangle (direction "offen") both levels are breakout levels: a closing price outside one of the
+// lines resolves the pattern. It only becomes invalid when the apex is reached without a breakout or the deadline passes.
 export function levelLabels(direction: string): { confirmation: string; invalidation: string } {
   return direction === "offen"
     ? { confirmation: tr("pattern.levels.breakoutUp"), invalidation: tr("pattern.levels.breakoutDown") }

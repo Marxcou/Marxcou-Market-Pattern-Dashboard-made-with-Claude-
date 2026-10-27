@@ -1,4 +1,4 @@
-"""Ende-zu-Ende: Kerzen + Meldungen in der DB -> Analyse -> Endpunkte, Ereignisse, Verknüpfung."""
+"""End to end: candles + news in the DB -> analysis -> endpoints, events, linking."""
 from datetime import UTC, datetime, timedelta
 
 import numpy as np
@@ -17,7 +17,7 @@ N = 300
 def seed(with_volume=True):
     rng = np.random.default_rng(11)
     ret = rng.normal(0, 0.005, N)
-    ret[285] = -0.08  # auffällige Bewegung an Kerze 285
+    ret[285] = -0.08  # conspicuous move at candle 285
     close = 100 * np.cumprod(1 + ret)
     days = [datetime(2026, 9, 28, tzinfo=UTC) - timedelta(days=N - 1 - i) for i in range(N)]  # letzte = 28.09.
     with SessionLocal() as db:
@@ -33,10 +33,10 @@ def seed(with_volume=True):
             db.add(PriceBar(instrument_id=inst.id, timeframe="1d", ts_utc=d, source_id=src.id, open=c, high=c * 1.004,
                             low=c * 0.996, close=c, volume=float(rng.integers(900, 1100)) if with_volume else None,
                             fetched_at=NOW))
-        # eine laufende (nicht abgeschlossene) Kerze von "heute": darf nie ausgewertet werden
+        # a running (unfinished) candle of "today": must never be evaluated
         db.add(PriceBar(instrument_id=inst.id, timeframe="1d", ts_utc=datetime(2026, 9, 29, tzinfo=UTC),
                         source_id=src.id, open=1, high=1000, low=1, close=1, volume=1e9, fetched_at=NOW))
-        # Meldung 5 Stunden vor Beginn der Bewegungs-Kerze, eine weit davon entfernt
+        # news item 5 hours before the start of the move candle, one far away from it
         move_start = days[285]
         near = NewsCluster(canonical_title="Apple meldet Lieferprobleme",
                            first_published_at=move_start - timedelta(hours=5), last_published_at=move_start,
@@ -63,7 +63,7 @@ def test_pipeline_and_endpoints(client):
         assert stats["moves"] >= 1 and stats["links"] == 1
         again = analyze_instrument(db, inst, "1d", now=NOW)
         assert again == {"events": 0, "moves": 0, "links": 0}  # idempotent
-        # laufende Kerze wurde nicht ausgewertet
+        # running candle was not evaluated
         today = datetime(2026, 9, 29, tzinfo=UTC)
         assert not db.scalars(select(IndicatorEvent).where(IndicatorEvent.ts_utc >= today)).all()
         published = db.scalars(select(Event).where(Event.type == "detection")).all()
@@ -76,7 +76,7 @@ def test_pipeline_and_endpoints(client):
     assert body["note"] == "Coinciding in time, no statement about cause."
     big = next(m for m in body["moves"] if m["return_pct"] < -7)
     assert big["return_z"] < -3 and "return_z" in big["reasons"]
-    assert [n["canonical_title"] for n in big["news"]] == ["Apple meldet Lieferprobleme"]  # die ferne Meldung nicht
+    assert [n["canonical_title"] for n in big["news"]] == ["Apple meldet Lieferprobleme"]  # not the distant item
     assert big["news"][0]["time_offset_minutes"] == -300
     assert big["news"][0]["sources"][0]["key"] == "finnhub_news"
     assert big["sources"][0]["key"] == "stooq" and big["bars_fetched_at"]
@@ -90,7 +90,7 @@ def test_pipeline_and_endpoints(client):
         assert e["historical_stats"] is None and e["historical_stats_reason"]
         assert e["direction"] in ("up", "down", None)
     assert [e["ts"] for e in events] == sorted((e["ts"] for e in events), reverse=True)
-    # Paging über cursor
+    # paging via cursor
     first = client.get(f"/api/instruments/{iid}/indicator-events?timeframe=1d&limit=1").json()
     assert first["next_cursor"] and len(first["events"]) == 1
     cur = first["next_cursor"]
@@ -113,7 +113,7 @@ def test_indicator_series_aligned_with_bars(client):
     keys = {i["key"]: i for i in b["indicators"]}
     assert list(keys) == ["sma_20", "sma_50", "ema_12", "rsi_14", "macd_12_26_9", "bb_20_2"]
     assert all(len(v) == 100 for i in b["indicators"] for v in i["lines"].values())
-    # Vorlauf: trotz limit=100 sind alle Werte bereits gültig (nicht null)
+    # warm-up: despite limit=100 all values are already valid (not null)
     assert None not in keys["sma_50"]["lines"]["value"] and None not in keys["rsi_14"]["lines"]["value"]
     assert set(keys["macd_12_26_9"]["lines"]) == {"macd", "signal", "histogram"}
     assert keys["rsi_14"]["panel"] == "own" and keys["sma_20"]["panel"] == "price" and keys["sma_20"]["formula"]

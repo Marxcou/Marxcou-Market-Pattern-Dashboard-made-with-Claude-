@@ -13,7 +13,7 @@ describe("Benutzerverwaltung", () => {
     const rows = await screen.findAllByTestId("user-row");
     expect(rows).toHaveLength(2);
     expect(within(rows[1]).getByText(/Einmalpasswort offen/)).toBeTruthy();
-    expect(within(rows[0]).queryByText("Sperren")).toBeNull(); // eigenes Konto nicht sperrbar
+    expect(within(rows[0]).queryByText("Sperren")).toBeNull(); // own account cannot be blocked
   });
 
   it("verweigert Nicht-Administratoren die Seite und den Menüpunkt", async () => {

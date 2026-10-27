@@ -3,7 +3,7 @@ import { formatDateTime } from "../lib/format";
 import { useI18n, type MessageKey } from "../lib/i18n";
 import { SourceTip } from "./SourceTip";
 
-// Neutrale Darstellung: die Stimmung ist eine Beschreibung des Textes, kein Signal und keine Handlungsaufforderung.
+// Neutral presentation: the sentiment describes the text, it is not a signal or a call to action.
 export function SentimentInfo({ s }: { s: NonNullable<NewsCluster["sentiment"]> }) {
   const { t, locale } = useI18n();
   const label = ["positiv", "neutral", "negativ"].includes(s.label) ? t(`sentiment.${s.label}` as MessageKey) : s.label;

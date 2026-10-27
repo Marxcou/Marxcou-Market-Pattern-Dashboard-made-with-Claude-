@@ -36,7 +36,7 @@ def add(body: WatchlistAdd, bg: BackgroundTasks, db: DB, user: CurrentUser) -> d
                         .where(WatchlistItem.user_id == user.id)) or 0
         db.add(WatchlistItem(user_id=user.id, instrument_id=body.instrument_id, position=pos))
         db.commit()
-        bg.add_task(process_new_instrument, body.instrument_id)  # sofort Kurse, Muster, Prognose
+        bg.add_task(process_new_instrument, body.instrument_id)  # prices, patterns and forecast immediately
     return {"instrument_id": body.instrument_id}
 
 

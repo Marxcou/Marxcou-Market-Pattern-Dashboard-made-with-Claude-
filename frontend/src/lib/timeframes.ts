@@ -13,10 +13,10 @@ export const RANGES: Range[] = [
 
 const DAY_MS = 86_400_000;
 
-// Abfragebeginn mit Puffer für Wochenenden/Feiertage.
+// Query start with a buffer for weekends and holidays.
 export const rangeStart = (r: Range, now = Date.now()) => new Date(now - (r.days + 5) * DAY_MS).toISOString();
 
-// Das Fenster hängt am letzten vorhandenen Datenpunkt, nicht an der Uhrzeit: so zeigt "1T" auch am Wochenende den letzten Handelstag.
+// The window is anchored to the last available data point, not to the clock: so "1D" shows the last trading day on weekends too.
 export function windowBars(bars: Bar[], r: Range): Bar[] {
   if (bars.length === 0) return bars;
   const last = new Date(bars[bars.length - 1].ts_utc).getTime();

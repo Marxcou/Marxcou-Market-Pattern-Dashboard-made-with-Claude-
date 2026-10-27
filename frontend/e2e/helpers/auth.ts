@@ -1,13 +1,13 @@
-// Einzige Stelle für Anmeldung in den E2E-Tests. Ändert sich der Login, wird nur diese Datei angepasst.
-// Konten mit Einmalpasswort (must_change_password) müssen vor der Nutzung ein eigenes Passwort setzen;
-// beide Helfer erledigen das, wenn `newPassword` angegeben ist, und schlagen sonst mit klarer Meldung fehl.
+// The only place for logging in within the E2E tests. If the login changes, only this file needs to be adapted.
+// Accounts with a one-time password (must_change_password) must set their own password before use;
+// both helpers do that when `newPassword` is given and otherwise fail with a clear message.
 import { expect, type APIRequestContext, type Page } from "@playwright/test";
 import { E2E_ADMIN } from "./credentials.mjs";
 
 export interface Credentials { email: string; password: string }
 export const CREDENTIALS: Credentials = E2E_ADMIN;
 
-/** Anmeldung über die Oberfläche (für die Tests des Login-Ablaufs selbst). */
+/** Login through the interface (for the tests of the login flow itself). */
 export async function loginViaUi(page: Page, creds: Credentials = CREDENTIALS, opts: { newPassword?: string } = {}): Promise<void> {
   await page.goto("/login");
   await page.getByLabel("E-Mail").fill(creds.email);
@@ -17,17 +17,17 @@ export async function loginViaUi(page: Page, creds: Credentials = CREDENTIALS, o
   await expect(page.getByRole("heading", { name: "Watchlist" })).toBeVisible();
 }
 
-/** Pflicht-Passwortwechsel nach Einmalpasswort (Seite "Passwort ändern"). */
+/** Mandatory password change after a one-time password (page "Change password"). */
 export async function changeForcedPasswordViaUi(page: Page, current: string, next: string): Promise<void> {
   await expect(page.getByTestId("forced-change")).toBeVisible();
   await page.getByLabel("Aktuelles Passwort").fill(current);
   await page.getByLabel("Neues Passwort (mindestens 10 Zeichen)").fill(next);
   await page.getByLabel("Neues Passwort wiederholen").fill(next);
   await page.getByRole("button", { name: "Passwort ändern" }).click();
-  // Nach dem Wechsel gibt die Oberfläche die Seiten frei (kein Umweg über die Kontoseite nötig)
+  // After the change the interface unlocks the pages (no detour via the account page needed)
 }
 
-/** Anmeldung über die API; die Sitzungs-Cookies gelten danach für Seite und Anfragen desselben Kontexts. Liefert das CSRF-Token. */
+/** Login via the API; the session cookies then apply to the page and requests of the same context. Returns the CSRF token. */
 export async function loginViaApi(request: APIRequestContext, creds: Credentials = CREDENTIALS, opts: { newPassword?: string } = {}): Promise<string> {
   const res = await request.post("/api/auth/login", { data: creds });
   expect(res.ok(), `API-Login fehlgeschlagen: ${res.status()}`).toBeTruthy();

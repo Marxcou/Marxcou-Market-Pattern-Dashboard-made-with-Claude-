@@ -1,4 +1,4 @@
-"""Neues Watchlist-Instrument: sofortige Erstberechnung und neutraler "wird berechnet"-Zustand."""
+"""New watchlist instrument: immediate initial calculation and a neutral "being calculated" state."""
 from datetime import UTC, datetime, timedelta
 
 from app import onboarding
@@ -36,12 +36,12 @@ def _watch(instrument_id: int, minutes_ago: int = 0) -> None:
 def test_adding_to_watchlist_runs_first_calculation_immediately(client):
     iid = _instrument("XETR", bars=300)
     csrf = login(client)
-    # Der Hintergrundlauf des TestClient hat keine Adapter; Kerzen liegen schon in der Datenbank.
+    # The background run of the TestClient has no adapters; candles are already in the database.
     assert client.post("/api/watchlist", json={"instrument_id": iid}, headers={"X-CSRF-Token": csrf}).status_code == 201
     with SessionLocal() as db:
         assert db.get(PatternScan, (iid, "1d")) is not None  # Mustererkennung lief sofort
         fc = db.query(Forecast).filter(Forecast.instrument_id == iid).all()
-        assert fc and all(f.empty_reason is None for f in fc)  # Prognose wartet nicht auf den 15-Minuten-Job
+        assert fc and all(f.empty_reason is None for f in fc)  # forecast does not wait for the 15-minute job
     body = client.get(f"/api/instruments/{iid}/forecast").json()
     assert body["empty_reason"] is None and body["steps"] and body["pending"] is False
 

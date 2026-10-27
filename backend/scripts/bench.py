@@ -1,5 +1,5 @@
-"""Messlauf für Phase 5A: füllt eine frische SQLite-Datei mit synthetischen Daten (nur für die Messung, nie für die
-App) und misst Worker-Jobs, API-Antwortzeiten und Query-Pläne.
+"""Measurement run for phase 5A: fills a fresh SQLite file with synthetic data (for measuring only, never for the
+app) and measures worker jobs, API response times and query plans.
 
   cd backend && python scripts/bench.py [--instruments 40] [--news 20000]
 """
@@ -113,7 +113,7 @@ def main() -> None:
     seed(a.instruments, a.news)
     print(f"seed: {time.perf_counter() - t:.1f}s, db {os.path.getsize(f'{_tmp}/bench.db') / 1e6:.0f} MB\n")
 
-    print("== Worker-Jobs (Watchlist-Instrumente: alle Nutzer zusammen) ==")
+    print("== Worker jobs (watchlist instruments: all users together) ==")
     with SessionLocal() as db:
         print("watched:", db.execute(text("select count(distinct instrument_id) from watchlist_items")).scalar())
     timed("pattern_job (1. Lauf)", pattern_job)
@@ -138,7 +138,7 @@ def main() -> None:
                      "/api/instruments/1/news"]:
             timed(path[:44], get(path), repeat=5)
 
-    print("\n== Query-Pläne ==")
+    print("\n== Query plans ==")
     with engine.connect() as conn:
         for q in [
             "select * from news_clusters order by first_published_at desc, id desc limit 30",

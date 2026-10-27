@@ -1,5 +1,5 @@
-"""Prognose-Kern (reines numpy): Korridor, Determinismus, ARIMA-Schätzung, Erstberührung, Backtest ohne Vorgriff.
-Synthetische Reihen mit bekannten Eigenschaften (Zufallsreihen mit festem Seed)."""
+"""Forecast core (pure numpy): corridor, determinism, ARIMA estimation, first touch, backtest without look-ahead.
+Synthetic series with known properties (random series with a fixed seed)."""
 import math
 from datetime import datetime
 
@@ -29,7 +29,7 @@ def test_quantiles_are_ordered_and_widen(method):
     assert q.shape == (7, fc.HORIZON)
     assert np.all(np.diff(q, axis=0) >= 0)  # 2,5 <= 10 <= ... <= 97,5 je Schritt
     width = q[6] - q[0]
-    assert width[-1] > width[0] * 2  # Unsicherheit wächst mit dem Horizont
+    assert width[-1] > width[0] * 2  # uncertainty grows with the horizon
 
 
 def test_bootstrap_is_deterministic_per_seed():
@@ -41,9 +41,9 @@ def test_bootstrap_is_deterministic_per_seed():
 
 
 def test_bootstrap_removes_past_trend():
-    close = gbm(drift=0.004)  # starker Anstieg (~+170 % über 250 Tage)
+    close = gbm(drift=0.004)  # strong rise (~+170% over 250 days)
     q = fc.forecast(fc.PRIMARY, close, seed=1).quantiles
-    assert abs(q[3, -1] / close[-1] - 1) < 0.02  # Median bleibt nahe am letzten Kurs
+    assert abs(q[3, -1] / close[-1] - 1) < 0.02  # median stays close to the last price
     with_drift = fc.forecast(fc.PRIMARY, close, params={**fc.DEFAULT_PARAMS[fc.PRIMARY], "remove_drift": False},
                              seed=1).quantiles
     assert with_drift[3, -1] / close[-1] > 1.05
@@ -73,7 +73,7 @@ def test_first_passage_counts_first_touch():
         [100, 106, 90],   # oben zuerst
         [94, 110, 110],   # unten zuerst
         [100, 101, 102],  # keins
-        [100, 100, 105],  # oben (am Niveau zählt)
+        [100, 100, 105],  # above (at the level counts)
     ], dtype=float)
     fp = fc.first_passage(paths, upper=105, lower=95)
     assert (fp.upper_first, fp.lower_first, fp.neither) == (0.5, 0.25, 0.25)
@@ -98,8 +98,8 @@ def test_backtest_uses_no_future_data(monkeypatch):
     monkeypatch.setattr(fc, "forecast", spy)
     res = fc.rolling_backtest(fc.COMPARISON, close)
     assert res.sample_size == len(seen) > 0
-    assert seen == [o + 1 for o in res.origins]  # nur Kerzen bis zum Ursprung
-    assert res.origins[-1] + 20 <= len(close) - 1  # Ergebnis liegt in der gespeicherten Historie
+    assert seen == [o + 1 for o in res.origins]  # only candles up to the origin
+    assert res.origins[-1] + 20 <= len(close) - 1  # outcome lies in the stored history
 
 
 def test_backtest_random_walk_is_not_better_than_naive():
@@ -129,7 +129,7 @@ def test_backtest_without_enough_bars_is_empty():
 
 
 def test_diebold_mariano():
-    assert fc.diebold_mariano(np.full(50, -1.0), 0) is None  # keine Varianz
+    assert fc.diebold_mariano(np.full(50, -1.0), 0) is None  # no variance
     rng = np.random.default_rng(0)
     d = rng.normal(-0.5, 1, 200)
     p = fc.diebold_mariano(d, 0)
@@ -144,11 +144,11 @@ def test_example_paths_follow_end_value_percentiles():
     picked = fc.example_path_indices(f.paths)
     assert [p for p, _ in picked] == list(fc.EXAMPLE_PERCENTILES)
     ends = [float(f.paths[k, -1]) for _, k in picked]
-    assert ends == sorted(ends)  # 10. bis 90. Perzentil aufsteigend
+    assert ends == sorted(ends)  # 10th to 90th percentile ascending
     all_ends = f.paths[:, -1]
     for (p, _), end in zip(picked, ends, strict=True):
         assert (all_ends <= end).mean() == pytest.approx(p / 100, abs=0.01)
-    # Median-Beispielpfad endet am Median der Endwerte, also in der Mitte des Korridors
+    # The median example path ends at the median of the end values, i.e. in the middle of the corridor
     assert ends[2] == pytest.approx(f.quantiles[3, -1], rel=1e-3)
 
 

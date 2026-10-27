@@ -60,7 +60,7 @@ export function ChartPage() {
   }, [news.data, shown]);
   const selectedClusters = (news.data?.items ?? []).filter((c) => selected.includes(c.id));
 
-  // Phase 3: Indikatoren, Muster, Ereignisse, Bewegungen mit zeitlich passenden Meldungen.
+  // Phase 3: indicators, patterns, events, moves with news that fit in time.
   const startIso = shown[0]?.ts_utc;
   const [activeInd, setActiveInd] = useState<string[]>([]);
   const [selectedPattern, setSelectedPattern] = useState<number | null>(null);

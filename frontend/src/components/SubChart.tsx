@@ -5,7 +5,7 @@ import { alignSeries, toTime } from "../lib/chartData";
 import type { ChartGroup } from "../lib/chartSync";
 import { baseChartOptions } from "./PriceChart";
 
-// Eigenes Teilfenster für RSI bzw. MACD, zeitlich gekoppelt an den Kurschart.
+// Separate sub-pane for RSI or MACD, time-synchronized with the price chart.
 export function SubChart({ series, timestamps, bars, intraday, group }: { series: IndicatorSeries; timestamps: string[]; bars: Bar[]; intraday: boolean; group: ChartGroup }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {

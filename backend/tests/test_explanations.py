@@ -1,4 +1,4 @@
-"""KI-Erklärtexte: Fakten, Vorlage, Prüfung, Zwischenspeicher, Budget und Endpunkte (Claude per MockTransport)."""
+"""AI explanation texts: facts, template, validation, cache, budget and endpoints (Claude via MockTransport)."""
 import httpx
 import pytest
 from sqlalchemy import select
@@ -17,7 +17,7 @@ from tests.test_pattern_api import run_scan, seed
 
 @pytest.fixture()
 def claude(monkeypatch):
-    """Registriert die Erklär-Quelle mit Schlüssel; handler(request) -> Text. Gibt (calls, set_handler) zurück."""
+    """Registers the explanation source with a key; handler(request) -> text. Returns (calls, set_handler)."""
     state = {"calls": [], "text": None}
 
     def install(text_fn=None, budget="10", tin=1500, tout=300, stop_reason="end_turn"):
@@ -81,7 +81,7 @@ def test_validate_rejects_invented_numbers_dates_and_advice():
     assert validate(ok + " We recommend acting now.", facts) == "contains inadmissible language"
     assert validate(ok + " Mehr: https://example.org", facts) == "contains a link"
     assert validate("Zu kurz.", facts) == "length outside the permitted range"
-    # Zahlwörter als Ziffern (bis 10) sind frei, große fremde Zahlen nicht
+    # Number words as digits (up to 10) are free, large foreign numbers are not
     assert validate(ok.replace("two", "999"), facts).startswith("number 999")
 
 
@@ -108,7 +108,7 @@ def test_ai_text_generated_once_cached_labeled_and_cost_counted(client, claude):
     assert first["budget"]["spent_usd"] == pytest.approx(first["cost_usd"], abs=1e-4)
     second = client.get(f"/api/patterns/{det['id']}/explanation").json()
     assert second["text"] == first["text"] and second["generated_at"] == first["generated_at"]
-    assert len(state["calls"]) == 1  # nur einmal je Datenstand
+    assert len(state["calls"]) == 1  # only once per data state
     assert MODEL in state["calls"][0] and "Facts of the automatic analysis" in state["calls"][0]
     with SessionLocal() as db:
         assert len(db.scalars(select(AiExplanation)).all()) == 1
@@ -136,7 +136,7 @@ def test_forbidden_or_invented_ai_text_falls_back_to_template_and_is_cached(clie
     assert body["source"] == "vorlage" and "rejected" in body["fallback_reason"]
     assert "buy signal" not in body["text"] and body["cost_usd"] > 0
     client.get(f"/api/patterns/{det['id']}/explanation")
-    assert len(state["calls"]) == 1  # verworfener Text wird nicht erneut bezahlt
+    assert len(state["calls"]) == 1  # a discarded text is not paid for again
 
     with SessionLocal() as db:
         d = db.get(PatternDetection, det["id"])
@@ -150,7 +150,7 @@ def test_forbidden_or_invented_ai_text_falls_back_to_template_and_is_cached(clie
 def test_truncated_ai_text_falls_back_to_template(client, claude):
     state, install = claude
     _, det = setup_pattern(client)
-    # Ein bei max_tokens abgeschnittener Text kann die Prüfung bestehen, bricht aber mitten im Satz ab.
+    # A text cut off at max_tokens can pass validation but ends mid-sentence.
     install(lambda body: pattern_template(det)[:400], stop_reason="max_tokens")
     body = client.get(f"/api/patterns/{det['id']}/explanation").json()
     assert body["source"] == "vorlage" and "max_tokens" in body["fallback_reason"]
@@ -193,7 +193,7 @@ def test_forecast_explanation(client, claude):
     state, install = claude
     iid, _ = seed_forecast()
     login(client)
-    assert client.get(f"/api/instruments/{iid}/forecast/explanation").status_code == 404  # noch nicht berechnet
+    assert client.get(f"/api/instruments/{iid}/forecast/explanation").status_code == 404  # not calculated yet
     run_forecast(iid)
     f = client.get(f"/api/instruments/{iid}/forecast").json()
     facts = forecast_facts_text({**f, "steps": f["steps"]}, "SAP")

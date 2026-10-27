@@ -66,7 +66,7 @@ class BarsOut(BaseModel):
     instrument: InstrumentOut
     timeframe: str
     bars: list[BarOut]
-    # Explizite Leerstands-Aussage statt Ersatzdaten (Grundregel 6):
+    # Explicit empty-state statement instead of substitute data (Grundregel 6):
     empty_reason: str | None = None
     # Prices are being retrieved for the first time (the instrument was just put on a watchlist):
     pending: bool = False

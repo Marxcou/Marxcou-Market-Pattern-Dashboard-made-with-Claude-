@@ -29,7 +29,7 @@ def test_search_and_watchlist_roundtrip(client):
     assert [x["symbol"] for x in client.get("/api/instruments/search", params={"q": "US0378"}).json()] == ["AAPL"]
     assert client.post("/api/watchlist", json={"instrument_id": iid}, headers=h).status_code == 201
     wl = client.get("/api/watchlist").json()
-    assert wl[0]["quote"]["source"]["name"] == "Testquelle"  # Quelle am Kurs (Grundregel 2)
+    assert wl[0]["quote"]["source"]["name"] == "Testquelle"  # source on the price (Grundregel 2)
     assert client.delete(f"/api/watchlist/{iid}", headers=h).status_code == 204
     assert client.get("/api/watchlist").json() == []
 
@@ -40,7 +40,7 @@ def test_bars_carry_source_and_empty_state_is_explicit(client):
     r = client.get(f"/api/instruments/{iid}/bars", params={"timeframe": "1d"}).json()
     assert r["bars"][0]["source"]["key"] == "test" and r["bars"][0]["fetched_at"]
     empty = client.get(f"/api/instruments/{iid}/bars", params={"timeframe": "1m"}).json()
-    assert empty["bars"] == [] and empty["empty_reason"]  # kein Platzhalter (Grundregel 6)
+    assert empty["bars"] == [] and empty["empty_reason"]  # no placeholder (Grundregel 6)
 
 
 def test_meta_has_disclaimer(client):

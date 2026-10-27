@@ -1,4 +1,4 @@
-"""Kein konfigurierter Schlüssel darf in Logs oder gespeicherten Statustexten erscheinen."""
+"""No configured key may appear in logs or stored status texts."""
 import logging
 
 import httpx
@@ -79,8 +79,8 @@ def test_stored_error_text_is_clean():
 
 
 def test_uvicorn_access_log_keeps_its_argument_tuple():
-    """uvicorns Zugriffs-Formatierer entpackt record.args (Client, Methode, Pfad, Version, Status). Die Bereinigung darf
-    die Tupelstruktur nicht zerstören, sonst scheitert jede Zugriffszeile mit einem Formatierungsfehler."""
+    """uvicorn's access formatter unpacks record.args (client, method, path, version, status). The redaction must
+    not destroy the tuple structure, otherwise every access line fails with a formatting error."""
     from uvicorn.logging import AccessFormatter
 
     rec = logging.getLogger("uvicorn.access").makeRecord(

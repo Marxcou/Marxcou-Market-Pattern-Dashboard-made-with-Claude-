@@ -1,9 +1,9 @@
-"""Regressionstests der Mustererkennung: feste Kerzen-Fixtures (CSV) laufen durch die Engine, und das Ergebnis
-(Muster, Zeitraum, Status, Kriterienwerte, Konfidenz, Szenario-Niveaus, Zonen) wird mit einer Golden-Datei
-verglichen. Ändert sich ein Parameter oder eine Regel, zeigt der Test die Abweichung als Diff.
+"""Regression tests of the pattern detection: fixed candle fixtures (CSV) run through the engine, and the result
+(pattern, period, status, criteria values, confidence, scenario levels, zones) is compared with a golden file.
+If a parameter or a rule changes, the test shows the deviation as a diff.
 
-Absichtliche Änderung übernehmen:  UPDATE_GOLDEN=1 pytest tests/regression   (danach den Diff der Golden-Datei
-im PR prüfen; bei geänderten Regeln außerdem ALGO_VERSION in app/analysis/params.py erhöhen)."""
+To accept an intentional change:  UPDATE_GOLDEN=1 pytest tests/regression   (then review the diff of the golden file
+in the PR; for changed rules also raise ALGO_VERSION in app/analysis/params.py)."""
 import csv
 import difflib
 import json
@@ -98,7 +98,7 @@ def test_detection_is_deterministic(name: str) -> None:
 
 @pytest.mark.parametrize("name", NAMES)
 def test_every_detection_meets_explanation_duty(name: str) -> None:
-    """Grundregel 3 auf Fixture-Ebene: Kriterien mit Werten, Konfidenz-Aufschlüsselung, zwei Szenario-Niveaus."""
+    """Grundregel 3 at fixture level: criteria with values, confidence breakdown, two scenario levels."""
     for d in detect(load(name), "1d").detections:
         assert d.criteria and all(c.actual_text for c in d.criteria)
         assert d.breakdown and 0.0 <= d.confidence <= 1.0
@@ -111,7 +111,7 @@ NAMED = [n for n in NAMES if n not in NEGATIVE and not n.startswith(("zufall", "
 
 @pytest.mark.parametrize("name", NAMED)
 def test_named_fixture_contains_its_pattern(name: str) -> None:
-    """Schutz davor, die Golden-Datei blind zu übernehmen: das im Namen genannte Muster muss weiterhin vorkommen."""
+    """Protection against blindly accepting the golden file: the pattern named in the fixture name must still occur."""
     assert name in {d.pattern_type for d in detect(load(name), "1d").detections}
 
 

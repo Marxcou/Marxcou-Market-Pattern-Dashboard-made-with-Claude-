@@ -35,7 +35,7 @@ def test_create_generates_temporary_password_and_requires_change(client, admin_c
     csrf = login(client, "f@example.com", created["temporary_password"])
     me = client.get("/api/auth/me").json()
     assert me["user"]["must_change_password"] is True
-    assert client.get("/api/watchlist").status_code == 403  # gesperrt bis zum Passwortwechsel
+    assert client.get("/api/watchlist").status_code == 403  # blocked until the password is changed
     assert client.get("/api/sources").status_code == 403
     bad = _change(client, csrf, "falsch-falsch", "neues-passwort-1")
     assert bad.status_code == 400
@@ -75,7 +75,7 @@ def test_disable_ends_sessions_and_blocks_login_then_reenable(client, admin_csrf
         blocked = friend.post("/api/auth/login", json={"email": "f@example.com", "password": "ein-langes-passwort"})
         assert blocked.status_code == 403 and "blocked" in blocked.json()["detail"]
         wrong = friend.post("/api/auth/login", json={"email": "f@example.com", "password": "falsch-falsch-1"})
-        assert wrong.status_code == 401  # gesperrtes Konto verrät sich nicht ohne richtiges Passwort
+        assert wrong.status_code == 401  # a blocked account does not reveal itself without the correct password
         client.patch(f"/api/users/{uid}", json={"is_active": True}, headers={H: admin_csrf})
         login(friend, "f@example.com", "ein-langes-passwort")
 
@@ -128,7 +128,7 @@ def test_unauthenticated_admin_endpoints_401(client):
 
 
 def test_no_endpoint_returns_secrets(client, admin_csrf, monkeypatch):
-    """Schlüssel bleiben serverseitig: kein GET (auch Admin) zeigt einen konfigurierten Geheimwert."""
+    """Keys stay server-side: no GET (admin included) shows a configured secret value."""
     s = get_settings()
     secrets_ = {}
     for name in ("alpaca_api_key_id", "alpaca_api_secret_key", "finnhub_api_key", "stooq_api_key", "openfigi_api_key",

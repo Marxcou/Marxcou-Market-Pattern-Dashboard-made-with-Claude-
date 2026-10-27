@@ -1,6 +1,6 @@
 import { useI18n } from "../lib/i18n";
 
-// Platzhalter beim Laden: zeigt die Form der kommenden Inhalte, ohne Werte vorzutäuschen (Grundregel 6).
+// Loading placeholder: shows the shape of the coming content without faking values (Grundregel 6).
 export function Skeleton({ className = "h-4 w-full" }: { className?: string }) {
   return <div className={`skeleton ${className}`} aria-hidden="true" />;
 }

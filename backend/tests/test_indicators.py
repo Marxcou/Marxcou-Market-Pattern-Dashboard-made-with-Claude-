@@ -1,4 +1,4 @@
-"""Indikator-Formeln gegen bekannte Referenzwerte und einfache analytische Fälle."""
+"""Indicator formulas against known reference values and simple analytical cases."""
 import numpy as np
 import pytest
 
@@ -26,7 +26,7 @@ def test_ema_seed_is_sma_then_recursion():
 
 
 def test_rsi_wilder_reference_values():
-    # Beispielreihe der StockCharts-Erklärung zum RSI (Wilder-Glättung, Periode 14)
+    # Example series from the StockCharts explanation of the RSI (Wilder smoothing, period 14)
     close = arr(44.34, 44.09, 44.15, 43.61, 44.33, 44.83, 45.10, 45.42, 45.84, 46.08, 45.89, 46.03, 45.61, 46.28,
                 46.28, 46.00, 46.03, 46.41, 46.22, 45.64)
     out = ind.rsi(close, 14)
@@ -41,7 +41,7 @@ def test_rsi_extremes():
 
 
 def test_macd_on_linear_ramp_converges_to_lag_difference():
-    # EMA einer Rampe mit Steigung 1 hinkt (n-1)/2 hinterher, also MACD -> (26-12)/2 = 7, Histogramm -> 0
+    # The EMA of a ramp with slope 1 lags (n-1)/2 behind, so MACD -> (26-12)/2 = 7, histogram -> 0
     line, sig, hist = ind.macd(np.arange(1, 400, dtype=float), 12, 26, 9)
     assert np.isnan(line[:25]).all() and not np.isnan(line[25])
     assert line[-1] == pytest.approx(7.0, abs=1e-6)

@@ -1,4 +1,4 @@
-// Grundregeln 1, 5 und 6 auf jeder Seite der Oberfläche.
+// Grundregeln 1, 5 and 6 on every page of the interface.
 import { expect, test } from "./helpers/fixtures";
 import { DISCLAIMER, DISCLAIMER_DE, findForbidden } from "./helpers/grundregeln";
 
@@ -9,11 +9,11 @@ test("Hinweis, Demo-Banner und neutrale Sprache auf jeder Seite", async ({ page,
     await page.goto(path);
     await expect(page.getByTestId("disclaimer").first(), path).toHaveText(DISCLAIMER_DE);
     await expect(page.getByTestId("disclaimer").first(), path).toBeVisible();
-    // Grundregel 6: erfundene Daten nur mit sichtbarer Kennzeichnung
+    // Grundregel 6: invented data only with a visible label
     await expect(page.getByTestId("demo-banner"), path).toContainText("DEMO-MODUS");
     if (path.startsWith("/instrument/")) await expect(page.getByTestId("price-chart")).toBeVisible();
     else await page.waitForLoadState("networkidle");
-    // Grundregel 1: keine Empfehlungssprache im sichtbaren Text
+    // Grundregel 1: no recommendation language in the visible text
     const text = await page.locator("body").innerText();
     expect(findForbidden(text), `verbotener Begriff auf ${path}`).toBeNull();
   }

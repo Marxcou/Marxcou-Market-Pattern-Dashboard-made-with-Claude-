@@ -44,7 +44,7 @@ def test_fetch_maps_records_with_source_publisher_and_symbol():
     a = IrFeedsAdapter({"AAPL": "https://ir.example/a.xml", "SAP.DE": "https://ir.example/s"},
                        transport=httpx.MockTransport(handler), **NOSLEEP)
     recs = a.fetch_news_for([NewsTarget("AAPL", "XNAS", "Apple Inc.")], SINCE)
-    assert len(recs) == 1  # nur Watchlist-Aktie mit Feed, alter Eintrag fällt weg
+    assert len(recs) == 1  # only watchlist stock with a feed, old entry is dropped
     r = recs[0]
     assert (r.title, r.excerpt, r.url, r.source_key) == ("Q3-Zahlen", "Kurztext", "https://ir.example/q3", "ir_feeds")
     assert r.symbols == ("AAPL",) and r.publisher == "Investor Relations Apple Inc."

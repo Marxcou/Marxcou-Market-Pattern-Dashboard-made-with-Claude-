@@ -101,22 +101,22 @@ def test_daily_job_uses_stooq_for_xetra_and_derives_quote(db, monkeypatch):
     assert q.price == 110 and q.change_pct == pytest.approx(10.0) and q.delay_seconds is None
     src = db.get(Source, q.source_id)
     assert src and src.key == "stooq" and src.delay_text == "Handelsende"
-    ps.daily_job()  # zweiter Lauf erzeugt keine doppelte Quote
+    ps.daily_job()  # second run does not create a duplicate quote
     assert len(db.scalars(select(Quote)).all()) == 1
     assert db.scalars(select(Event).where(Event.type == "quote")).first() is not None
 
 
 def test_daily_quote_follows_updated_close_of_current_day(db, monkeypatch):
-    """Die Tageskerze des laufenden Tages ändert ihren Schlusskurs; die abgeleitete Quote muss folgen."""
+    """The daily candle of the current day changes its closing price; the derived quote must follow."""
     today = NOW.replace(hour=0)
     stooq = Fake("stooq", ("XETR",), bars=[bar("stooq", "1d", today - timedelta(days=1), 100, "SAP", "XETR"),
                                           bar("stooq", "1d", today, 101, "SAP", "XETR")])
     add_instrument(db, [stooq], "SAP", "XETR")
     monkeypatch.setattr(ps, "SessionLocal", SessionLocal)
     ps.daily_job()
-    stooq._bars[-1] = bar("stooq", "1d", today, 104, "SAP", "XETR")  # späterer Abruf am selben Tag
+    stooq._bars[-1] = bar("stooq", "1d", today, 104, "SAP", "XETR")  # later fetch on the same day
     ps.daily_job()
-    ps.daily_job()  # unverändert: keine weitere Quote
+    ps.daily_job()  # unchanged: no further quote
     prices = [q.price for q in db.scalars(select(Quote).order_by(Quote.id))]
     assert prices == [101, 104]
 
@@ -129,7 +129,7 @@ def test_failing_adapter_falls_through_without_invented_data(db, monkeypatch):
     ps.daily_job()
     assert [b.source_id for b in db.scalars(select(PriceBar)).all()] == [db.scalar(
         select(Source.id).where(Source.key == "stooq"))]
-    assert ps.refresh_quote(db, inst) is False  # beide ohne Kurs: nichts gespeichert
+    assert ps.refresh_quote(db, inst) is False  # both without a price: nothing stored
     assert db.scalars(select(Quote)).all() == []
 
 

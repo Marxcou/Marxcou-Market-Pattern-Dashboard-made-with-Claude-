@@ -1,4 +1,4 @@
-"""Muster-Engine: synthetische Kursreihen mit bekanntem Ergebnis (Stützpunkte = erwartete Wendepunkte)."""
+"""Pattern engine: synthetic price series with a known result (anchor points = expected turning points)."""
 import dataclasses
 
 import numpy as np
@@ -12,7 +12,7 @@ from app.analysis.series import Bars, atr
 from app.grundregeln import find_forbidden
 from tests.synthetic import flat_volume, path
 
-# Mustertyp -> (Stützpunkte, erwarteter Beginn, erwartetes Ende, erwarteter Status, Kerze der Bestätigung)
+# Pattern type -> (anchor points, expected start, expected end, expected status, confirmation candle)
 CASES: dict[str, tuple[list[tuple[int, float]], int, int, str, int | None]] = {
     "doppelboden": ([(0, 120), (30, 100), (45, 110), (60, 100.3), (80, 118), (100, 125)], 30, 60, "bestaetigt", 72),
     "doppelhoch": ([(0, 80), (30, 100), (45, 90), (60, 99.7), (80, 82), (100, 78)], 30, 60, "bestaetigt", 72),
@@ -43,7 +43,7 @@ def mirror(anchors: list[tuple[int, float]]) -> list[tuple[int, float]]:
     return [(i, 200 - p) for i, p in anchors]
 
 
-# Gespiegelt; die Kanal-Regression reagiert auf den prozentualen Spread, daher endet sie eine Kerze früher
+# Mirrored; the channel regression reacts to the percentage spread, so it ends one candle earlier
 CASES["wimpel_abwaerts"] = (mirror(CASES["wimpel_aufwaerts"][0]), 41, 62, "bestaetigt", 63)
 
 
@@ -63,8 +63,8 @@ def test_known_pattern_is_detected(ptype: str) -> None:
 
 @pytest.mark.parametrize("ptype", sorted(CASES))
 def test_explanation_duty_for_every_pattern_type(ptype: str) -> None:
-    """Grundregel 3: Name, Lage, Kriterien mit tatsächlichen Werten, Konfidenz mit Aufschlüsselung,
-    mindestens zwei Szenarien mit Niveaus. Die Trefferquote hängt die API aus backtest_runs an."""
+    """Grundregel 3: name, position, criteria with actual values, confidence with breakdown,
+    at least two scenarios with levels. The API attaches the hit rate from backtest_runs."""
     anchors, start, end, _, _ = CASES[ptype]
     det = find(detect(path(anchors, flat_volume(anchors[-1][0] + 1)), "1d").detections, ptype, start, end)
     assert det.name and det.key_points and det.lines
@@ -89,7 +89,7 @@ def test_explanation_duty_for_every_pattern_type(ptype: str) -> None:
 def test_double_bottom_values_in_explanation() -> None:
     det = find(detect(path(CASES["doppelboden"][0]), "1d").detections, "doppelboden", 30, 60)
     crit = {c.key: c for c in det.criteria}
-    # Tiefs 99,80 (100 − 0,2 %) und 100,10 (100,3 − 0,2 %, gerundet)
+    # Lows 99.80 (100 − 0.2%) and 100.10 (100.3 − 0.2%, rounded)
     assert crit["extrem_abweichung"].actual == pytest.approx(0.3, abs=0.01)
     assert "Low 1: 99.80 on 2024-01-31" in crit["extrem_abweichung"].actual_text
     assert det.confirmation_level == pytest.approx(110.22, abs=0.01)  # Zwischenhoch = Nackenlinie

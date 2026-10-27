@@ -1,8 +1,8 @@
-// Zugriff auf die gekennzeichneten Demo-Daten (backend/app/e2e_seed.py). Alles hier ist erfunden.
+// Access to the labeled demo data (backend/app/e2e_seed.py). Everything here is invented.
 import { expect, type APIRequestContext } from "@playwright/test";
 
-export const DEMO_SYMBOL = "DEMOA"; // Doppelboden, Meldungen, Prognose
-export const DEMO_SYMBOL_2 = "DEMOB"; // Doppelboden in Bildung, ohne Meldungen, zum Hinzufügen in Tests
+export const DEMO_SYMBOL = "DEMOA"; // double bottom, news, forecast
+export const DEMO_SYMBOL_2 = "DEMOB"; // double bottom forming, without news, for adding in tests
 
 export interface DemoInstrument { id: number; symbol: string; name: string }
 
@@ -10,7 +10,7 @@ export async function findInstrument(request: APIRequestContext, symbol: string)
   const res = await request.get(`/api/instruments/search?q=${symbol}`);
   expect(res.ok()).toBeTruthy();
   const hit = ((await res.json()) as DemoInstrument[]).find((i) => i.symbol === symbol);
-  expect(hit, `Demo-Instrument ${symbol} fehlt (wurde e2e_seed ausgeführt?)`).toBeTruthy();
+  expect(hit, `Demo instrument ${symbol} is missing (was e2e_seed run?)`).toBeTruthy();
   return hit as DemoInstrument;
 }
 

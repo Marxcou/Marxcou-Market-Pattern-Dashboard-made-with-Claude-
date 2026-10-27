@@ -1,4 +1,4 @@
-"""Kommentare in .env: Docker Compose übergibt bei "KEY=   # Text" den Kommentar als Wert."""
+"""Comments in .env: Docker Compose passes the comment as the value for "KEY=   # text"."""
 import logging
 from pathlib import Path
 
@@ -36,9 +36,9 @@ def test_comment_values_count_as_unset(monkeypatch, caplog):
     with caplog.at_level(logging.WARNING, logger="app.config"):
         s = Settings(_env_file=None)
     assert s.openfigi_api_key == "" and s.alphavantage_api_key == ""
-    assert s.claude_use_batch is True  # Standardwert statt Validierungsfehler
+    assert s.claude_use_batch is True  # default value instead of a validation error
     assert s.finnhub_api_key == "real-key"
-    assert "OPENFIGI_API_KEY" in caplog.text and "optional" not in caplog.text  # nur Name, nie der Wert
+    assert "OPENFIGI_API_KEY" in caplog.text and "optional" not in caplog.text  # name only, never the value
 
 
 def test_ir_feeds_comment_text_is_disabled_with_english_reason(monkeypatch):

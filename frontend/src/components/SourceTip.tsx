@@ -2,7 +2,7 @@ import { formatDateTime } from "../lib/format";
 import type { SourceRef } from "../lib/api";
 import { useI18n } from "../lib/i18n";
 
-// Grundregel 2: Anbieter, Original-Link, Zeitstempel und Verzögerung an jedem Wert.
+// Grundregel 2: provider, original link, timestamps and delay on every value.
 export function SourceTip({ source, ts, fetchedAt }: { source: SourceRef; ts?: string; fetchedAt: string }) {
   const { t } = useI18n();
   return (
