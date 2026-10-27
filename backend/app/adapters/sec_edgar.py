@@ -1,5 +1,5 @@
-"""SEC EDGAR (offiziell): US-Pflichtmeldungen (8-K, 10-Q, 10-K, Form 4, 6-K, 20-F) je Aktie.
-Die SEC verlangt eine Kontaktadresse im User-Agent und höchstens 10 Anfragen pro Sekunde."""
+"""SEC EDGAR (official): US mandatory filings (8-K, 10-Q, 10-K, Form 4, 6-K, 20-F) per stock.
+The SEC requires a contact address in the user agent and at most 10 requests per second."""
 import logging
 import time
 from datetime import UTC, datetime
@@ -16,9 +16,9 @@ log = logging.getLogger(__name__)
 
 FORMS = {"8-K", "10-Q", "10-K", "4", "6-K", "20-F"}
 FORM_LABEL = {
-    "8-K": "aktuelle Mitteilung (Form 8-K)", "10-Q": "Quartalsbericht (Form 10-Q)",
-    "10-K": "Jahresbericht (Form 10-K)", "4": "Insider-Meldung (Form 4)",
-    "6-K": "Mitteilung ausländischer Emittent (Form 6-K)", "20-F": "Jahresbericht ausländischer Emittent (Form 20-F)",
+    "8-K": "current report (Form 8-K)", "10-Q": "quarterly report (Form 10-Q)",
+    "10-K": "annual report (Form 10-K)", "4": "insider filing (Form 4)",
+    "6-K": "report of a foreign issuer (Form 6-K)", "20-F": "annual report of a foreign issuer (Form 20-F)",
 }
 TICKER_MAP_TTL = 24 * 3600
 
@@ -27,16 +27,16 @@ class SecEdgarAdapter(ProbedHealth, NewsAdapter):
     key = "sec_edgar"
     supported_exchanges = ("XNYS", "XNAS")
     poll_seconds = 600
-    disabled_reason = "SEC_EDGAR_CONTACT_EMAIL nicht gesetzt (Pflicht im User-Agent der SEC)"
+    disabled_reason = "SEC_EDGAR_CONTACT_EMAIL not set (required in the SEC user agent)"
 
     def __init__(self, transport: httpx.BaseTransport | None = None, **kw: Any) -> None:
         raw = get_settings().sec_edgar_contact_email.strip()
-        # Ein ungültiger Wert (Umlaut, kein E-Mail-Format) zählt wie ein fehlender: Quelle 'disabled', Backend läuft
+        # An invalid value (umlaut, not an email format) counts like a missing one: source 'disabled', backend runs
         self._email = raw if is_valid_contact_email(raw) else ""
         if raw and not self._email:
-            log.warning("SEC_EDGAR_CONTACT_EMAIL ist keine gültige ASCII-E-Mail-Adresse; SEC EDGAR bleibt deaktiviert")
-            self.disabled_reason = ("SEC_EDGAR_CONTACT_EMAIL ungültig (nur ASCII-Zeichen, Format name@domain.de); "
-                                    "Quelle deaktiviert")
+            log.warning("SEC_EDGAR_CONTACT_EMAIL is not a valid ASCII email address; SEC EDGAR stays disabled")
+            self.disabled_reason = ("SEC_EDGAR_CONTACT_EMAIL invalid (ASCII characters only, format name@domain.com); "
+                                    "source disabled")
         ua = f"Marktmuster-Dashboard {self._email}" if self._email else "Marktmuster-Dashboard"
         headers = {"User-Agent": ua, "Accept-Encoding": "gzip, deflate"}
         self.http = ResilientHttp(base_url="https://data.sec.gov", headers=headers, rate_per_min=240,
@@ -47,10 +47,10 @@ class SecEdgarAdapter(ProbedHealth, NewsAdapter):
     def metadata(self) -> AdapterMetadata:
         return AdapterMetadata(
             key=self.key, name="SEC EDGAR", kind="news",
-            description="Offizielle US-Pflichtmeldungen der Börsenaufsicht SEC (8-K, 10-Q, 10-K, Form 4). "
-            "Angezeigt werden Formular, Unternehmen, Zeitpunkt und Link zur Einreichung.",
+            description="Official US mandatory filings from the securities regulator SEC (8-K, 10-Q, 10-K, Form 4). "
+            "Shown are form, company, time and link to the filing.",
             homepage="https://www.sec.gov/edgar", terms_url="https://www.sec.gov/os/webmaster-faq#developers",
-            update_interval="alle 10 Min. (Watchlist-Aktien)", delay_text="Minuten nach Einreichung",
+            update_interval="every 10 min. (watchlist stocks)", delay_text="minutes after filing",
             requires_key=False,
         )
 
@@ -95,7 +95,7 @@ class SecEdgarAdapter(ProbedHealth, NewsAdapter):
                     items = recent.get("items", [""] * len(recent["form"]))[i]
                     desc = recent.get("primaryDocDescription", [""] * len(recent["form"]))[i]
                     url = f"https://www.sec.gov/Archives/edgar/data/{cik}/{acc.replace('-', '')}/{doc}"
-                    excerpt = "Pflichtmeldung bei der US-Börsenaufsicht SEC."
+                    excerpt = "Mandatory filing with the US securities regulator SEC."
                     if items:
                         excerpt += f" Inhalte (Items): {items}."
                     out.append(NewsRecord(

@@ -1,5 +1,5 @@
-"""Tageszähler für Quellen mit knappem Kontingent. Der Stand liegt in der Datenbank, damit ein Neustart des Workers
-den Zähler nicht zurücksetzt; der Tag wechselt um 00:00 UTC."""
+"""Daily counter for sources with a tight quota. The state lives in the database so a restart of the worker does not
+reset the counter; the day changes at 00:00 UTC."""
 from datetime import UTC, date, datetime, timedelta
 from typing import Any, cast
 
@@ -25,7 +25,7 @@ def calls_today(source_key: str, db: Session | None = None) -> int:
 
 
 def count_call(source_key: str, db: Session | None = None) -> int:
-    """Zählt einen Abruf (vor dem Aufruf, wie bisher: ein fehlgeschlagener Abruf verbraucht Kontingent)."""
+    """Counts a call (before the call, as before: a failed call consumes quota)."""
     if db is None:
         with SessionLocal() as own:
             return count_call(source_key, own)

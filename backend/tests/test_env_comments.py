@@ -41,11 +41,11 @@ def test_comment_values_count_as_unset(monkeypatch, caplog):
     assert "OPENFIGI_API_KEY" in caplog.text and "optional" not in caplog.text  # nur Name, nie der Wert
 
 
-def test_ir_feeds_comment_text_is_disabled_with_german_reason(monkeypatch):
+def test_ir_feeds_comment_text_is_disabled_with_english_reason(monkeypatch):
     monkeypatch.setenv("IR_FEEDS", "Investor-Relations-Feeds: AAPL|https://.../feed.xml,SAP.DE|https://.../rss")
     a = IrFeedsAdapter()
     assert not a.is_configured()
-    assert "ungültig" in a.disabled_reason and "SYMBOL|https://" in a.disabled_reason
+    assert "invalid" in a.disabled_reason and "SYMBOL|https://" in a.disabled_reason
 
 
 def test_ir_feeds_partly_invalid_keeps_valid_entries():
@@ -53,9 +53,9 @@ def test_ir_feeds_partly_invalid_keeps_valid_entries():
     assert feeds == {"AAPL": "https://ir.example/a.xml"} and invalid == 2
 
 
-def test_eqs_invalid_url_is_disabled_with_german_reason():
+def test_eqs_invalid_url_is_disabled_with_english_reason():
     a = RssFeedAdapter(EQS, enabled=True, url="# Feed-Adresse der EQS-News, Nutzungsbedingungen prüfen")
-    assert not a.is_configured() and "EQS_RSS_URL ungültig" in a.disabled_reason
+    assert not a.is_configured() and "EQS_RSS_URL invalid" in a.disabled_reason
     ok = RssFeedAdapter(EQS, enabled=True, url="https://eqs.example/feed")
     assert ok.is_configured()
 
@@ -76,6 +76,6 @@ def test_sources_page_shows_misconfiguration_not_exception_name(monkeypatch, cli
         sync_sources(db)
         rows = {r.key: r for r in db.scalars(select(Source))}
     registry.clear()
-    assert rows["ir_feeds"].status == "disabled" and "IR_FEEDS ungültig" in rows["ir_feeds"].last_error
-    assert rows["eqs_news"].status == "disabled" and "EQS_RSS_URL ungültig" in rows["eqs_news"].last_error
+    assert rows["ir_feeds"].status == "disabled" and "IR_FEEDS invalid" in rows["ir_feeds"].last_error
+    assert rows["eqs_news"].status == "disabled" and "EQS_RSS_URL invalid" in rows["eqs_news"].last_error
     assert "Error" not in rows["ir_feeds"].last_error and "Protocol" not in rows["eqs_news"].last_error

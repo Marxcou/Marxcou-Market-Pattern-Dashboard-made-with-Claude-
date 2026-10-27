@@ -1,9 +1,9 @@
-"""Yahoo Finance (inoffiziell): Tagesdaten für US und XETRA über den öffentlichen Chart-Endpunkt.
+"""Yahoo Finance (unofficial): daily data for US and XETRA via the public chart endpoint.
 
-Nur aktiv mit YAHOO_ENABLED=true in .env. Es gibt keine offizielle API und keine Nutzungsbedingungen, die diese
-Nutzung ausdrücklich erlauben; der Endpunkt kann sich ohne Ankündigung ändern. Deshalb standardmäßig aus und auf
-der Seite Quellen als inoffiziell gekennzeichnet. Liefert der Endpunkt etwas Unerwartetes, gibt es einen
-SourceError, nie geschätzte Werte (Grundregel 6)."""
+Active only with YAHOO_ENABLED=true in .env. There is no official API and no terms of use that explicitly
+allow this use; the endpoint can change without notice. Therefore off by default and marked as
+unofficial on the Sources page. If the endpoint returns something unexpected, there is a
+SourceError, never estimated values (core rule 6)."""
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
@@ -14,7 +14,7 @@ from app.adapters.http import ProbedHealth, ResilientHttp, SourceError
 from app.config import get_settings
 
 _SUFFIX = {"XNYS": "", "XNAS": "", "XETR": ".DE"}
-# Ohne browserähnlichen User-Agent antwortet der Endpunkt meist mit HTTP 429
+# Without a browser-like user agent the endpoint usually answers with HTTP 429
 _HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
                           "Chrome/128.0 Safari/537.36", "Accept": "application/json"}
 
@@ -35,12 +35,12 @@ class YahooAdapter(ProbedHealth, PriceAdapter):
 
     def metadata(self) -> AdapterMetadata:
         return AdapterMetadata(
-            key=self.key, name="Yahoo Finance (inoffiziell)", kind="price",
-            description="Tagesdaten (Handelsende) für US-Aktien und XETRA über den öffentlichen Chart-Endpunkt von "
-                        "Yahoo Finance. Inoffiziell: keine dokumentierte API, kann sich ohne Ankündigung ändern. "
-                        "Kurse splitbereinigt, nicht dividendenbereinigt. Keine Intraday-Daten in diesem Dashboard.",
+            key=self.key, name="Yahoo Finance (unofficial)", kind="price",
+            description="Daily data (end of trading) for US stocks and XETRA via the public chart endpoint of "
+                        "Yahoo Finance. Unofficial: no documented API, can change without notice. "
+                        "Prices split-adjusted, not dividend-adjusted. No intraday data in this dashboard.",
             homepage="https://finance.yahoo.com", terms_url="https://legal.yahoo.com/us/en/yahoo/terms/otos/index.html",
-            update_interval="täglich", delay_text="Handelsende (Tagesdaten)", requires_key=False, is_official=False,
+            update_interval="daily", delay_text="end of trading (daily data)", requires_key=False, is_official=False,
         )
 
     def is_configured(self) -> bool:
@@ -51,16 +51,16 @@ class YahooAdapter(ProbedHealth, PriceAdapter):
         try:
             body = resp.json()
         except ValueError as exc:
-            raise SourceError("Yahoo lieferte kein JSON") from exc
+            raise SourceError("Yahoo did not return JSON") from exc
         chart = body.get("chart") if isinstance(body, dict) else None
         if not isinstance(chart, dict):
-            raise SourceError("Unerwartetes Antwortformat von Yahoo")
+            raise SourceError("Unexpected response format from Yahoo")
         if chart.get("error"):
             err = chart["error"]
             code = err.get("code") if isinstance(err, dict) else None
             if code == "Not Found":
                 return {}
-            raise SourceError(f"Yahoo meldet Fehler: {code or 'unbekannt'}")
+            raise SourceError(f"Yahoo reports an error: {code or 'unknown'}")
         results = chart.get("result") or []
         return results[0] if results and isinstance(results[0], dict) else {}
 
@@ -80,13 +80,13 @@ class YahooAdapter(ProbedHealth, PriceAdapter):
 
 
 def _trading_day(ts: int, gmtoffset: int) -> date:
-    """Yahoo stempelt Tageskerzen mit dem Handelsbeginn; maßgeblich ist der Kalendertag an der Börse."""
+    """Yahoo stamps daily candles with the start of trading; the calendar day at the exchange is what counts."""
     return (datetime.fromtimestamp(ts, UTC) + timedelta(seconds=gmtoffset)).date()
 
 
 def parse_chart(result: dict[str, Any], symbol: str, exchange: str, fetched_at: datetime) -> list[BarRecord]:
-    """Tageskerzen mit Zeitstempel 00:00 UTC des Handelstags (wie Stooq). Tage mit fehlenden Werten werden
-    ausgelassen statt ergänzt."""
+    """Daily candles with timestamp 00:00 UTC of the trading day (like Stooq). Days with missing values are
+    left out instead of filled in."""
     if not result:
         return []
     try:
@@ -95,9 +95,9 @@ def parse_chart(result: dict[str, Any], symbol: str, exchange: str, fetched_at: 
         offset = int((result.get("meta") or {}).get("gmtoffset") or 0)
         cols = [quote.get(k) or [] for k in ("open", "high", "low", "close", "volume")]
     except (KeyError, IndexError, TypeError, ValueError) as exc:
-        raise SourceError("Unerwartetes Antwortformat von Yahoo") from exc
+        raise SourceError("Unexpected response format from Yahoo") from exc
     if any(len(c) != len(stamps) for c in cols[:4]):
-        raise SourceError("Unerwartetes Antwortformat von Yahoo (Spaltenlängen ungleich)")
+        raise SourceError("Unexpected response format from Yahoo (column lengths differ)")
     out: dict[date, BarRecord] = {}
     for i, ts in enumerate(stamps):
         o, h, lo, c = (cols[k][i] for k in range(4))

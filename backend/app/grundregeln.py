@@ -1,20 +1,23 @@
-"""Grundregel 1: keine Empfehlungssprache. Diese Liste wird vom CI-Test und (später) zur
-Laufzeit für KI-Texte verwendet. Sie ist die einzige Stelle im Code, an der die Wörter stehen."""
+"""Core rule 1 (Grundregel 1): no recommendation language. This list is used by the CI test and at runtime
+for AI texts. It is the only place in the code where the words appear."""
 import re
 
 DISCLAIMER = (
-    "Dieses Dashboard stellt keine Anlageberatung dar. Alle Analysen sind automatisiert, "
-    "können fehlerhaft sein und dienen ausschließlich der Information."
+    "This dashboard does not constitute investment advice. All analyses are automated, "
+    "may be incorrect and are for information only."
 )
 
 FORBIDDEN_TERMS = [
-    "kaufen", "verkaufen", "kaufsignal", "verkaufssignal", "kaufempfehlung", "verkaufsempfehlung",
-    "strong buy", "strong sell", "kursziel", "outperform", "underperform", "übergewichten",
-    "untergewichten", "buy", "sell",
+    # English (UI and analysis texts)
+    "buy", "sell", "buy signal", "sell signal", "buy recommendation", "sell recommendation", "strong buy",
+    "strong sell", "price target", "target price", "outperform", "underperform", "overweight", "underweight",
+    # German (the UI can be switched to German)
+    "kaufen", "verkaufen", "kaufsignal", "verkaufssignal", "kaufempfehlung", "verkaufsempfehlung", "kursziel",
+    "übergewichten", "untergewichten",
 ]
 
 _PATTERN = re.compile(
-    r"\b(" + "|".join(re.escape(t) for t in FORBIDDEN_TERMS) + r")\b", re.IGNORECASE
+    r"\b(" + "|".join(re.escape(t) for t in sorted(FORBIDDEN_TERMS, key=len, reverse=True)) + r")\b", re.IGNORECASE
 )
 
 

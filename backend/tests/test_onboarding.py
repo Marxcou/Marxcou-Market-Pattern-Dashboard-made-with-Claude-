@@ -71,9 +71,9 @@ def test_pending_state_shown_shortly_after_adding(client):
     login(client)
     _watch(iid)
     fc = client.get(f"/api/instruments/{iid}/forecast").json()
-    assert fc["pending"] is True and "wird gerade berechnet" in fc["empty_reason"] and fc["steps"] == []
+    assert fc["pending"] is True and "is being calculated" in fc["empty_reason"] and fc["steps"] == []
     pat = client.get(f"/api/instruments/{iid}/patterns", params={"timeframe": "1d"}).json()
-    assert pat["pending"] is True and "wird gerade berechnet" in pat["empty_reason"]
+    assert pat["pending"] is True and "is being calculated" in pat["empty_reason"]
     bars = client.get(f"/api/instruments/{iid}/bars", params={"timeframe": "1d"}).json()
     assert bars["pending"] is True and bars["bars"] == []
 
@@ -83,9 +83,9 @@ def test_pending_ends_after_window_with_plain_reason(client):
     login(client)
     _watch(iid, minutes_ago=30)
     fc = client.get(f"/api/instruments/{iid}/forecast").json()
-    assert fc["pending"] is False and "noch nicht berechnet" in fc["empty_reason"]
+    assert fc["pending"] is False and "not been calculated" in fc["empty_reason"]
     bars = client.get(f"/api/instruments/{iid}/bars", params={"timeframe": "1d"}).json()
-    assert bars["pending"] is False and "noch keine Quelle" in bars["empty_reason"]
+    assert bars["pending"] is False and "no source" in bars["empty_reason"]
 
 
 def test_not_watched_instrument_is_not_pending(client):

@@ -1,4 +1,4 @@
-"""Kerzenreihe als numpy-Arrays und ATR (Average True Range nach Wilder)."""
+"""Candle series as numpy arrays and ATR (Average True Range after Wilder)."""
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
@@ -16,7 +16,7 @@ class Bars:
     high: FloatArray
     low: FloatArray
     close: FloatArray
-    volume: FloatArray  # NaN, wo die Quelle kein Volumen liefert
+    volume: FloatArray  # NaN where the source provides no volume
 
     def __len__(self) -> int:
         return len(self.ts)
@@ -30,12 +30,12 @@ class Bars:
         vol = [np.nan if v is None else float(v) for v in volume] if volume is not None else [np.nan] * n
         arrays = [np.asarray(a, dtype=np.float64) for a in (open_, high, low, close, vol)]
         if any(len(a) != n for a in arrays):
-            raise ValueError("Alle Spalten brauchen dieselbe Länge")
+            raise ValueError("All columns need the same length")
         return cls(tuple(ts), *arrays)
 
     @property
     def has_volume(self) -> bool:
-        """Volumen gilt als verfügbar, wenn mindestens 90 % der Kerzen einen positiven Wert haben."""
+        """Volume counts as available if at least 90% of the candles have a positive value."""
         if len(self) == 0:
             return False
         ok = np.isfinite(self.volume) & (self.volume > 0)
@@ -50,7 +50,7 @@ def true_range(bars: Bars) -> FloatArray:
 
 
 def atr(bars: Bars, period: int) -> FloatArray:
-    """Wilder-ATR. Vor der ersten vollen Periode: Mittel der bisherigen True Ranges (keine Lücke am Anfang)."""
+    """Wilder ATR. Before the first full period: mean of the true ranges so far (no gap at the start)."""
     tr = true_range(bars)
     out = np.empty_like(tr)
     for i in range(len(tr)):
@@ -62,7 +62,7 @@ def atr(bars: Bars, period: int) -> FloatArray:
 
 
 def mean_volume(bars: Bars, start: int, end: int) -> float:
-    """Mittleres Volumen der Kerzen start..end (inklusive), NaN ignoriert."""
+    """Mean volume of the candles start..end (inclusive), NaN ignored."""
     s, e = max(0, start), min(len(bars) - 1, end)
     window = bars.volume[s : e + 1]
     window = window[np.isfinite(window)]

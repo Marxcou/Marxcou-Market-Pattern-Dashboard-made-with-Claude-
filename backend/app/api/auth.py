@@ -42,9 +42,9 @@ class MeOut(BaseModel):
 def login(body: LoginIn, response: Response, db: DB) -> MeOut:
     user = db.scalar(select(User).where(User.email == body.email.lower()))
     if user is None or not verify_password(user.password_hash, body.password):
-        raise HTTPException(401, "E-Mail oder Passwort falsch")
+        raise HTTPException(401, "Incorrect email or password")
     if not user.is_active:
-        raise HTTPException(403, "Dieses Konto ist gesperrt. Bitte den Administrator fragen.")
+        raise HTTPException(403, "This account is blocked. Please ask the administrator.")
     token, sess = create_session(db, user)
     s = get_settings()
     response.set_cookie(
@@ -84,11 +84,11 @@ def change_password(
     body: PasswordChange, db: DB, user: CurrentUserAllowPwChange,
     session: Annotated[str | None, Cookie(alias=SESSION_COOKIE)] = None,
 ) -> None:
-    """Jeder Nutzer ändert sein eigenes Passwort. Andere Sitzungen des Kontos werden beendet."""
+    """Every user changes their own password. Other sessions of the account are ended."""
     if not verify_password(user.password_hash, body.current_password):
-        raise HTTPException(400, "Das aktuelle Passwort ist falsch")
+        raise HTTPException(400, "The current password is incorrect")
     if body.new_password == body.current_password:
-        raise HTTPException(400, "Das neue Passwort muss sich vom bisherigen unterscheiden")
+        raise HTTPException(400, "The new password must differ from the previous one")
     user.password_hash = hash_password(body.new_password)
     user.must_change_password = False
     delete_user_sessions(db, user.id, keep_token_hash=session_token_hash(session) if session else None)

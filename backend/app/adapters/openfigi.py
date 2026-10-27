@@ -1,4 +1,4 @@
-"""OpenFIGI (Bloomberg-Mapping-Dienst): Suche nach Ticker, Firmenname und ISIN für US und XETRA."""
+"""OpenFIGI (Bloomberg mapping service): search by ticker, company name and ISIN for US and XETRA."""
 import logging
 import re
 from datetime import UTC, datetime
@@ -12,9 +12,9 @@ from app.config import get_settings
 
 log = logging.getLogger(__name__)
 
-# OpenFIGI-Börsencodes -> MIC. Nur diese drei Märkte sind im Umfang (Nasdaq-Segmente UQ/UW/UR).
+# OpenFIGI exchange codes -> MIC. Only these three markets are in scope (Nasdaq segments UQ/UW/UR).
 EXCH_TO_MIC = {"UN": "XNYS", "UQ": "XNAS", "UW": "XNAS", "UR": "XNAS", "GY": "XETR"}
-CURRENCY = {"XNYS": "USD", "XNAS": "USD", "XETR": "EUR"}  # Währung folgt dem Handelsplatz
+CURRENCY = {"XNYS": "USD", "XNAS": "USD", "XETR": "EUR"}  # currency follows the trading venue
 ISIN_RE = re.compile(r"^[A-Z]{2}[A-Z0-9]{9}[0-9]$")
 
 
@@ -25,7 +25,7 @@ class OpenFigiAdapter(ProbedHealth, PriceAdapter):
     def __init__(self, transport: httpx.BaseTransport | None = None, **kw: Any) -> None:
         self._token = get_settings().openfigi_api_key.strip()
         if self._token and not is_header_safe(self._token):
-            log.warning("OPENFIGI_API_KEY: unzulässige Zeichen, OpenFIGI läuft ohne Schlüssel (niedrigeres Limit)")
+            log.warning("OPENFIGI_API_KEY: invalid characters, OpenFIGI runs without a key (lower limit)")
             self._token = ""
         headers = {"X-OPENFIGI-APIKEY": self._token} if self._token else {}
         self.http = ResilientHttp(base_url="https://api.openfigi.com", headers=headers,
@@ -34,10 +34,10 @@ class OpenFigiAdapter(ProbedHealth, PriceAdapter):
     def metadata(self) -> AdapterMetadata:
         return AdapterMetadata(
             key=self.key, name="OpenFIGI", kind="reference",
-            description="Zuordnung von ISIN, Ticker und Firmenname zu Börsenplätzen (NYSE, Nasdaq, XETRA). "
-            "Liefert keine Kurse.",
+            description="Mapping of ISIN, ticker and company name to trading venues (NYSE, Nasdaq, XETRA). "
+            "Delivers no prices.",
             homepage="https://www.openfigi.com", terms_url="https://www.openfigi.com/about/terms",
-            update_interval="bei Suchanfragen", delay_text="nicht zutreffend (Stammdaten)", requires_key=False,
+            update_interval="on search requests", delay_text="not applicable (reference data)", requires_key=False,
         )
 
     def _probe(self) -> None:

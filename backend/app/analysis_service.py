@@ -1,5 +1,5 @@
-"""Indikator-Ereignisse und auffällige Kursbewegungen berechnen und speichern (Worker-Job), inkl. zeitlicher
-Verknüpfung mit Meldungen. Alles idempotent: bereits gespeicherte Ereignisse werden nicht doppelt angelegt."""
+"""Compute and store indicator events and notable price moves (worker job), including linking them in time
+with news. All idempotent: events that are already stored are not created twice."""
 import logging
 from datetime import UTC, datetime, timedelta
 
@@ -27,9 +27,9 @@ from app.price_service import watched_instruments
 log = logging.getLogger("analysis")
 
 TIMEFRAMES = ("1d", "1h")
-BAR_LIMIT = 1500  # 1d: rund 6 Jahre; 1h: rund 8 Monate Börsenzeit
-LINK_MAX_AGE = timedelta(days=30)  # Meldungen können nachgeholt werden; ältere Bewegungen werden nicht neu verknüpft
-FRESH_BARS = 2  # nur Ereignisse der letzten Kerzen lösen ein Live-Ereignis (WebSocket) aus, kein Backfill-Sturm
+BAR_LIMIT = 1500  # 1d: about 6 years; 1h: about 8 months of exchange time
+LINK_MAX_AGE = timedelta(days=30)  # news can be back-filled; older moves are not linked again
+FRESH_BARS = 2  # only events of the latest candles trigger a live event (WebSocket), no backfill storm
 
 
 def build_series(rows: list[tuple[PriceBar, Source]], timeframe: str, currency: str) -> ev.Series:
@@ -48,15 +48,15 @@ def _source_info(rows: list[tuple[PriceBar, Source]], indices: list[int]) -> tup
     return ids, max(aware(b.fetched_at) for b, _ in used)
 
 
-# Letzter ausgewerteter Stand je (Instrument, Zeitraster): (Kerzenanzahl, letzte Kerze). Nur im Worker-Prozess;
-# nach einem Neustart wird einmal komplett gerechnet (idempotent, siehe unten).
+# Last evaluated state per (instrument, timeframe): (candle count, last candle). Worker process only;
+# after a restart everything is computed once in full (idempotent, see below).
 _last_seen: dict[tuple[int, str], tuple[int, datetime]] = {}
 
 
 def analyze_instrument(db: Session, inst: Instrument, timeframe: str, now: datetime | None = None,
                        skip_unchanged: bool = False) -> dict[str, int]:
-    """skip_unchanged (Worker-Job): Ereignisse und Bewegungen nur neu berechnen, wenn es neue Kerzen gibt.
-    Die Verknüpfung mit Meldungen läuft immer, weil Meldungen nach der Bewegung eintreffen können."""
+    """skip_unchanged (worker job): recompute events and moves only if there are new candles.
+    Linking with news always runs because news can arrive after the move."""
     now = now or datetime.now(UTC)
     rows = closed_only(load_bars(db, inst.id, timeframe, limit=BAR_LIMIT), timeframe, now)
     stats = {"events": 0, "moves": 0, "links": 0}
@@ -80,7 +80,7 @@ def analyze_instrument(db: Session, inst: Instrument, timeframe: str, now: datet
         key = (e.type, e.direction or "none", e.ts)
         if key in existing:
             continue
-        # Alle geladenen Kerzen bis zur Markierung fließen ein (Indikator-Vorlauf), also zählen ihre Quellen.
+        # All loaded candles up to the marker enter the calculation (indicator lead-in), so their sources count.
         ids, fetched = _source_info(rows, [0, e.index])
         row = IndicatorEvent(
             instrument_id=inst.id, timeframe=timeframe, type=e.type, direction=e.direction or "none", ts_utc=e.ts,
@@ -121,8 +121,8 @@ def analyze_instrument(db: Session, inst: Instrument, timeframe: str, now: datet
 
 
 def link_news(db: Session, inst: Instrument, timeframe: str, moves: list[NotableMove]) -> int:
-    """Meldungscluster des Instruments, deren erste Veröffentlichung im Zeitfenster liegt. Fügt nur fehlende
-    Verknüpfungen hinzu (Meldungen können nach der Bewegung eintreffen)."""
+    """News clusters of the instrument whose first publication lies in the time window. Adds only missing
+    links (news can arrive after the move)."""
     if not moves:
         return 0
     before, after = mv.WINDOWS[timeframe]
@@ -148,13 +148,13 @@ def link_news(db: Session, inst: Instrument, timeframe: str, moves: list[Notable
 
 
 def analysis_job() -> None:
-    """Für alle Watchlist-Instrumente (alle Nutzer) und je Zeitrahmen; ein Fehler betrifft nur diesen Lauf."""
+    """For all watchlist instruments (all users) and per timeframe; an error affects only that run."""
     with SessionLocal() as db:
         for inst in watched_instruments(db):
             for tf in TIMEFRAMES:
                 try:
                     stats = analyze_instrument(db, inst, tf, skip_unchanged=True)
-                except Exception:  # noqa: BLE001 - ein Instrument darf die anderen nicht stoppen
+                except Exception:  # noqa: BLE001 - one instrument must not stop the others
                     db.rollback()
                     log.exception("Analyse %s/%s fehlgeschlagen", inst.symbol, tf)
                     continue

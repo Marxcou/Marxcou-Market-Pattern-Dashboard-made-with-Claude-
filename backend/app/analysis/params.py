@@ -1,11 +1,12 @@
-"""Dokumentierte Parameter der Mustererkennung. Jede Erkennung speichert die verwendeten Werte, ihren Hash
-und ALGO_VERSION, damit sie reproduzierbar ist. Änderungen an Regeln erhöhen ALGO_VERSION."""
+"""Documented parameters of the pattern detection. Every detection stores the values used, their hash
+and ALGO_VERSION so it is reproducible. Changes to rules increase ALGO_VERSION."""
 import hashlib
 import json
 from dataclasses import dataclass
 from typing import Any
 
 ALGO_VERSION = "1.0.0"
+TEXT_VERSION = "en-1"  # bump when the language or wording of stored texts changes (forces a rescan)
 
 
 @dataclass(frozen=True)
@@ -17,89 +18,90 @@ class Param:
 
 PARAM_DOCS: dict[str, dict[str, Param]] = {
     "pivots": {
-        "atr_periode": Param(14, "Kerzen", "Periode der ATR (Average True Range nach Wilder)"),
-        "atr_faktor": Param(2.0, "Faktor", "Ein Wendepunkt steht fest, wenn der Kurs sich um mindestens so viele ATR "
-                            "davon entfernt hat"),
-        "min_bewegung_pct": Param(1.0, "%", "Mindestbewegung für einen Wendepunkt, falls größer als die ATR-Schwelle"),
+        "atr_periode": Param(14, "candles", "Period of the ATR (Average True Range after Wilder)"),
+        "atr_faktor": Param(2.0, "factor", "A turning point is fixed once the price has moved away from it by at "
+                            "least this many ATR"),
+        "min_bewegung_pct": Param(1.0, "%", "Minimum move for a turning point, if larger than the ATR threshold"),
     },
     "status": {
-        "invalidierung_puffer_pct": Param(1.5, "%", "Abstand jenseits des Extrempunkts, ab dem ein Muster "
-                                          "als ungültig gilt (Doppel- und Kopf-Schulter-Muster)"),
-        "frist_min_kerzen": Param(10, "Kerzen", "Mindestfrist für Bestätigung nach Musterende"),
-        "frist_max_kerzen": Param(60, "Kerzen", "Höchstfrist für Bestätigung nach Musterende; sonst Musterbreite"),
+        "invalidierung_puffer_pct": Param(1.5, "%", "Distance beyond the extreme point from which a pattern "
+                                          "is considered invalid (double top/bottom and head and shoulders)"),
+        "frist_min_kerzen": Param(10, "candles", "Minimum deadline for confirmation after the pattern end"),
+        "frist_max_kerzen": Param(60, "candles", "Maximum deadline for confirmation after the pattern end; "
+                                 "otherwise the pattern width"),
     },
     "doppel": {
-        "max_extrem_abweichung_pct": Param(1.5, "%", "Höchstabweichung der beiden Hochs bzw. Tiefs (Idealwert 0 %)"),
-        "min_abstand_kerzen": Param(10, "Kerzen", "Mindestabstand zwischen den beiden Extrempunkten"),
-        "max_abstand_kerzen": Param(120, "Kerzen", "Höchstabstand zwischen den beiden Extrempunkten"),
-        "ideal_abstand_min": Param(20, "Kerzen", "Abstand ab dem der Teilwert 1 ist"),
-        "ideal_abstand_max": Param(80, "Kerzen", "Abstand bis zu dem der Teilwert 1 ist"),
-        "min_tiefe_pct": Param(3.0, "%", "Mindestabstand des Zwischenhochs/-tiefs vom näheren Extrempunkt"),
-        "ideal_tiefe_pct": Param(8.0, "%", "Tiefe, ab der der Teilwert 1 ist"),
-        "min_vortrend_pct": Param(5.0, "%", "Mindestbewegung vom vorherigen Wendepunkt zum ersten Extrempunkt"),
-        "ideal_vortrend_pct": Param(15.0, "%", "Vortrend, ab dem der Teilwert 1 ist"),
+        "max_extrem_abweichung_pct": Param(1.5, "%", "Maximum deviation of the two highs or lows (ideal value 0%)"),
+        "min_abstand_kerzen": Param(10, "candles", "Minimum distance between the two extreme points"),
+        "max_abstand_kerzen": Param(120, "candles", "Maximum distance between the two extreme points"),
+        "ideal_abstand_min": Param(20, "candles", "Distance from which the sub-score is 1"),
+        "ideal_abstand_max": Param(80, "candles", "Distance up to which the sub-score is 1"),
+        "min_tiefe_pct": Param(3.0, "%", "Minimum distance of the intermediate high/low from the nearer extreme point"),
+        "ideal_tiefe_pct": Param(8.0, "%", "Depth from which the sub-score is 1"),
+        "min_vortrend_pct": Param(5.0, "%", "Minimum move from the previous turning point to the first extreme point"),
+        "ideal_vortrend_pct": Param(15.0, "%", "Prior trend from which the sub-score is 1"),
     },
     "kopf_schulter": {
-        "min_kopf_ueberhang_pct": Param(2.0, "%", "Kopf liegt mindestens so weit jenseits der höheren Schulter"),
-        "ideal_kopf_ueberhang_pct": Param(6.0, "%", "Überhang, ab dem der Teilwert 1 ist"),
-        "max_schulter_abweichung_pct": Param(5.0, "%", "Höchstabweichung der beiden Schultern (Idealwert 0 %)"),
-        "max_nacken_neigung_pct": Param(5.0, "%", "Höchstunterschied der beiden Nackenpunkte (Idealwert 0 %)"),
-        "min_zeit_verhaeltnis": Param(0.5, "Faktor", "Dauer linke Seite / rechte Seite mindestens"),
-        "max_zeit_verhaeltnis": Param(2.0, "Faktor", "Dauer linke Seite / rechte Seite höchstens (Idealwert 1)"),
-        "min_breite_kerzen": Param(15, "Kerzen", "Mindestbreite von linker bis rechter Schulter"),
-        "max_breite_kerzen": Param(250, "Kerzen", "Höchstbreite von linker bis rechter Schulter"),
-        "min_vortrend_pct": Param(5.0, "%", "Mindestbewegung vom vorherigen Wendepunkt zur linken Schulter"),
-        "ideal_vortrend_pct": Param(15.0, "%", "Vortrend, ab dem der Teilwert 1 ist"),
+        "min_kopf_ueberhang_pct": Param(2.0, "%", "Head lies at least this far beyond the higher shoulder"),
+        "ideal_kopf_ueberhang_pct": Param(6.0, "%", "Overhang from which the sub-score is 1"),
+        "max_schulter_abweichung_pct": Param(5.0, "%", "Maximum deviation of the two shoulders (ideal value 0%)"),
+        "max_nacken_neigung_pct": Param(5.0, "%", "Maximum difference of the two neck points (ideal value 0%)"),
+        "min_zeit_verhaeltnis": Param(0.5, "factor", "Duration left side / right side, minimum"),
+        "max_zeit_verhaeltnis": Param(2.0, "factor", "Duration left side / right side, maximum (ideal value 1)"),
+        "min_breite_kerzen": Param(15, "candles", "Minimum width from left to right shoulder"),
+        "max_breite_kerzen": Param(250, "candles", "Maximum width from left to right shoulder"),
+        "min_vortrend_pct": Param(5.0, "%", "Minimum move from the previous turning point to the left shoulder"),
+        "ideal_vortrend_pct": Param(15.0, "%", "Prior trend from which the sub-score is 1"),
     },
     "dreieck_keil": {
-        "min_pivots": Param(4, "Anzahl", "Mindestzahl Wendepunkte (je mindestens 2 an jeder Linie)"),
-        "max_pivots": Param(6, "Anzahl", "Höchstzahl Wendepunkte je Kandidat"),
-        "min_breite_kerzen": Param(15, "Kerzen", "Mindestdauer"),
-        "max_breite_kerzen": Param(150, "Kerzen", "Höchstdauer"),
-        "flach_steigung_pct": Param(0.05, "% je Kerze", "Eine Linie gilt als waagerecht bis zu dieser Steigung"),
-        "min_steigung_pct": Param(0.05, "% je Kerze", "Eine Linie gilt als steigend/fallend ab dieser Steigung"),
-        "max_anpassung_pct": Param(1.5, "%", "Höchstabstand eines Wendepunkts von seiner Linie"),
-        "min_verengung_pct": Param(20.0, "%", "Mindestverengung der Spanne vom Anfang zum Ende"),
-        "ideal_verengung_pct": Param(50.0, "%", "Verengung, ab der der Teilwert 1 ist"),
-        "toleranz_atr": Param(0.5, "Faktor", "Toleranz um die Linien für Schlusskurse innerhalb, in ATR"),
-        "min_anteil_innerhalb_pct": Param(90.0, "%", "Mindestanteil der Schlusskurse zwischen den Linien"),
+        "min_pivots": Param(4, "count", "Minimum number of turning points (at least 2 on each line)"),
+        "max_pivots": Param(6, "count", "Maximum number of turning points per candidate"),
+        "min_breite_kerzen": Param(15, "candles", "Minimum duration"),
+        "max_breite_kerzen": Param(150, "candles", "Maximum duration"),
+        "flach_steigung_pct": Param(0.05, "% per candle", "A line counts as horizontal up to this slope"),
+        "min_steigung_pct": Param(0.05, "% per candle", "A line counts as rising/falling from this slope"),
+        "max_anpassung_pct": Param(1.5, "%", "Maximum distance of a turning point from its line"),
+        "min_verengung_pct": Param(20.0, "%", "Minimum narrowing of the range from start to end"),
+        "ideal_verengung_pct": Param(50.0, "%", "Narrowing from which the sub-score is 1"),
+        "toleranz_atr": Param(0.5, "factor", "Tolerance around the lines for closing prices inside, in ATR"),
+        "min_anteil_innerhalb_pct": Param(90.0, "%", "Minimum share of closing prices between the lines"),
     },
     "flagge": {
-        "min_stange_pct": Param(8.0, "%", "Mindestbewegung der Fahnenstange"),
-        "ideal_stange_pct": Param(15.0, "%", "Fahnenstange, ab der der Teilwert 1 ist"),
-        "min_stange_kerzen": Param(3, "Kerzen", "Mindestdauer der Fahnenstange"),
-        "max_stange_kerzen": Param(15, "Kerzen", "Höchstdauer der Fahnenstange"),
-        "min_flagge_kerzen": Param(5, "Kerzen", "Mindestdauer der Konsolidierung"),
-        "max_flagge_kerzen": Param(20, "Kerzen", "Höchstdauer der Konsolidierung"),
-        "max_ruecksetzer_pct": Param(50.0, "%", "Höchster Rücksetzer in der Konsolidierung, in % der Fahnenstange"),
-        "ideal_ruecksetzer_pct": Param(25.0, "%", "Rücksetzer, bis zu dem der Teilwert 1 ist"),
-        "max_parallel_abweichung_pct": Param(0.15, "% je Kerze", "Flagge: Höchstunterschied der Steigungen"),
-        "max_gegen_steigung_pct": Param(0.05, "% je Kerze", "Flagge: Mittellinie höchstens so steil in Richtung "
-                                        "der Fahnenstange (sonst keine Konsolidierung)"),
-        "max_neigung_anteil_pct": Param(40.0, "%", "Steigung der Kanal-Mitte höchstens dieser Anteil der mittleren "
-                                        "Steigung der Fahnenstange (sonst eher Trendwende als Konsolidierung)"),
-        "wimpel_min_steigung_pct": Param(0.02, "% je Kerze", "Wimpel: obere Linie fällt und untere steigt je "
-                                         "mindestens so stark"),
-        "toleranz_atr": Param(0.5, "Faktor", "Toleranz um die Kanal-Linien für Schlusskurse, in ATR"),
-        "min_anteil_innerhalb_pct": Param(90.0, "%", "Mindestanteil der Schlusskurse im Kanal"),
-        "ausbruch_frist_kerzen": Param(10, "Kerzen", "Frist für den Ausbruch nach Ende der Konsolidierung"),
+        "min_stange_pct": Param(8.0, "%", "Minimum move of the flagpole"),
+        "ideal_stange_pct": Param(15.0, "%", "Flagpole from which the sub-score is 1"),
+        "min_stange_kerzen": Param(3, "candles", "Minimum duration of the flagpole"),
+        "max_stange_kerzen": Param(15, "candles", "Maximum duration of the flagpole"),
+        "min_flagge_kerzen": Param(5, "candles", "Minimum duration of the consolidation"),
+        "max_flagge_kerzen": Param(20, "candles", "Maximum duration of the consolidation"),
+        "max_ruecksetzer_pct": Param(50.0, "%", "Maximum retracement within the consolidation, in % of the flagpole"),
+        "ideal_ruecksetzer_pct": Param(25.0, "%", "Retracement up to which the sub-score is 1"),
+        "max_parallel_abweichung_pct": Param(0.15, "% per candle", "Flag: maximum difference of the slopes"),
+        "max_gegen_steigung_pct": Param(0.05, "% per candle", "Flag: midline at most this steep in the direction "
+                                        "of the flagpole (otherwise not a consolidation)"),
+        "max_neigung_anteil_pct": Param(40.0, "%", "Slope of the channel midline at most this share of the mean "
+                                        "slope of the flagpole (otherwise more a trend reversal than a consolidation)"),
+        "wimpel_min_steigung_pct": Param(0.02, "% per candle", "Pennant: upper line falls and lower line rises by "
+                                         "at least this much each"),
+        "toleranz_atr": Param(0.5, "factor", "Tolerance around the channel lines for closing prices, in ATR"),
+        "min_anteil_innerhalb_pct": Param(90.0, "%", "Minimum share of closing prices inside the channel"),
+        "ausbruch_frist_kerzen": Param(10, "candles", "Deadline for the breakout after the end of the consolidation"),
     },
     "volumen": {
-        "ideal_verhaeltnis": Param(0.7, "Faktor", "Volumenverhältnis (später/früher), bis zu dem der Teilwert 1 ist"),
-        "grenz_verhaeltnis": Param(1.3, "Faktor", "Volumenverhältnis, ab dem der Teilwert 0 ist"),
-        "fenster_kerzen": Param(2, "Kerzen", "Kerzen links und rechts eines Wendepunkts für das mittlere Volumen"),
+        "ideal_verhaeltnis": Param(0.7, "factor", "Volume ratio (later/earlier) up to which the sub-score is 1"),
+        "grenz_verhaeltnis": Param(1.3, "factor", "Volume ratio from which the sub-score is 0"),
+        "fenster_kerzen": Param(2, "candles", "Candles left and right of a turning point for the mean volume"),
     },
     "zonen": {
-        "rueckblick_kerzen": Param(500, "Kerzen", "Nur Wendepunkte aus diesem Zeitraum bilden Zonen"),
-        "toleranz_atr": Param(0.5, "Faktor", "Zonenbreite als Vielfaches der mittleren ATR"),
-        "min_toleranz_pct": Param(0.75, "%", "Mindest-Zonenbreite in % des letzten Schlusskurses"),
-        "min_beruehrungen": Param(3, "Anzahl", "Mindestzahl Wendepunkte in der Zone"),
-        "ideal_beruehrungen": Param(6, "Anzahl", "Berührungen, ab denen der Teilwert 1 ist"),
-        "min_zeitspanne_kerzen": Param(20, "Kerzen", "Mindestabstand zwischen erster und letzter Berührung"),
-        "ideal_zeitspanne_kerzen": Param(120, "Kerzen", "Zeitspanne, ab der der Teilwert 1 ist"),
-        "ideal_aktualitaet_kerzen": Param(20, "Kerzen", "Letzte Berührung höchstens so lange her: Teilwert 1"),
-        "max_aktualitaet_kerzen": Param(250, "Kerzen", "Letzte Berührung so lange her: Teilwert 0"),
-        "max_zonen": Param(8, "Anzahl", "Höchstzahl angezeigter Zonen (die mit der höchsten Konfidenz)"),
+        "rueckblick_kerzen": Param(500, "candles", "Only turning points from this period form zones"),
+        "toleranz_atr": Param(0.5, "factor", "Zone width as a multiple of the mean ATR"),
+        "min_toleranz_pct": Param(0.75, "%", "Minimum zone width in % of the last closing price"),
+        "min_beruehrungen": Param(3, "count", "Minimum number of turning points in the zone"),
+        "ideal_beruehrungen": Param(6, "count", "Touches from which the sub-score is 1"),
+        "min_zeitspanne_kerzen": Param(20, "candles", "Minimum distance between first and last touch"),
+        "ideal_zeitspanne_kerzen": Param(120, "candles", "Time span from which the sub-score is 1"),
+        "ideal_aktualitaet_kerzen": Param(20, "candles", "Last touch at most this long ago: sub-score 1"),
+        "max_aktualitaet_kerzen": Param(250, "candles", "Last touch this long ago: sub-score 0"),
+        "max_zonen": Param(8, "count", "Maximum number of displayed zones (those with the highest confidence)"),
     },
 }
 
@@ -111,12 +113,12 @@ def default_params() -> Params:
 
 
 def params_hash(params: Params) -> str:
-    blob = json.dumps({"v": ALGO_VERSION, "p": params}, sort_keys=True, separators=(",", ":"))
+    blob = json.dumps({"v": ALGO_VERSION, "t": TEXT_VERSION, "p": params}, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(blob.encode()).hexdigest()[:8]
 
 
 def params_doc(groups: list[str], params: Params) -> list[dict[str, Any]]:
-    """Parameter mit Beschreibung für /patterns/catalog (tatsächlich verwendete Werte)."""
+    """Parameters with description for /patterns/catalog (values actually used)."""
     return [
         {"key": f"{g}.{k}", "value": params[g][k], "unit": p.unit, "description": p.description}
         for g in groups for k, p in PARAM_DOCS[g].items()

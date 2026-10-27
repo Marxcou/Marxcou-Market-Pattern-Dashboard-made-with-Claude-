@@ -1,5 +1,5 @@
-"""KI-Erklärtexte zu Erkennungen und Prognosen. Vertrag: docs/api-contract.md (Abschnitt "Erklärtexte").
-Der Text entsteht ausschließlich aus den bereits berechneten Werten dieser Endpunkte (siehe explain_facts)."""
+"""AI explanation texts for detections and forecasts. Contract: docs/api-contract.md (section "Explanation texts").
+The text is generated exclusively from the values already calculated by these endpoints (see explain_facts)."""
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
@@ -14,14 +14,14 @@ from app.models import Instrument, PatternDetection
 
 router = APIRouter(prefix="/api", tags=["explanations"])
 
-NO_FORECAST = "Für diese Prognose liegt kein Korridor vor, deshalb gibt es keinen Erklärtext."
+NO_FORECAST = "There is no corridor for this forecast, so there is no explanation text."
 
 
 @router.get("/patterns/{detection_id}/explanation")
 def pattern_explanation(detection_id: int, db: DB, user: CurrentUser) -> dict[str, Any]:
     d = db.get(PatternDetection, detection_id)
     if d is None:
-        raise HTTPException(404, "Erkennung nicht gefunden")
+        raise HTTPException(404, "Detection not found")
     facts = detection_out(db, d)
     return get_explanation(db, "pattern", d.id, pattern_facts_text(facts), pattern_template(facts),
                            allow_ai=not d.is_demo)
@@ -31,7 +31,7 @@ def pattern_explanation(detection_id: int, db: DB, user: CurrentUser) -> dict[st
 def forecast_explanation(instrument_id: int, db: DB, user: CurrentUser) -> dict[str, Any]:
     inst = db.get(Instrument, instrument_id)
     if inst is None:
-        raise HTTPException(404, "Instrument nicht gefunden")
+        raise HTTPException(404, "Instrument not found")
     f = get_forecast(instrument_id, db, user, timeframe="1d", horizon=HORIZON)
     if f["empty_reason"] or not f["steps"]:
         raise HTTPException(404, f["empty_reason"] or NO_FORECAST)

@@ -73,7 +73,7 @@ def test_disable_ends_sessions_and_blocks_login_then_reenable(client, admin_csrf
         assert r.status_code == 200 and r.json()["is_active"] is False
         assert friend.get("/api/auth/me").status_code == 401  # Sitzung beendet
         blocked = friend.post("/api/auth/login", json={"email": "f@example.com", "password": "ein-langes-passwort"})
-        assert blocked.status_code == 403 and "gesperrt" in blocked.json()["detail"]
+        assert blocked.status_code == 403 and "blocked" in blocked.json()["detail"]
         wrong = friend.post("/api/auth/login", json={"email": "f@example.com", "password": "falsch-falsch-1"})
         assert wrong.status_code == 401  # gesperrtes Konto verrät sich nicht ohne richtiges Passwort
         client.patch(f"/api/users/{uid}", json={"is_active": True}, headers={H: admin_csrf})

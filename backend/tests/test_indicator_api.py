@@ -73,7 +73,7 @@ def test_pipeline_and_endpoints(client):
     r = client.get(f"/api/instruments/{iid}/move-links?timeframe=1d")
     assert r.status_code == 200
     body = r.json()
-    assert body["note"] == "Zeitlich zusammenfallend, keine Aussage über Ursache."
+    assert body["note"] == "Coinciding in time, no statement about cause."
     big = next(m for m in body["moves"] if m["return_pct"] < -7)
     assert big["return_z"] < -3 and "return_z" in big["reasons"]
     assert [n["canonical_title"] for n in big["news"]] == ["Apple meldet Lieferprobleme"]  # die ferne Meldung nicht

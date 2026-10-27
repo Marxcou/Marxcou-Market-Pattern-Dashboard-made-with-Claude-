@@ -29,7 +29,7 @@ def _digest(token: str) -> str:
 
 
 def generate_temporary_password() -> str:
-    """Zufälliges Einmalpasswort (16 Zeichen, URL-sicher); wird nur einmal angezeigt und nie gespeichert."""
+    """Random one-time password (16 characters, URL-safe); shown only once and never stored."""
     return secrets.token_urlsafe(12)
 
 

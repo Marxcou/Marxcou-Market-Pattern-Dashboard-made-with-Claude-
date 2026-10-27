@@ -11,7 +11,7 @@ test("Chart zeigt Kurs, Kennzeichnung als Beispieldaten, letzten Datenpunkt und 
   await expect(info).toContainText("Letzter Datenpunkt:");
   await expect(info).toContainText("Beispieldaten (Demo-Modus)");
   const tip = page.locator('[data-testid="last-update"] ~ [data-testid="source-tip"]');
-  await tip.getByText("Quelle: Demo-Kursquelle (Beispieldaten)").click();
+  await tip.getByText("Quelle: Demo price source (sample data)").click();
   await expect(tip.getByText("Verzögerung:")).toBeVisible();
   await expect(tip.getByText("Abgerufen:")).toBeVisible();
   await expect(tip.getByRole("link", { name: "Nutzungsbedingungen" })).toBeVisible();
@@ -42,7 +42,7 @@ test("Indikatoren sind zuschaltbar und nennen Formel und Datenbasis", async ({ p
   for (const name of ["RSI", "MACD"]) await toggles.getByLabel(name).check({ force: true });
   const info = page.getByTestId("indicator-info");
   await expect(info).toContainText("Berechnet aus den Kursdaten");
-  await expect(info).toContainText("Demo-Kursquelle (Beispieldaten)");
+  await expect(info).toContainText("Demo price source (sample data)");
   await expect(info.getByRole("listitem").first()).toBeVisible();
 });
 

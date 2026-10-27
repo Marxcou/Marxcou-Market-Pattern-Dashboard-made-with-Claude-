@@ -1,5 +1,5 @@
-"""Indikator-Serien, Indikator-Ereignisse und auffällige Kursbewegungen mit zeitlich passenden Meldungen.
-Der Vertrag steht in docs/api-contract.md (Abschnitt Phase 3A)."""
+"""Indicator series, indicator events and notable price moves with news matching in time.
+The contract is in docs/api-contract.md (section phase 3A)."""
 import base64
 import binascii
 from datetime import UTC, datetime
@@ -32,7 +32,7 @@ router = APIRouter(prefix="/api", tags=["indicators"])
 INDICATORS_VERSION = "indicators-1"
 WARMUP_BARS = 400
 EVENT_TYPES = ("golden_cross", "death_cross", "rsi_divergence", "bb_breakout", "volume_spike")
-NO_STATS_REASON = "Für Indikator-Ereignisse wird noch keine historische Trefferquote berechnet."
+NO_STATS_REASON = "No historical hit rate is calculated for indicator events yet."
 
 
 class IndicatorOut(BaseModel):
@@ -143,14 +143,14 @@ def _periods(raw: str | None, name: str, count: int = 5) -> list[int]:
     except ValueError:
         raise HTTPException(422, f"{name}: ganze Zahlen, durch Komma getrennt") from None
     if len(vals) > count or any(v < 2 or v > 500 for v in vals):
-        raise HTTPException(422, f"{name}: höchstens {count} Perioden, je 2 bis 500")
+        raise HTTPException(422, f"{name}: at most {count} periods, each 2 to 500")
     return list(dict.fromkeys(vals))
 
 
 def _get_instrument(db: DB, instrument_id: int) -> Instrument:
     inst = db.get(Instrument, instrument_id)
     if inst is None:
-        raise HTTPException(404, "Instrument nicht gefunden")
+        raise HTTPException(404, "Instrument not found")
     return inst
 
 
@@ -162,12 +162,12 @@ def get_indicators(  # noqa: PLR0912, PLR0913
     bb: str | None = None,
 ) -> IndicatorsOut:
     if timeframe not in TIMEFRAMES:
-        raise HTTPException(422, f"timeframe muss einer von {TIMEFRAMES} sein")
+        raise HTTPException(422, f"timeframe must be one of {TIMEFRAMES}")
     _get_instrument(db, instrument_id)
     sma_p, ema_p = _periods(sma, "sma"), _periods(ema, "ema")
     macd_p = _periods(macd, "macd", 3) if macd else []
     if macd and (len(macd_p) != 3 or not macd_p[0] < macd_p[1]):
-        raise HTTPException(422, "macd: schnell,langsam,signal mit schnell < langsam")
+        raise HTTPException(422, "macd: fast,slow,signal with fast < slow")
     bb_p: tuple[int, float] | None = None
     if bb:
         try:
@@ -183,26 +183,26 @@ def get_indicators(  # noqa: PLR0912, PLR0913
     if not rows:
         return IndicatorsOut(instrument_id=instrument_id, timeframe=timeframe, algo_version=INDICATORS_VERSION,
                              timestamps=[], indicators=[], sources=[], bars_fetched_at=None, computed_at=now,
-                             empty_reason="Keine Kursdaten für diesen Zeitraum gespeichert (noch keine Quelle hat "
-                                          "sie geliefert); ohne Kerzen gibt es keine Indikatoren.")
+                             empty_reason="No price data stored for this period (no source has "
+                                          "delivered it yet); without candles there are no indicators.")
     close = np.array([b.close for b, _ in rows], dtype=float)
     out: list[IndicatorOut] = []
     for n in sma_p:
         out.append(IndicatorOut(
             key=f"sma_{n}", type="sma", params={"period": n}, label=f"SMA ({n})", panel="price",
-            formula=f"Arithmetisches Mittel der letzten {n} Schlusskurse",
+            formula=f"Arithmetic mean of the last {n} closing prices",
             lines={"value": _clean(ind.sma(close, n))}))
     for n in ema_p:
         out.append(IndicatorOut(
             key=f"ema_{n}", type="ema", params={"period": n}, label=f"EMA ({n})", panel="price",
-            formula=(f"Exponentieller Durchschnitt der Schlusskurse, α = 2/({n}+1); "
-                     f"Startwert = SMA der ersten {n} Kerzen"),
+            formula=(f"Exponential average of the closing prices, α = 2/({n}+1); "
+                     f"start value = SMA of the first {n} candles"),
             lines={"value": _clean(ind.ema(close, n))}))
     if rsi:
         out.append(IndicatorOut(
             key=f"rsi_{rsi}", type="rsi", params={"period": rsi}, label=f"RSI ({rsi})", panel="own",
-            formula=(f"RSI nach Wilder: 100 − 100 / (1 + RS), RS = geglätteter Durchschnittsgewinn / geglätteter "
-                     f"Durchschnittsverlust der Schlusskurs-Änderungen ({rsi} Kerzen)"),
+            formula=(f"Wilder RSI: 100 − 100 / (1 + RS), RS = smoothed average gain / smoothed "
+                     f"average loss of the closing price changes ({rsi} candles)"),
             range=[0, 100], reference_lines=[30, 70], lines={"value": _clean(ind.rsi(close, rsi))}))
     if macd_p:
         f, sl, sg = macd_p
@@ -210,20 +210,20 @@ def get_indicators(  # noqa: PLR0912, PLR0913
         out.append(IndicatorOut(
             key=f"macd_{f}_{sl}_{sg}", type="macd", params={"fast": f, "slow": sl, "signal": sg},
             label=f"MACD ({f}, {sl}, {sg})", panel="own",
-            formula=(f"MACD = EMA({f}) − EMA({sl}) der Schlusskurse; Signal = EMA({sg}) des MACD; "
-                     "Histogramm = MACD − Signal"),
+            formula=(f"MACD = EMA({f}) − EMA({sl}) of the closing prices; signal = EMA({sg}) of the MACD; "
+                     "histogram = MACD − signal"),
             lines={"macd": _clean(line), "signal": _clean(sig), "histogram": _clean(hist)}))
     if bb_p:
         per, fac = bb_p
         mid, up, lo = ind.bollinger(close, per, fac)
         out.append(IndicatorOut(
             key=f"bb_{per}_{fac:g}".replace(".", "_"), type="bollinger", params={"period": per, "factor": fac},
-            label=f"Bollinger-Bänder ({per}, {fac:g} σ)", panel="price",
-            formula=(f"Mittelband = SMA({per}); Bänder = Mittelband ± {fac:g} × Standardabweichung "
-                     f"(Grundgesamtheit) der letzten {per} Schlusskurse"),
+            label=f"Bollinger bands ({per}, {fac:g} σ)", panel="price",
+            formula=(f"Middle band = SMA({per}); bands = middle band ± {fac:g} × standard deviation "
+                     f"(population) of the last {per} closing prices"),
             lines={"middle": _clean(mid), "upper": _clean(up), "lower": _clean(lo)}))
 
-    # Auf das angefragte Fenster kürzen (Vorlauf gehört nicht in die Antwort)
+    # Trim to the requested window (the lead-in does not belong in the response)
     keep = [i for i, (b, _) in enumerate(rows) if start is None or aware(b.ts_utc) >= aware(start)][-limit:]
     lo_i = keep[0] if keep else len(rows)
     for item in out:
@@ -234,7 +234,7 @@ def get_indicators(  # noqa: PLR0912, PLR0913
         instrument_id=instrument_id, timeframe=timeframe, algo_version=INDICATORS_VERSION,
         timestamps=[b.ts_utc for b, _ in shown], indicators=out, sources=[_ref(s) for s in srcs.values()],
         bars_fetched_at=max((b.fetched_at for b, _ in rows), default=None), computed_at=now,
-        empty_reason=None if shown else "Im angefragten Zeitraum liegen keine Kerzen.")
+        empty_reason=None if shown else "There are no candles in the requested period.")
 
 
 def _encode(ts: datetime, id_: int) -> str:
@@ -246,7 +246,7 @@ def _decode(cursor: str) -> tuple[datetime, int]:
         ts, id_ = base64.urlsafe_b64decode(cursor.encode()).decode().split("|")
         return datetime.fromisoformat(ts), int(id_)
     except (ValueError, binascii.Error, UnicodeDecodeError):
-        raise HTTPException(422, "Ungültiger cursor") from None
+        raise HTTPException(422, "Invalid cursor") from None
 
 
 def _sources(db: DB, ids: list[int]) -> list[SourceRef]:
@@ -260,9 +260,9 @@ def get_indicator_events(  # noqa: PLR0913
     cursor: str | None = None,
 ) -> IndicatorEventsOut:
     if timeframe not in TIMEFRAMES:
-        raise HTTPException(422, f"timeframe muss einer von {TIMEFRAMES} sein")
+        raise HTTPException(422, f"timeframe must be one of {TIMEFRAMES}")
     if type and type not in EVENT_TYPES:
-        raise HTTPException(422, f"type muss einer von {EVENT_TYPES} sein")
+        raise HTTPException(422, f"type must be one of {EVENT_TYPES}")
     _get_instrument(db, instrument_id)
     stmt = select(IndicatorEvent).where(
         IndicatorEvent.instrument_id == instrument_id, IndicatorEvent.timeframe == timeframe,
@@ -292,9 +292,9 @@ def get_indicator_events(  # noqa: PLR0913
         for e in rows]
     reason = None
     if not items:
-        reason = ("Keine Ereignisse mit diesen Filtern gefunden." if (type or since or until or cursor)
-                  else "Noch keine Ereignisse erkannt. Die Auswertung braucht gespeicherte Kerzen und läuft im "
-                       "Hintergrund; für Kreuzungen des SMA(200) sind mindestens 201 abgeschlossene Kerzen nötig.")
+        reason = ("No events found with these filters." if (type or since or until or cursor)
+                  else "No events detected yet. The analysis needs stored candles and runs in the "
+                       "background; crossings of the SMA(200) need at least 201 completed candles.")
     return IndicatorEventsOut(events=items, next_cursor=_encode(rows[-1].ts_utc, rows[-1].id) if more else None,
                               empty_reason=reason)
 
@@ -305,7 +305,7 @@ def get_move_links(
     until: datetime | None = None, limit: int = Query(50, ge=1, le=200),
 ) -> MoveLinksOut:
     if timeframe not in TIMEFRAMES:
-        raise HTTPException(422, f"timeframe muss einer von {TIMEFRAMES} sein")
+        raise HTTPException(422, f"timeframe must be one of {TIMEFRAMES}")
     _get_instrument(db, instrument_id)
     stmt = select(NotableMove).where(
         NotableMove.instrument_id == instrument_id, NotableMove.timeframe == timeframe,
@@ -334,6 +334,6 @@ def get_move_links(
             reasons=m.reasons, params=m.params, algo_version=m.algo_version, sources=_sources(db, m.source_ids),
             bars_fetched_at=m.fetched_at, detected_at=m.detected_at, is_demo=m.is_demo, news=news))
     reason = None if out else (
-        "Keine auffälligen Kursbewegungen im Zeitraum gefunden." if (since or until) else
-        "Noch keine auffälligen Kursbewegungen erkannt (nötig sind mindestens 61 abgeschlossene Kerzen).")
+        "No notable price moves found in the period." if (since or until) else
+        "No notable price moves detected yet (at least 61 completed candles are required).")
     return MoveLinksOut(moves=out, note=NOTE, empty_reason=reason)

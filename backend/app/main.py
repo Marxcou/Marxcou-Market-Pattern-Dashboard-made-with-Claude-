@@ -34,7 +34,7 @@ for r in (meta.router, auth.router, users.router, instruments.router, watchlist.
 
 @app.websocket("/ws")
 async def ws(websocket: WebSocket) -> None:
-    """Live-Ereignisse (quote, news, detection, source_status). Nur mit gültiger Sitzung."""
+    """Live events (quote, news, detection, source_status). Only with a valid session."""
     token = websocket.cookies.get(SESSION_COOKIE)
     with SessionLocal() as db:
         ok = bool(token) and load_session(db, token or "") is not None

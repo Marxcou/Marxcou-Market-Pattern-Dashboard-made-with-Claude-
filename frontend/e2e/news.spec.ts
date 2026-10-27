@@ -7,18 +7,18 @@ test.beforeEach(async ({ page }) => {
 test("Meldungen sind zusammengeführt und nennen alle Quellen mit Link, Zeitpunkt und Stimmungsbegründung", async ({ page }) => {
   const clusters = page.getByTestId("news-cluster");
   await expect(clusters).toHaveCount(2);
-  const first = clusters.filter({ hasText: "dritte Quartal" });
+  const first = clusters.filter({ hasText: "third-quarter" });
   await expect(first).toContainText("2 Quellen");
   const items = first.getByTestId("news-item");
   await expect(items).toHaveCount(2);
   await expect(items.first().getByRole("link").first()).toHaveAttribute("href", /^https:\/\/example\.org\/demo\//);
-  await expect(first).toContainText("Demo-Nachrichtenquelle A (Beispieldaten)");
-  await expect(first).toContainText("Demo-Nachrichtenquelle B (Beispieldaten)");
+  await expect(first).toContainText("Demo news source A (sample data)");
+  await expect(first).toContainText("Demo news source B (sample data)");
   await expect(first).toContainText("veröffentlicht");
   // Stimmung mit Begründung, Zitat und Methode/Modell
   await first.getByTestId("sentiment").locator("summary").click();
-  await expect(first.getByTestId("sentiment")).toContainText("Methode: Wörterbuch (Demo-Lexikon (Beispieldaten)");
-  await expect(first.getByTestId("sentiment")).toContainText("Zahlen für das dritte Quartal");
+  await expect(first.getByTestId("sentiment")).toContainText("Methode: Wörterbuch (Demo lexicon (sample data)");
+  await expect(first.getByTestId("sentiment")).toContainText("third-quarter figures");
   // Herkunft je Meldung
   await items.first().getByText(/^Quelle:/).click();
   await expect(items.first().getByText("Abgerufen:")).toBeVisible();
@@ -32,7 +32,7 @@ test("Filter nach Stimmung, Quelle und Aktie", async ({ page }) => {
   await expect(page.getByTestId("no-news")).toContainText("Keine Nachrichten für diese Auswahl.");
   await page.getByLabel("Stimmung").selectOption("");
   await expect(clusters).toHaveCount(2);
-  await page.getByLabel("Quelle").selectOption({ label: "Demo-Nachrichtenquelle A (Beispieldaten)" });
+  await page.getByLabel("Quelle").selectOption({ label: "Demo news source A (sample data)" });
   await expect(clusters).toHaveCount(2);
   await page.getByLabel("Aktie").selectOption({ label: "DEMOA" });
   await expect(clusters).toHaveCount(2);

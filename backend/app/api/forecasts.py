@@ -1,7 +1,7 @@
-"""Prognosen als Quantil-Korridor, Prognose-Backtest und Verknüpfung mit Muster-Szenarien. Vertrag: docs/api-contract.md
-(Phase 4A). Es gibt keinen Endpunkt für eine einzelne Linie (Grundregel 4): der mittlere Verlauf (Median) und die
-Beispielpfade kommen nur zusammen mit dem Korridor und den Fehlermaßen des Medians; Fehlermaße stammen nur aus
-backtest_runs (kind='forecast'), sonst status "nicht_berechnet" mit null-Werten (Grundregel 6)."""
+"""Forecasts as a quantile corridor, forecast backtest and link to pattern scenarios. Contract: docs/api-contract.md
+(phase 4A). There is no endpoint for a single line (core rule 4): the central path (median) and the
+example paths come only together with the corridor and the error measures of the median; error measures come only from
+backtest_runs (kind='forecast'), otherwise status "nicht_berechnet" with null values (core rule 6)."""
 from datetime import datetime
 from typing import Any
 
@@ -10,40 +10,59 @@ from sqlalchemy import select
 
 from app.analysis import fmt
 from app.analysis import forecast as fc
-from app.api.patterns import _latest_run, _sources
+from app.api.patterns import _historical, _latest_run, _sources
 from app.bars import aware
 from app.deps import DB, CurrentUser
-from app.forecast_service import METHOD_NOTE, NOT_RUN_REASON, TIMEFRAME, params_hash
+from app.forecast_service import (
+    METHOD_NOTE,
+    METRIC_NAMES,
+    NOT_RUN_REASON,
+    TIMEFRAME,
+    params_hash,
+    verdict_from_values,
+)
 from app.models import BacktestRun, Forecast, Instrument, PatternDetection
 from app.onboarding import is_pending
 
 router = APIRouter(prefix="/api", tags=["forecasts"])
 
-NOTE = "Statistische Szenarien aus historischen Schwankungen, keine Vorhersage und keine Anlageberatung."
-PENDING_REASON = "Die Prognose wird gerade berechnet. Die Ansicht aktualisiert sich automatisch."
-ONLY_DAILY_REASON = "Prognosen gibt es derzeit nur für Tageskerzen."
-BACKTEST_NOT_COMPUTED = "Die Prognosegüte wurde für dieses Instrument noch nicht berechnet."
+NOTE = "Statistical scenarios from historical fluctuations, not a prediction and not investment advice."
+PENDING_REASON = "The forecast is being calculated. The view updates automatically."
+ONLY_DAILY_REASON = "Forecasts are currently available for daily candles only."
+BACKTEST_NOT_COMPUTED = "The forecast quality has not been calculated for this instrument yet."
 SCENARIO_NOTE = (
-    "Die Simulation kennt das Muster nicht; sie zeigt nur, wie oft die Niveaus bei historischer Schwankung zuerst "
-    "erreicht würden. Die historische Quote stammt aus dem Muster-Backtest."
+    "The simulation does not know the pattern; it only shows how often the levels would be reached first given "
+    "historical fluctuation. The historical rate comes from the pattern backtest."
 )
-MEDIAN_NAME = "Mittlerer Verlauf der Modellverteilung"
+MEDIAN_NAME = "Central path of the model distribution"
 MEDIAN_DESCRIPTION = (
-    "Die Linie verbindet je Handelstag den Median (50-%-Quantil) aller simulierten Kurse: die Hälfte der simulierten "
-    "Pfade liegt an diesem Tag darüber, die Hälfte darunter. Sie ist die Mitte des Korridors, kein erwarteter Kurs: "
-    "der tatsächliche Verlauf weicht fast immer von ihr ab, wie weit, zeigen die Bänder und die Backtest-Fehler. "
-    "Weil der historische Durchschnittstrend entfernt wird, verläuft sie meist nahe am letzten Schlusskurs."
+    "The line connects, for each trading day, the median (50% quantile) of all simulated prices: half of the simulated "
+    "paths lie above it on that day, half below. It is the middle of the corridor, not an expected price: "
+    "the actual course almost always deviates from it; how far is shown by the bands and the backtest errors. "
+    "Because the historical average trend is removed, it usually runs close to the last closing price."
 )
 EXAMPLE_PATHS_NOTE = (
-    "Einzelne simulierte Verläufe, ausgewählt nach ihrem Endwert (10., 30., 50., 70. und 90. Perzentil aller "
-    "simulierten Endwerte). Sie zeigen, wie unruhig ein möglicher Verlauf innerhalb des Korridors aussehen kann. Jeder "
-    "einzelne ist ein Beispiel und nicht wahrscheinlicher als die übrigen simulierten Pfade."
+    "Individual simulated paths, selected by their end value (10th, 30th, 50th, 70th and 90th percentile of all "
+    "simulated end values). They show how choppy a possible path inside the corridor can look. Each "
+    "one is an example and no more likely than the other simulated paths."
 )
-LEVELS_STALE = "Noch nicht berechnet: das Muster wurde nach der letzten Prognose aktualisiert."
+LEVELS_STALE = "Not calculated yet: the pattern was updated after the last forecast."
 
 
 def _iso(dt: datetime | None) -> str | None:
     return aware(dt).isoformat() if dt is not None else None
+
+
+def _render_horizon(h: dict[str, Any]) -> dict[str, Any]:
+    """Texts are rendered from the stored numbers, so runs saved before the English switch show English too."""
+    metrics = [{**x, "name": METRIC_NAMES.get(x.get("key", ""), x.get("name"))} for x in h.get("metrics", [])]
+    mae = next((x for x in metrics if x.get("key") == "median_abs_error"), None)
+    cov80 = next((c["observed"] for c in h.get("coverage", []) if abs(c.get("nominal", 0) - 0.8) < 1e-9), None)
+    out = {**h, "metrics": metrics}
+    if mae is not None and mae.get("model") is not None and mae.get("naive") is not None:
+        out["verdict_text"] = verdict_from_values(h.get("sample_size", 0), cov80, h.get("better_than_naive"),
+                                                  mae["model"], mae["naive"], h.get("dm_p_value"))
+    return out
 
 
 def backtest_out(run: BacktestRun | None, reason: str | None = None) -> dict[str, Any]:
@@ -54,21 +73,21 @@ def backtest_out(run: BacktestRun | None, reason: str | None = None) -> dict[str
                 "by_horizon": [], "method_note": None, "note": reason or BACKTEST_NOT_COMPUTED}
     m = run.metrics or {}
     horizon = m.get("primary_horizon", fc.HORIZON)
-    by_h: list[dict[str, Any]] = m.get("by_horizon", [])
+    by_h = [_render_horizon(h) for h in m.get("by_horizon", [])]
     main = next((h for h in by_h if h["horizon_bars"] == horizon), None) or {}
     return {"status": "berechnet", "run_id": run.id, "sample_size": main.get("sample_size", run.sample_size),
             "horizon_bars": horizon, "date_range": run.date_range or None, "universe": run.universe or None,
             "computed_at": _iso(run.created_at), "is_demo": m.get("is_demo", False),
             "coverage": main.get("coverage", []), "metrics": main.get("metrics", []), "skill": main.get("skill"),
             "dm_p_value": main.get("dm_p_value"), "better_than_naive": main.get("better_than_naive"),
-            "verdict_text": m.get("verdict_text"), "by_horizon": by_h, "method_note": m.get("method_note"),
+            "verdict_text": main.get("verdict_text"), "by_horizon": by_h, "method_note": METHOD_NOTE,
             "note": None}
 
 
 def _probability_text(p: float, level: float, above: bool, horizon: int) -> str:
-    side = "über" if above else "unter"
-    return (f"In {fmt.pct(p * 100, 0)} der simulierten Pfade schließt der Kurs innerhalb von {horizon} "
-            f"Handelstagen zuerst {side} {fmt.price(level)}.")
+    side = "above" if above else "below"
+    return (f"In {fmt.pct(p * 100, 0)} of the simulated paths the price closes {side} {fmt.price(level)} "
+            f"first within {horizon} trading days.")
 
 
 def pattern_scenarios(db: DB, row: Forecast) -> list[dict[str, Any]]:
@@ -98,7 +117,7 @@ def pattern_scenarios(db: DB, row: Forecast) -> list[dict[str, Any]]:
                 text = _probability_text(prob, level, above, entry["horizon_bars"])
             scenarios.append({"kind": s["kind"], "title": s["title"], "trigger_level": level,
                               "model_probability": prob, "model_probability_text": text,
-                              "historical": hist.get(s["kind"])})
+                              "historical": _historical(hist.get(s["kind"]), s["kind"])})
         out.append({"detection_id": d.id, "pattern_type": d.pattern_type, "name": d.name, "status": d.status,
                     "scenarios": scenarios,
                     "neither_probability": entry["p_neither"] if fresh and entry is not None else None,
@@ -128,7 +147,7 @@ def get_forecast(instrument_id: int, db: DB, _u: CurrentUser, timeframe: str = "
                  horizon: int = Query(fc.HORIZON, ge=1, le=fc.HORIZON)) -> dict[str, Any]:
     inst = db.get(Instrument, instrument_id)
     if inst is None:
-        raise HTTPException(404, "Instrument nicht gefunden")
+        raise HTTPException(404, "Instrument not found")
     rows = {r.method: r for r in db.scalars(select(Forecast).where(
         Forecast.instrument_id == instrument_id, Forecast.timeframe == TIMEFRAME))}
     main = rows.get(fc.PRIMARY) if timeframe == TIMEFRAME else None
@@ -176,7 +195,7 @@ def get_forecast(instrument_id: int, db: DB, _u: CurrentUser, timeframe: str = "
 
 
 def median_errors(bt: dict[str, Any]) -> list[dict[str, Any]]:
-    """Fehler des Medians je Horizont aus dem Prognose-Backtest (Prozent des Kurses am Ursprung)."""
+    """Errors of the median per horizon from the forecast backtest (percent of the price at the origin)."""
     out: list[dict[str, Any]] = []
     for h in bt.get("by_horizon") or []:
         m = next((x for x in h.get("metrics") or [] if x.get("key") == "median_abs_error"), None)
@@ -196,7 +215,7 @@ def example_paths(row: Forecast | None, horizon: int) -> list[dict[str, Any]]:
     if row is None or row.empty_reason:
         return []
     return [{"percentile": e["percentile"],
-             "label": f"Beispielpfad (Endwert am {e['percentile']}. Perzentil der Simulation)",
+             "label": f"Example path (end value at the {e['percentile']}th percentile of the simulation)",
              "steps": list(e["steps"][:horizon])} for e in row.example_paths or []]
 
 

@@ -1,5 +1,5 @@
-"""Technische Indikatoren mit dokumentierten Formeln. Alle Funktionen nehmen ein float64-Array und liefern ein
-Array gleicher Länge; Werte vor dem ersten gültigen Punkt sind NaN (Warm-up)."""
+"""Technical indicators with documented formulas. All functions take a float64 array and return an
+array of the same length; values before the first valid point are NaN (warm-up)."""
 import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
 
@@ -7,7 +7,7 @@ F64 = np.ndarray  # dtype float64
 
 
 def sma(x: F64, n: int) -> F64:
-    """Arithmetisches Mittel der letzten n Werte."""
+    """Arithmetic mean of the last n values."""
     out = np.full(len(x), np.nan)
     if n < 1 or len(x) < n:
         return out
@@ -16,8 +16,8 @@ def sma(x: F64, n: int) -> F64:
 
 
 def ema(x: F64, n: int) -> F64:
-    """Exponentieller Durchschnitt, alpha = 2/(n+1). Startwert (bei Index n-1) ist der SMA der ersten n Werte.
-    Enthält x führende NaN (z. B. MACD-Linie), beginnt die Reihe nach dem ersten gültigen Block von n Werten."""
+    """Exponential average, alpha = 2/(n+1). The start value (at index n-1) is the SMA of the first n values.
+    If x contains leading NaNs (e.g. MACD line), the series begins after the first valid block of n values."""
     out = np.full(len(x), np.nan)
     valid = np.flatnonzero(~np.isnan(x))
     if n < 1 or len(valid) < n:
@@ -32,9 +32,9 @@ def ema(x: F64, n: int) -> F64:
 
 
 def rsi(close: F64, n: int = 14) -> F64:
-    """RSI nach Wilder: RS = geglätteter Durchschnittsgewinn / geglätteter Durchschnittsverlust (Glättung
-    (alt*(n-1)+neu)/n, Start = einfacher Mittelwert der ersten n Änderungen), RSI = 100 - 100/(1+RS).
-    Ohne Verluste ist der RSI 100, ohne jede Änderung 50."""
+    """Wilder RSI: RS = smoothed average gain / smoothed average loss (smoothing
+    (old*(n-1)+new)/n, start = simple mean of the first n changes), RSI = 100 - 100/(1+RS).
+    Without losses the RSI is 100, without any change 50."""
     out = np.full(len(close), np.nan)
     if n < 1 or len(close) <= n:
         return out
@@ -56,15 +56,15 @@ def rsi(close: F64, n: int = 14) -> F64:
 
 
 def macd(close: F64, fast: int = 12, slow: int = 26, signal: int = 9) -> tuple[F64, F64, F64]:
-    """MACD-Linie = EMA(fast) - EMA(slow); Signal = EMA(signal) der MACD-Linie; Histogramm = MACD - Signal."""
+    """MACD line = EMA(fast) - EMA(slow); signal = EMA(signal) of the MACD line; histogram = MACD - signal."""
     line = ema(close, fast) - ema(close, slow)
     sig = ema(line, signal)
     return line, sig, line - sig
 
 
 def bollinger(close: F64, n: int = 20, k: float = 2.0) -> tuple[F64, F64, F64]:
-    """Mittelband = SMA(n); Bänder = Mittelband +/- k * Standardabweichung (Grundgesamtheit, ddof=0) der
-    letzten n Schlusskurse. Rückgabe: (mittel, oben, unten)."""
+    """Middle band = SMA(n); bands = middle band +/- k * standard deviation (population, ddof=0) of the
+    last n closing prices. Returns: (middle, upper, lower)."""
     mid = sma(close, n)
     std = np.full(len(close), np.nan)
     if n >= 1 and len(close) >= n:

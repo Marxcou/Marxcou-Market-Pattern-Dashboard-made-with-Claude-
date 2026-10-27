@@ -1,5 +1,5 @@
-"""Registry aller Adapter. Workstreams 1B/2A/2B registrieren ihre Adapter hier (eine Zeile pro Quelle).
-Solange keiner registriert ist, zeigt die Quellen-Seite ehrlich eine leere Liste."""
+"""Registry of all adapters. Workstreams 1B/2A/2B register their adapters here (one line per source).
+As long as none is registered, the Sources page honestly shows an empty list."""
 import logging
 from datetime import UTC, datetime
 
@@ -30,21 +30,21 @@ def get_adapter(key: str) -> SourceAdapter | None:
     return _ADAPTERS.get(key)
 
 
-def clear() -> None:  # nur für Tests
+def clear() -> None:  # tests only
     _ADAPTERS.clear()
 
 
 class BrokenAdapter(SourceAdapter):
-    """Platzhalter für einen Adapter, dessen Aufbau an der Konfiguration scheiterte. Er erscheint auf der Seite
-    Quellen als 'disabled' mit Grund (Grundregel 6: nie still verschwinden) und legt nichts anderes lahm."""
+    """Placeholder for an adapter whose construction failed because of the configuration. It appears on the Sources
+    page as 'disabled' with a reason (core rule 6: never disappear silently) and paralyzes nothing else."""
 
     def __init__(self, key: str, name: str, reason: str) -> None:
         self.key, self._name, self.disabled_reason = key, name, reason
 
     def metadata(self) -> AdapterMetadata:
         return AdapterMetadata(key=self.key, name=self._name, kind="reference",
-                               description="Diese Quelle konnte wegen eines Konfigurationsfehlers nicht starten.",
-                               homepage="", terms_url="", update_interval="nicht aktiv", delay_text="nicht aktiv",
+                               description="This source could not start because of a configuration error.",
+                               homepage="", terms_url="", update_interval="not active", delay_text="not active",
                                requires_key=False)
 
     def health(self) -> Health:
@@ -57,14 +57,14 @@ class BrokenAdapter(SourceAdapter):
 def _safe_build(build, key: str, name: str) -> SourceAdapter:  # type: ignore[no-untyped-def]
     try:
         return build()  # type: ignore[no-any-return]
-    except Exception as exc:  # ein Konfigurationsfehler darf API und Worker nie am Start hindern
-        log.warning("Adapter %s konnte nicht gestartet werden: %s: %s", key, type(exc).__name__, exc)
-        return BrokenAdapter(key, name, f"Konfigurationsfehler in .env ({type(exc).__name__}); Quelle deaktiviert")
+    except Exception as exc:  # a configuration error must never prevent API and worker from starting
+        log.warning("Adapter %s could not be started: %s: %s", key, type(exc).__name__, exc)
+        return BrokenAdapter(key, name, f"Configuration error in .env ({type(exc).__name__}); source disabled")
 
 
 def load_builtin_adapters() -> None:
-    """Registriert alle eingebauten Adapter. Adapter ohne API-Schlüssel werden trotzdem registriert und als
-    'disabled' auf der Quellen-Seite gezeigt (Grundregel 6: ehrlich statt still)."""
+    """Registers all built-in adapters. Adapters without an API key are registered anyway and shown as
+    'disabled' on the Sources page (core rule 6: honest instead of silent)."""
     from app.adapters.alpaca import AlpacaAdapter
     from app.adapters.alphavantage_news import AlphaVantageNewsAdapter
     from app.adapters.finnhub import FinnhubAdapter
@@ -91,9 +91,9 @@ def load_builtin_adapters() -> None:
     try:
         rss_adapters = build_rss_adapters()
     except Exception as exc:
-        log.warning("RSS-Adapter konnten nicht aufgebaut werden: %s: %s", type(exc).__name__, exc)
-        reason = f"Konfigurationsfehler in .env ({type(exc).__name__}); Quelle deaktiviert"
-        register(BrokenAdapter("rss", "RSS-Feeds", reason))
+        log.warning("RSS adapters could not be built: %s: %s", type(exc).__name__, exc)
+        reason = f"Configuration error in .env ({type(exc).__name__}); source disabled"
+        register(BrokenAdapter("rss", "RSS feeds", reason))
         rss_adapters = []
     for rss in rss_adapters:
         if rss.key not in _ADAPTERS:

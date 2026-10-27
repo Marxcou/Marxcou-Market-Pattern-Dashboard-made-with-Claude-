@@ -49,7 +49,7 @@ def test_scan_and_patterns_endpoint(client):
     login(client)
     r = client.get(f"/api/instruments/{iid}/patterns")
     assert r.status_code == 200
-    assert r.json()["empty_reason"] == "Die Mustererkennung wurde für dieses Instrument noch nicht ausgeführt."
+    assert r.json()["empty_reason"] == "Pattern detection has not been run for this instrument yet."
 
     stats = run_scan(iid)
     assert stats["new"] >= 1
@@ -58,7 +58,7 @@ def test_scan_and_patterns_endpoint(client):
     assert body["data_basis"]["bar_count"] == len(days)  # ohne die laufende Kerze
     assert body["data_basis"]["sources"][0]["key"] == "stooq"
     det = next(d for d in body["detections"] if d["pattern_type"] == "doppelboden")
-    assert det["status"] == "bestaetigt" and det["status_label"] == "Bestätigt"
+    assert det["status"] == "bestaetigt" and det["status_label"] == "Confirmed"
     assert det["start_ts"] == days[30].isoformat() and det["end_ts"] == days[60].isoformat()
     assert det["confirmed_at"] == days[72].isoformat()
     assert [k["role"] for k in det["key_points"]] == ["tief_1", "zwischenhoch", "tief_2"]
@@ -69,7 +69,7 @@ def test_scan_and_patterns_endpoint(client):
     # Grundregel 3/6: ohne Backtest keine Zahl, sondern ausdrücklich "nicht berechnet"
     bt = det["backtest"]
     assert bt["status"] == "nicht_berechnet" and bt["hit_rate"] is None and bt["sample_size"] is None
-    assert "noch nicht berechnet" in bt["note"]
+    assert "not been calculated" in bt["note"]
     assert det["data_basis"]["sources"][0]["name"] == "Stooq"
     assert det["params"]["doppel.max_extrem_abweichung_pct"] == 1.5
 
@@ -139,7 +139,7 @@ def test_fresh_status_change_publishes_event(client):
 def test_counts_and_catalog(client):
     iid, _ = seed([(0, 120), (30, 100), (45, 110), (60, 100.3), (70, 106)])  # Doppelboden in Bildung
     login(client)
-    assert client.get("/api/patterns/counts").json()["empty_reason"] == "Die Watchlist ist leer."
+    assert client.get("/api/patterns/counts").json()["empty_reason"] == "The watchlist is empty."
     with SessionLocal() as db:
         db.add(WatchlistItem(user_id=1, instrument_id=iid))
         db.commit()
@@ -161,15 +161,15 @@ def test_empty_reasons(client):
     iid, _ = seed([(0, 100), (30, 110)], symbol="TINY")
     run_scan(iid)
     body = client.get(f"/api/instruments/{iid}/patterns").json()
-    assert body["detections"] == [] and "Zu wenige Kerzen" in body["empty_reason"]
+    assert body["detections"] == [] and "Too few candles" in body["empty_reason"]
     r = client.get(f"/api/instruments/{iid}/patterns?timeframe=1h").json()
-    assert "Keine Intraday-Daten für XETRA" in r["empty_reason"]
+    assert "No intraday data for XETRA" in r["empty_reason"]
     assert client.get(f"/api/instruments/{iid}/patterns?timeframe=5m").status_code == 422
 
     flat, _ = seed([(0, 100), (200, 160)], symbol="TREND", exchange="XNAS")
     run_scan(flat)
     body = client.get(f"/api/instruments/{flat}/patterns").json()
-    assert body["detections"] == [] and body["empty_reason"] == "Aktuell erfüllt kein Muster alle Kriterien."
+    assert body["detections"] == [] and body["empty_reason"] == "No pattern currently meets all criteria."
 
 
 def test_requires_login(client):

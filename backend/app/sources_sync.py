@@ -11,7 +11,7 @@ log = logging.getLogger(__name__)
 
 
 def sync_sources(db: Session) -> None:
-    """Schreibt Adapter-Metadaten und Health in die Tabelle 'sources' (Quelle der Quellen-Seite)."""
+    """Writes adapter metadata and health to the 'sources' table (basis of the Sources page)."""
     for adapter in all_adapters():
         meta = adapter.metadata()
         row = db.scalar(select(Source).where(Source.key == meta.key)) or Source(key=meta.key)
@@ -28,8 +28,8 @@ def sync_sources(db: Session) -> None:
                 row.status, row.last_error = h.status, redact(h.message) if h.message else h.message
                 if h.last_success_at:
                     row.last_success_at = h.last_success_at
-        except Exception as exc:  # eine defekte Quelle darf den Start und die anderen Quellen nicht stoppen
-            log.warning("Status von %s nicht ermittelbar: %s: %s", meta.key, type(exc).__name__, exc)
-            row.status, row.last_error = "offline", f"Statusabfrage fehlgeschlagen ({type(exc).__name__})"
+        except Exception as exc:  # one broken source must not stop startup and the other sources
+            log.warning("Status of %s could not be determined: %s: %s", meta.key, type(exc).__name__, exc)
+            row.status, row.last_error = "offline", f"Status check failed ({type(exc).__name__})"
         db.add(row)
     db.commit()

@@ -83,7 +83,7 @@ def test_explanation_duty_for_every_pattern_type(ptype: str) -> None:
     texts = [det.explanation, det.status_reason, *(c.actual_text + c.rule + c.name for c in det.criteria),
              *(s.title + s.trigger_rule + s.description for s in det.scenarios)]
     assert find_forbidden(" ".join(texts)) == []
-    assert det.explanation.startswith(det.name) and " bis " in det.explanation
+    assert det.explanation.startswith(det.name) and " to " in det.explanation
 
 
 def test_double_bottom_values_in_explanation() -> None:
@@ -91,7 +91,7 @@ def test_double_bottom_values_in_explanation() -> None:
     crit = {c.key: c for c in det.criteria}
     # Tiefs 99,80 (100 − 0,2 %) und 100,10 (100,3 − 0,2 %, gerundet)
     assert crit["extrem_abweichung"].actual == pytest.approx(0.3, abs=0.01)
-    assert "Tief 1: 99,80 am 31.01.2024" in crit["extrem_abweichung"].actual_text
+    assert "Low 1: 99.80 on 2024-01-31" in crit["extrem_abweichung"].actual_text
     assert det.confirmation_level == pytest.approx(110.22, abs=0.01)  # Zwischenhoch = Nackenlinie
     assert det.invalidation_level == pytest.approx(99.8 * 0.985, abs=0.01)
     assert [s.kind for s in det.scenarios] == ["bestaetigung", "scheitern"]
@@ -125,7 +125,7 @@ def test_double_bottom_invalidation() -> None:
     assert det.status == "ungueltig" and det.confirmed_idx is None
     bars = path(anchors)
     assert det.invalidated_idx is not None and bars.close[det.invalidated_idx] < det.invalidation_level
-    assert "Ungültigkeitsniveau" in det.status_reason
+    assert "invalidation level" in det.status_reason
 
 
 def test_double_bottom_still_forming_at_series_end() -> None:
@@ -138,7 +138,7 @@ def test_double_bottom_still_forming_at_series_end() -> None:
 def test_double_bottom_expires_without_confirmation() -> None:
     anchors = [(0, 120), (30, 100), (45, 110), (60, 100.3), (70, 106), (80, 103), (90, 107), (100, 104)]
     det = find(detect(path(anchors), "1d").detections, "doppelboden", 30, 60)
-    assert det.status == "ungueltig" and "Fristende" in det.status_reason
+    assert det.status == "ungueltig" and "deadline" in det.status_reason
 
 
 def test_detection_is_deterministic() -> None:
@@ -187,7 +187,7 @@ def test_support_and_resistance_zones() -> None:
     sup, res = kinds["unterstuetzung"], kinds["widerstand"]
     assert len(sup.touches) == 3 and 99.5 < sup.lower <= sup.upper < 100.5
     assert len(res.touches) == 3 and 119.5 < res.lower <= res.upper < 120.6
-    assert sup.explanation.startswith("Unterstützungszone zwischen")
+    assert sup.explanation.startswith("Support zone between")
     assert abs(sum(float(b["contribution"]) for b in sup.breakdown) - sup.confidence) < 1e-3
 
 

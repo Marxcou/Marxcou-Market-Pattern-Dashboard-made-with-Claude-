@@ -1,6 +1,6 @@
-"""Aufbewahrung: Nachrichten-Cluster, deren letzte Meldung älter als NEWS_RETENTION_DAYS ist, werden samt Meldungen,
-Instrumentzuordnung und Stimmung gelöscht. Ganze Cluster, damit nie ein Cluster ohne Leitmeldung übrig bleibt.
-Der Mindestwert liegt über dem Abruffenster der Quellen (7 Tage), sonst würden gelöschte Meldungen neu geladen."""
+"""Retention: news clusters whose latest item is older than NEWS_RETENTION_DAYS are deleted together with their items,
+instrument assignments and sentiment. Whole clusters, so a cluster without a lead item never remains.
+The minimum value is above the sources' retrieval window (7 days), otherwise deleted items would be loaded again."""
 import logging
 from datetime import timedelta
 from typing import Any, cast
@@ -48,7 +48,7 @@ def prune_news(db: Session) -> dict[str, int]:
         db.execute(delete(NewsCluster).where(NewsCluster.id.in_(ids)))
         db.commit()
         stats["clusters"] += len(ids)
-    # Batch-Zeilen ohne Einträge (alle Cluster gelöscht, Ergebnisse verarbeitet) räumen
+    # clear batch rows without entries (all clusters deleted, results processed)
     empty = select(SentimentBatch.id).where(SentimentBatch.status == "ended").outerjoin(
         SentimentBatchItem, SentimentBatchItem.batch_id == SentimentBatch.id).where(
         SentimentBatchItem.batch_id.is_(None))
@@ -63,4 +63,4 @@ def retention_job() -> None:
         prune_usage(db)
         event_bus.prune(db)
     if stats["clusters"]:
-        log.info("Aufbewahrung: %d Cluster mit %d Meldungen gelöscht", stats["clusters"], stats["items"])
+        log.info("Retention: %d clusters with %d items deleted", stats["clusters"], stats["items"])

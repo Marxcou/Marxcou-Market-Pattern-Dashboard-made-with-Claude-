@@ -1,6 +1,6 @@
-"""News-Pipeline: abrufen, Zuordnung zu Instrumenten, Duplikate zu Clustern zusammenführen, speichern,
-Stimmung berechnen, Ereignis für die WebSocket-Anzeige veröffentlichen. Jede Zeile trägt source_id und fetched_at
-(Grundregel 2); fehlt eine Quelle, wird nichts erfunden."""
+"""News pipeline: fetch, assign to instruments, merge duplicates into clusters, store,
+compute sentiment, publish an event for the WebSocket display. Every row carries source_id and fetched_at
+(core rule 2); if a source is missing, nothing is invented."""
 import logging
 import threading
 from collections.abc import Sequence
@@ -23,8 +23,8 @@ from app.sentiment_service import sentiment_pass
 log = logging.getLogger("news")
 INITIAL_LOOKBACK = timedelta(hours=48)
 OVERLAP = timedelta(minutes=15)
-EVENT_MAX_AGE = timedelta(hours=6)  # ältere (nachgeholte) Meldungen lösen keine Live-Ereignisse aus
-_INGEST_LOCK = threading.Lock()  # ein Schreiber, damit parallele Jobs keine doppelten Cluster anlegen
+EVENT_MAX_AGE = timedelta(hours=6)  # older (back-filled) items do not trigger live events
+_INGEST_LOCK = threading.Lock()  # a single writer, so parallel jobs do not create duplicate clusters
 
 
 def _aware(dt: datetime) -> datetime:
@@ -50,14 +50,14 @@ def _candidates(db: Session) -> list[Candidate]:
 
 
 def ingest(db: Session, records: Sequence[NewsRecord], adapter: NewsAdapter) -> dict[str, int]:
-    """Speichert Meldungen einer Quelle. Gibt Zähler zurück (neu, Cluster neu, verworfen, doppelt)."""
+    """Stores items of a source. Returns counters (new, clusters new, discarded, duplicate)."""
     stats = {"new_items": 0, "new_clusters": 0, "discarded": 0, "already_known": 0}
     if not records:
         return stats
     with _INGEST_LOCK:
         source_id = db.scalar(select(Source.id).where(Source.key == adapter.metadata().key))
         if source_id is None:
-            raise SourceError(f"Unbekannte Quelle {adapter.metadata().key}")
+            raise SourceError(f"Unknown source {adapter.metadata().key}")
         matcher = Matcher(_candidates(db))
         window_start = min(r.published_at for r in records) - timedelta(hours=CLUSTER_WINDOW_HOURS)
         index: list[tuple[int, str, frozenset[str]]] = [
@@ -70,7 +70,7 @@ def ingest(db: Session, records: Sequence[NewsRecord], adapter: NewsAdapter) -> 
             if rec.external_id in known:
                 stats["already_known"] += 1
                 continue
-            if not is_web_link(rec.url):  # der Link wird als href gezeigt; "javascript:" o. Ä. wäre ausführbar
+            if not is_web_link(rec.url):  # the link is shown as an href; "javascript:" or similar would be executable
                 stats["discarded"] += 1
                 continue
             matches = matcher.match(rec)
@@ -94,9 +94,9 @@ def ingest(db: Session, records: Sequence[NewsRecord], adapter: NewsAdapter) -> 
                             fetched_at=rec.fetched_at, language=rec.language, publisher=rec.publisher,
                             cluster_id=cluster.id))
             cluster.item_count += 1
-            # SQLite liefert naive Zeitstempel (UTC); für den Vergleich wieder mit Zeitzone versehen
+            # SQLite returns naive timestamps (UTC); add the time zone again for the comparison
             cluster.last_published_at = max(_aware(cluster.last_published_at), rec.published_at)
-            if rec.published_at < _aware(cluster.first_published_at):  # ältere Meldung wird zur Leitmeldung
+            if rec.published_at < _aware(cluster.first_published_at):  # an older item becomes the lead item
                 cluster.first_published_at, cluster.canonical_title = rec.published_at, rec.title
             existing = {ni.instrument_id: ni for ni in db.scalars(
                 select(NewsInstrument).where(NewsInstrument.cluster_id == cluster.id))}
@@ -117,7 +117,7 @@ def ingest(db: Session, records: Sequence[NewsRecord], adapter: NewsAdapter) -> 
                                "item_count": cluster.item_count, "is_new": is_new,
                                "instrument_ids": sorted(set(existing) | set(matches))})
         db.commit()
-    # je Cluster nur das letzte Ereignis veröffentlichen
+    # publish only the latest event per cluster
     for payload in {e["cluster_id"]: e for e in events}.values():
         publish(db, "news", payload)
     return stats
@@ -132,7 +132,7 @@ def since_for(db: Session, adapter: NewsAdapter) -> datetime:
 
 
 def run_adapter(db: Session, adapter: NewsAdapter) -> dict[str, int] | None:
-    """Ein Abrufzyklus für eine Quelle. Fehler bleiben lokal (Grundregel 6: Ausfall legt nichts anderes lahm)."""
+    """One fetch cycle for a source. Errors stay local (core rule 6: an outage does not paralyze anything else)."""
     key = adapter.metadata().key
     if not adapter.is_configured():
         return None
@@ -140,9 +140,9 @@ def run_adapter(db: Session, adapter: NewsAdapter) -> dict[str, int] | None:
         records = adapter.fetch_news_for(watchlist_targets(db), since_for(db, adapter))
         stats = ingest(db, records, adapter)
     except SourceError as exc:
-        log.warning("News-Quelle %s: %s", key, exc)
+        log.warning("News source %s: %s", key, exc)
         return None
-    log.info("News-Quelle %s: %s", key, stats)
+    log.info("News source %s: %s", key, stats)
     if stats["new_items"]:
         sentiment_pass(db)
     return stats
@@ -160,7 +160,7 @@ def make_job(key: str):  # type: ignore[no-untyped-def]
 
 
 def sentiment_job() -> None:
-    """Holt fehlende Stimmungen nach und stuft Lexikon-Ergebnisse mit Claude neu ein, sobald möglich."""
+    """Fetches missing sentiments and re-rates lexicon results with Claude as soon as possible."""
     with SessionLocal() as db:
         try:
             sentiment_pass(db)

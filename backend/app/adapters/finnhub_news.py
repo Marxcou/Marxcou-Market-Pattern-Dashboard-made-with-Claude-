@@ -1,4 +1,4 @@
-"""Finnhub Company News (kostenlos): US-Unternehmensmeldungen mit Überschrift, kurzer Zusammenfassung und Link."""
+"""Finnhub Company News (free): US company news with headline, short summary and link."""
 import logging
 from datetime import UTC, datetime
 from typing import Any
@@ -21,18 +21,18 @@ class FinnhubNewsAdapter(ProbedHealth, NewsAdapter):
     def __init__(self, transport: httpx.BaseTransport | None = None, **kw: Any) -> None:
         self._token = get_settings().finnhub_api_key.strip()
         if self._token and not is_header_safe(self._token):
-            log.warning("FINNHUB_API_KEY: unzulässige Zeichen, Finnhub bleibt deaktiviert")
+            log.warning("FINNHUB_API_KEY: invalid characters, Finnhub stays disabled")
             self._token = ""
         self.http = ResilientHttp(base_url="https://finnhub.io/api/v1", rate_per_min=30, transport=transport,
                                   headers={"X-Finnhub-Token": self._token} if self._token else None, **kw)
 
     def metadata(self) -> AdapterMetadata:
         return AdapterMetadata(
-            key=self.key, name="Finnhub Unternehmensnachrichten", kind="news",
-            description="US-Unternehmensmeldungen je Aktie (Überschrift, kurzer Auszug, Link zum Original). "
-            "Finnhub reicht Meldungen weiterer Verlage durch; der ursprüngliche Verlag steht je Meldung dabei.",
+            key=self.key, name="Finnhub company news", kind="news",
+            description="US company news per stock (headline, short excerpt, link to the original). "
+            "Finnhub passes on news from other publishers; the original publisher is shown with each item.",
             homepage="https://finnhub.io", terms_url="https://finnhub.io/terms-of-service",
-            update_interval="alle 5 Min. (Watchlist-Aktien)", delay_text="Minuten", requires_key=True,
+            update_interval="every 5 min. (watchlist stocks)", delay_text="minutes", requires_key=True,
         )
 
     def is_configured(self) -> bool:

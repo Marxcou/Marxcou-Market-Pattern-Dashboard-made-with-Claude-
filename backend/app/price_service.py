@@ -1,5 +1,5 @@
-"""Speichern von Kursdaten und die Worker-Jobs. Jede Zeile bekommt source_id und fetched_at (Grundregel 2);
-fehlt eine Quelle, wird nichts erfunden, der Job überspringt sie."""
+"""Storing price data and the worker jobs. Every row gets source_id and fetched_at (core rule 2);
+if a source is missing, nothing is invented and the job skips it."""
 import logging
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
@@ -27,10 +27,10 @@ log = logging.getLogger("price")
 
 INTRADAY_LOOKBACK = {"1m": timedelta(days=5), "5m": timedelta(days=30), "1h": timedelta(days=180)}
 DAILY_LOOKBACK = timedelta(days=365 * 5 + 2)
-# Reihenfolge bei mehreren Quellen für dieselbe Kerze: erste konfigurierte Quelle gewinnt
+# Order when several sources provide the same candle: first configured source wins
 SOURCE_PRIORITY = ["alpaca", "stooq", "yahoo"]
 NO_INTRADAY_REASON = (
-    "Keine Intraday-Daten für XETRA im kostenlosen Tarif. Verfügbar sind Tagesdaten (Handelsende)."
+    "No intraday data for XETRA in the free tier. Daily data (end of trading) is available."
 )
 
 
@@ -38,16 +38,16 @@ def ensure_source(db: Session, adapter: PriceAdapter) -> Source:
     meta = adapter.metadata()
     src = db.scalar(select(Source).where(Source.key == meta.key))
     if src is None:
-        sync_sources(db)  # legt alle registrierten Quellen mit Metadaten an
+        sync_sources(db)  # creates all registered sources with metadata
         src = db.scalar(select(Source).where(Source.key == meta.key))
-    assert src is not None, f"Adapter {meta.key} ist nicht registriert"
+    assert src is not None, f"Adapter {meta.key} is not registered"
     return src
 
 
 def _source_id(db: Session, key: str) -> int:
     sid = db.scalar(select(Source.id).where(Source.key == key))
     if sid is None:
-        raise SourceError(f"Unbekannte Quelle {key}")
+        raise SourceError(f"Unknown source {key}")
     return sid
 
 
@@ -101,7 +101,7 @@ def store_quote(db: Session, instrument: Instrument, q: QuoteRecord) -> Quote:
 
 
 def prune_quotes(db: Session, instrument_id: int, keep: int = 500) -> None:
-    """Live-Ticks würden die Tabelle sonst unbegrenzt füllen; die Historie steckt in price_bars."""
+    """Live ticks would otherwise fill the table without limit; the history lives in price_bars."""
     cutoff = db.scalar(select(Quote.id).where(Quote.instrument_id == instrument_id)
                        .order_by(Quote.id.desc()).offset(keep).limit(1))
     if cutoff is not None:
@@ -132,7 +132,7 @@ def _latest_ts(db: Session, instrument_id: int, tf: str) -> datetime | None:
 
 
 def backfill_instrument(db: Session, inst: Instrument, timeframes: Sequence[Timeframe]) -> int:
-    """Holt fehlende Kerzen je Zeitraster. Die erste konfigurierte Quelle mit Daten gewinnt."""
+    """Fetches missing candles per timeframe. The first configured source with data wins."""
     total = 0
     now = datetime.now(UTC)
     for tf in timeframes:
@@ -154,14 +154,14 @@ def backfill_instrument(db: Session, inst: Instrument, timeframes: Sequence[Time
 
 
 def refresh_quote(db: Session, inst: Instrument) -> bool:
-    """Live-Adapter der Reihe nach; für XETRA (nur Tagesdaten) leitet daily_job den Kurs aus den Tageskerzen ab."""
+    """Live adapters in order; for XETRA (daily data only) daily_job derives the price from the daily candles."""
     if not has_intraday(inst.exchange):
         return False
     for adapter in adapters_for(inst.exchange):
         try:
             q = adapter.fetch_quote(inst.symbol, inst.exchange)
         except SourceError as exc:
-            log.warning("%s Kurs %s: %s", adapter.metadata().key, inst.symbol, exc)
+            log.warning("%s price %s: %s", adapter.metadata().key, inst.symbol, exc)
             continue
         if q:
             store_quote(db, inst, q)
@@ -170,7 +170,7 @@ def refresh_quote(db: Session, inst: Instrument) -> bool:
 
 
 def quote_from_daily(db: Session, inst: Instrument) -> bool:
-    """Letzter Schlusskurs aus Tagesdaten, ausdrücklich mit Quelle und Verzögerung 'Handelsende'."""
+    """Latest closing price from daily data, explicitly with source and delay 'end of trading'."""
     rows = db.execute(select(PriceBar).where(PriceBar.instrument_id == inst.id, PriceBar.timeframe == "1d")
                       .order_by(PriceBar.ts_utc.desc()).limit(2)).scalars().all()
     if not rows:
@@ -179,8 +179,8 @@ def quote_from_daily(db: Session, inst: Instrument) -> bool:
     src = db.get(Source, last.source_id)
     assert src is not None
     ts = last.ts_utc if last.ts_utc.tzinfo else last.ts_utc.replace(tzinfo=UTC)
-    # Die Kerze des laufenden Handelstags ändert sich bis zum Handelsende (die Quelle aktualisiert ihren Schlusskurs).
-    # Nur ein unveränderter Wert wird übersprungen; sonst bliebe der erste Abruf des Tages den ganzen Tag stehen.
+    # The candle of the current trading day changes until the end of trading (the source updates its closing price).
+    # Only an unchanged value is skipped; otherwise the first retrieval of the day would stay all day.
     known = db.scalar(select(Quote.price).where(Quote.instrument_id == inst.id, Quote.ts_utc == ts,
                                                Quote.source_id == src.id).order_by(Quote.id.desc()).limit(1))
     if known is not None and known == last.close:
@@ -192,7 +192,7 @@ def quote_from_daily(db: Session, inst: Instrument) -> bool:
     return True
 
 
-# --- Jobs (vom Worker eingehängt) ---
+# --- Jobs (hooked in by the worker) ---
 
 def quote_job() -> None:
     with SessionLocal() as db:
@@ -201,9 +201,9 @@ def quote_job() -> None:
                 continue
             try:
                 refresh_quote(db, inst)
-            except Exception:  # noqa: BLE001 - ein Instrument darf die anderen nicht stoppen
+            except Exception:  # noqa: BLE001 - one instrument must not stop the others
                 db.rollback()
-                log.exception("Kurs %s fehlgeschlagen", inst.symbol)
+                log.exception("Price %s failed", inst.symbol)
 
 
 def intraday_job() -> None:
@@ -214,7 +214,7 @@ def intraday_job() -> None:
                     backfill_instrument(db, inst, ("1m", "5m", "1h"))
                 except Exception:  # noqa: BLE001
                     db.rollback()
-                    log.exception("Intraday-Kerzen %s fehlgeschlagen", inst.symbol)
+                    log.exception("Intraday candles %s failed", inst.symbol)
 
 
 def daily_job() -> None:
@@ -230,7 +230,7 @@ def daily_job() -> None:
 
 
 def backfill_new_instrument(instrument_id: int) -> None:
-    """Direkt nach dem Hinzufügen zur Watchlist, damit der Chart nicht bis zum nächsten Job leer bleibt."""
+    """Right after adding to the watchlist, so the chart does not stay empty until the next job."""
     with SessionLocal() as db:
         inst = db.get(Instrument, instrument_id)
         if inst is None:

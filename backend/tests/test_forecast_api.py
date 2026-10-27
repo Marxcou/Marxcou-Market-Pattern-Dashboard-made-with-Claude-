@@ -67,7 +67,7 @@ def test_forecast_endpoint(client):
     iid, last = seed()
     login(client)
     body = client.get(f"/api/instruments/{iid}/forecast").json()
-    assert body["empty_reason"] == "Die Prognose wurde für dieses Instrument noch nicht berechnet."
+    assert body["empty_reason"] == "The forecast has not been calculated for this instrument yet."
     assert body["steps"] == [] and body["backtest"]["status"] == "nicht_berechnet"
     assert body["median_line"] is None and body["example_paths"] == []
     assert body["method"]["key"] == "monte_carlo_block_bootstrap" and body["method"]["description"]
@@ -89,17 +89,17 @@ def test_forecast_endpoint(client):
     assert bt["status"] == "berechnet" and bt["sample_size"] > 0 and bt["horizon_bars"] == 20
     assert [c["nominal"] for c in bt["coverage"]] == [0.5, 0.8, 0.95]
     assert {m["key"] for m in bt["metrics"]} == {"median_abs_error", "pinball_loss"}
-    assert bt["verdict_text"] and "Kurs bleibt gleich" in bt["verdict_text"]
+    assert bt["verdict_text"] and "price stays the same" in bt["verdict_text"]
     assert bt["better_than_naive"] is None  # 400 Kerzen ergeben weniger als 30 Prüfzeitpunkte
     assert [h["horizon_bars"] for h in bt["by_horizon"]] == [5, 10, 20]
-    assert bt["universe"] == "SAP (XETR), eigene Historie" and bt["is_demo"] is False
+    assert bt["universe"] == "SAP (XETR), own history" and bt["is_demo"] is False
     comp = body["comparison"][0]
     assert comp["method_key"] == "arima_1_1_0" and len(comp["steps"]) == 20
     assert comp["backtest"]["status"] == "berechnet"
 
     # Mittlerer Verlauf = 50-%-Quantil des Korridors, mit den Median-Fehlern aus dem Backtest je Horizont
     ml = body["median_line"]
-    assert ml["quantile"] == "50" and "Median" in ml["description"] and "kein erwarteter Kurs" in ml["description"]
+    assert ml["quantile"] == "50" and "median" in ml["description"] and "not an expected price" in ml["description"]
     assert [e["horizon_bars"] for e in ml["errors"]] == [5, 10, 20]
     by_h = {h["horizon_bars"]: h for h in bt["by_horizon"]}
     for e in ml["errors"]:
@@ -111,7 +111,7 @@ def test_forecast_endpoint(client):
     assert all(len(p["steps"]) == 20 and p["steps"][0]["ts"] == steps[0]["ts"] for p in ex)
     ends = [p["steps"][-1]["close"] for p in ex]
     assert ends == sorted(ends) and steps[-1]["quantiles"]["2.5"] <= ends[2] <= steps[-1]["quantiles"]["97.5"]
-    assert "nicht wahrscheinlicher" in body["example_paths_note"]
+    assert "no more likely" in body["example_paths_note"]
 
     short = client.get(f"/api/instruments/{iid}/forecast?horizon=5").json()
     assert len(short["steps"]) == 5 and short["horizon_bars"] == 5
@@ -145,8 +145,8 @@ def test_pattern_scenarios_use_simulated_paths(client):
     assert up["kind"] == "bestaetigung" and 0 < up["model_probability"] < 1
     assert 0 < dn["model_probability"] < 1
     assert up["model_probability"] + dn["model_probability"] + ps[0]["neither_probability"] == pytest.approx(1.0)
-    assert "simulierten Pfade" in up["model_probability_text"] and " über " in up["model_probability_text"]
-    assert up["historical"] is None and "kennt das Muster nicht" in ps[0]["note"]
+    assert "simulated paths" in up["model_probability_text"] and " above " in up["model_probability_text"]
+    assert up["historical"] is None and "does not know the pattern" in ps[0]["note"]
 
     # Niveau ändert sich nach der Prognose: keine alte Zahl anzeigen
     with SessionLocal() as db:
@@ -155,7 +155,7 @@ def test_pattern_scenarios_use_simulated_paths(client):
         db.commit()
     ps = client.get(f"/api/instruments/{iid}/forecast").json()["pattern_scenarios"]
     assert ps[0]["scenarios"][0]["model_probability"] is None
-    assert ps[0]["scenarios"][0]["model_probability_text"].startswith("Noch nicht berechnet")
+    assert ps[0]["scenarios"][0]["model_probability_text"].startswith("Not calculated yet")
 
 
 def test_empty_reasons(client):
@@ -163,11 +163,11 @@ def test_empty_reasons(client):
     run(iid)
     login(client)
     body = client.get(f"/api/instruments/{iid}/forecast").json()
-    assert body["empty_reason"] == "Zu wenige Kerzen für eine Prognose (mindestens 250, vorhanden 100)."
+    assert body["empty_reason"] == "Too few candles for a forecast (at least 250, available 100)."
     assert body["steps"] == [] and body["backtest"]["status"] == "nicht_berechnet"
     assert body["backtest"]["metrics"] == [] and body["backtest"]["better_than_naive"] is None
     body = client.get(f"/api/instruments/{iid}/forecast?timeframe=1h").json()
-    assert body["empty_reason"] == "Prognosen gibt es derzeit nur für Tageskerzen."
+    assert body["empty_reason"] == "Forecasts are currently available for daily candles only."
     assert client.get("/api/instruments/99999/forecast").status_code == 404
 
 
@@ -178,7 +178,7 @@ def test_few_bars_forecast_without_backtest(client):
     body = client.get(f"/api/instruments/{iid}/forecast").json()
     assert body["empty_reason"] is None and len(body["steps"]) == 20
     assert body["backtest"]["status"] == "nicht_berechnet"
-    assert body["backtest"]["note"].startswith("Zu wenige Kerzen für einen Backtest")
+    assert body["backtest"]["note"].startswith("Too few candles for a backtest")
 
 
 def test_demo_bars_are_flagged(client):

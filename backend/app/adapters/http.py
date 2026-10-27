@@ -1,5 +1,5 @@
-"""Gemeinsame HTTP-Schicht für Adapter: Rate-Limit, Retry mit Backoff, Circuit-Breaker und Health-Zustand.
-Ein Ausfall bleibt lokal in seinem Adapter (Grundregel 6: keine Ersatzdaten, nur ein ehrlicher Status)."""
+"""Shared HTTP layer for adapters: rate limit, retry with backoff, circuit breaker and health state.
+An outage stays local to its adapter (core rule 6: no substitute data, only an honest status)."""
 import re
 import threading
 import time
@@ -17,8 +17,8 @@ _EMAIL_RE = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$")
 
 
 def is_header_safe(value: str) -> bool:
-    """True, wenn der Wert unverändert in einen HTTP-Header darf: druckbares ASCII, keine Zeilenumbrüche.
-    Sonst bricht schon der Aufbau des HTTP-Clients ab (z. B. UnicodeEncodeError bei einem Umlaut)."""
+    """True if the value may go into an HTTP header unchanged: printable ASCII, no line breaks.
+    Otherwise even building the HTTP client fails (e.g. UnicodeEncodeError for an umlaut)."""
     return value.isascii() and value.isprintable()
 
 
@@ -26,7 +26,7 @@ _HOST_RE = re.compile(r"^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?(\.[A-Za-z0-
 
 
 def is_valid_https_url(value: str) -> bool:
-    """https-Adresse mit ASCII-Hostnamen (keine Platzhalter wie "...", keine Kommentare, keine Leerzeichen)."""
+    """https address with ASCII hostname (no placeholders like "...", no comments, no spaces)."""
     if not value.isascii() or any(c.isspace() for c in value):
         return False
     try:
@@ -41,11 +41,11 @@ def is_valid_contact_email(value: str) -> bool:
 
 
 class SourceError(Exception):
-    """Die Quelle hat nicht geliefert (Netzwerk, Limit, Schlüssel, unerwartetes Format)."""
+    """The source did not deliver (network, limit, key, unexpected format)."""
 
 
 class SourceUnavailable(SourceError):
-    """Circuit-Breaker offen: es wird vorübergehend nicht erneut angefragt."""
+    """Circuit breaker open: no new requests for the time being."""
 
 
 class ResilientHttp:
@@ -87,8 +87,8 @@ class ResilientHttp:
 
     def request(self, method: str, url: str, **kwargs: Any) -> httpx.Response:
         if self.breaker_open:
-            raise SourceUnavailable(self.last_error or "Quelle vorübergehend pausiert")
-        message = "unbekannter Fehler"
+            raise SourceUnavailable(self.last_error or "Source temporarily paused")
+        message = "unknown error"
         for attempt in range(self._retries + 1):
             self._throttle()
             try:
@@ -102,7 +102,7 @@ class ResilientHttp:
                     return resp
                 message = f"HTTP {resp.status_code}"
                 if resp.status_code in (401, 403):
-                    message += " (Schlüssel prüfen)"
+                    message += " (check key)"
                     break
                 if resp.status_code < 500 and resp.status_code != 429:
                     break
@@ -113,12 +113,12 @@ class ResilientHttp:
 
 
 class ProbedHealth:
-    """Health aus dem Zustand der HTTP-Schicht; ein günstiger Probe-Aufruf höchstens alle 5 Minuten."""
+    """Health from the state of the HTTP layer; one cheap probe call at most every 5 minutes."""
 
     http: ResilientHttp
     _probe_ttl = 300.0
 
-    def _probe(self) -> None:  # von Adaptern überschrieben
+    def _probe(self) -> None:  # overridden by adapters
         raise NotImplementedError
 
     def health(self) -> Health:
@@ -141,12 +141,12 @@ class ProbedHealth:
 
 
 class PassiveHealth(ProbedHealth):
-    """Für Quellen mit knappem Tageskontingent: kein Probe-Aufruf, der Status folgt den echten Abrufen."""
+    """For sources with a tight daily quota: no probe call, the status follows the real retrievals."""
 
     def _probe(self) -> None:
         return None
 
     def health(self) -> Health:
         if self.http.last_success_at is None and self.http.last_error is None:
-            return Health(status="degraded", checked_at=datetime.now(UTC), message="Noch kein Abruf erfolgt")
+            return Health(status="degraded", checked_at=datetime.now(UTC), message="No retrieval yet")
         return super().health()

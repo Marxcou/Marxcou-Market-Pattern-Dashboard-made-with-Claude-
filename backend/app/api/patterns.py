@@ -1,18 +1,27 @@
-"""Mustererkennung: Erkennungen, Zonen, Katalog, Zähler. Der Vertrag steht in docs/api-contract.md (Phase 3B).
+"""Pattern detection: detections, zones, catalog, counts. The contract is in docs/api-contract.md (phase 3B).
 
-Die historische Trefferquote kommt ausschließlich aus backtest_runs (Workstream 3C). Gibt es keinen Lauf,
-steht status "nicht_berechnet" und alle Zahlen sind null; es wird nie ein Wert geschätzt (Grundregel 6)."""
+The historical hit rate comes exclusively from backtest_runs (workstream 3C). If there is no run,
+status is "nicht_berechnet" and all numbers are null; a value is never estimated (core rule 6)."""
 from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from sqlalchemy import or_, select
 
+from app.analysis import fmt
+from app.analysis.backtest import (
+    DEPENDENCE_NOTE,
+    NO_CASES_NOTE,
+    SURVIVORSHIP_NOTE,
+    scenario_text,
+    verdict,
+)
 from app.analysis.catalog import catalog
 from app.analysis.params import ALGO_VERSION, default_params, params_hash
 from app.analysis.patterns.common import CONFIDENCE_METHOD, STATUS_LABELS
 from app.analysis.zones import KIND_LABELS
 from app.api.instruments import InstrumentOut, _ref
+from app.backtest_service import METHOD_TEXT
 from app.bars import aware
 from app.deps import DB, CurrentUser
 from app.models import (
@@ -30,10 +39,10 @@ from app.price_service import NO_INTRADAY_REASON, has_intraday
 router = APIRouter(prefix="/api", tags=["patterns"])
 
 TIMEFRAMES = ("1d", "1h")
-NOT_COMPUTED_NOTE = "Die historische Trefferquote für dieses Muster wurde noch nicht berechnet."
-PENDING_REASON = "Die Mustererkennung wird gerade berechnet. Die Ansicht aktualisiert sich automatisch."
-NOT_RUN_REASON = "Die Mustererkennung wurde für dieses Instrument noch nicht ausgeführt."
-NO_MATCH_REASON = "Aktuell erfüllt kein Muster alle Kriterien."
+NOT_COMPUTED_NOTE = "The historical hit rate for this pattern has not been calculated yet."
+PENDING_REASON = "Pattern detection is being calculated. The view updates automatically."
+NOT_RUN_REASON = "Pattern detection has not been run for this instrument yet."
+NO_MATCH_REASON = "No pattern currently meets all criteria."
 
 
 def _iso(dt: datetime | None) -> str | None:
@@ -68,21 +77,33 @@ def backtest_block(run: BacktestRun | None) -> dict[str, Any]:
                 "survivorship_note": None, "verdict_text": None, "note": NOT_COMPUTED_NOTE,
                 "mean_return_pct": None, "median_return_pct": None, "base_mean_return_pct": None, "method": None,
                 "source": None}
-    # Nicht besser als Zufall: die untere Grenze des 95-%-Intervalls liegt nicht über der Basisrate
-    # (Intervall überdeckt die Basisrate oder liegt ganz darunter).
+    # Not better than chance: the lower bound of the 95% interval is not above the base rate
+    # (interval covers the base rate or lies entirely below it).
     not_better: bool | None = None
     if run.ci_low is not None and run.ci_high is not None and run.base_rate is not None:
         not_better = run.ci_low <= run.base_rate
     m = run.metrics or {}
+    # Texts are rendered from the stored numbers, so runs saved before the English switch show English too.
+    verdict_text = None
+    if run.hit_rate is not None and run.ci_low is not None and run.ci_high is not None and run.base_rate is not None:
+        verdict_text = verdict(run.hit_rate, run.ci_low, run.ci_high, run.base_rate)
+    horizon, min_move = run.params.get("horizon_bars"), run.params.get("min_move_pct")
+    method = None if horizon is None or min_move is None else METHOD_TEXT.format(h=horizon, x=fmt.pct(min_move, 1))
     return {"status": "berechnet", "run_id": run.id, "hit_rate": run.hit_rate, "sample_size": run.sample_size,
             "ci_low": run.ci_low, "ci_high": run.ci_high, "base_rate": run.base_rate,
             "not_better_than_random": not_better, "horizon_bars": run.params.get("horizon_bars"),
             "min_move_pct": run.params.get("min_move_pct"), "universe": run.universe or None,
             "date_range": run.date_range or None, "computed_at": _iso(run.created_at),
-            "survivorship_note": m.get("survivorship_note"), "verdict_text": m.get("verdict_text"),
-            "note": m.get("note"), "mean_return_pct": m.get("mean_return_pct"),
+            "survivorship_note": SURVIVORSHIP_NOTE, "verdict_text": verdict_text,
+            "note": DEPENDENCE_NOTE if run.sample_size else NO_CASES_NOTE, "mean_return_pct": m.get("mean_return_pct"),
             "median_return_pct": m.get("median_return_pct"), "base_mean_return_pct": m.get("base_mean_return_pct"),
-            "method": m.get("method"), "source": m.get("source")}
+            "method": method, "source": m.get("source")}
+
+
+def _historical(h: dict[str, Any] | None, kind: str) -> dict[str, Any] | None:
+    if h is None:
+        return None
+    return {**h, "text": scenario_text(kind, h.get("share"), int(h.get("sample_size") or 0))}
 
 
 def detection_out(db: DB, d: PatternDetection, runs: dict[str, BacktestRun | None] | None = None) -> dict[str, Any]:
@@ -91,7 +112,7 @@ def detection_out(db: DB, d: PatternDetection, runs: dict[str, BacktestRun | Non
         runs[d.pattern_type] = _latest_run(db, d.pattern_type, d.timeframe, d.algo_version)
     run = runs[d.pattern_type]
     hist = (run.metrics or {}).get("scenarios", {}) if run else {}
-    scenarios = [{**s, "historical": hist.get(s["kind"])} for s in d.scenarios]
+    scenarios = [{**s, "historical": _historical(hist.get(s["kind"]), s["kind"])} for s in d.scenarios]
     scan = db.get(PatternScan, (d.instrument_id, d.timeframe))
     return {
         "id": d.id, "instrument_id": d.instrument_id, "timeframe": d.timeframe, "pattern_type": d.pattern_type,
@@ -131,7 +152,7 @@ def get_catalog(_u: CurrentUser) -> dict[str, Any]:
 def get_counts(db: DB, user: CurrentUser) -> dict[str, Any]:
     ids = list(db.scalars(select(WatchlistItem.instrument_id).where(WatchlistItem.user_id == user.id)))
     if not ids:
-        return {"counts": {}, "empty_reason": "Die Watchlist ist leer."}
+        return {"counts": {}, "empty_reason": "The watchlist is empty."}
     counts: dict[str, int] = {}
     scans = db.scalars(select(PatternScan).where(PatternScan.instrument_id.in_(ids), PatternScan.timeframe == "1d"))
     for scan in scans:
@@ -152,7 +173,7 @@ def get_counts(db: DB, user: CurrentUser) -> dict[str, Any]:
 def get_detection(detection_id: int, db: DB, _u: CurrentUser) -> dict[str, Any]:
     d = db.get(PatternDetection, detection_id)
     if d is None:
-        raise HTTPException(404, "Erkennung nicht gefunden")
+        raise HTTPException(404, "Detection not found")
     return detection_out(db, d)
 
 
@@ -160,10 +181,10 @@ def get_detection(detection_id: int, db: DB, _u: CurrentUser) -> dict[str, Any]:
 def get_patterns(instrument_id: int, db: DB, _u: CurrentUser, timeframe: str = "1d", include_invalid: bool = False,
                  start: datetime | None = None) -> dict[str, Any]:
     if timeframe not in TIMEFRAMES:
-        raise HTTPException(422, f"timeframe muss einer von {TIMEFRAMES} sein")
+        raise HTTPException(422, f"timeframe must be one of {TIMEFRAMES}")
     inst = db.get(Instrument, instrument_id)
     if inst is None:
-        raise HTTPException(404, "Instrument nicht gefunden")
+        raise HTTPException(404, "Instrument not found")
     base: dict[str, Any] = {
         "instrument": InstrumentOut.model_validate(inst, from_attributes=True).model_dump(),
         "timeframe": timeframe, "detections": [], "zones": [], "data_basis": None, "algo_version": ALGO_VERSION,

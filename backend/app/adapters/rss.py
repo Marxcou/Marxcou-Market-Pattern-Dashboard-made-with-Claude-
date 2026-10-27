@@ -1,10 +1,10 @@
-"""RSS/Atom-Feeds seriöser Medien und EQS-Ad-hoc-Meldungen. Jeder Feed ist eine eigene Quelle.
-Es werden nur Überschrift, ein kurzer Auszug und der Link übernommen.
+"""RSS/Atom feeds of reputable media and EQS ad-hoc announcements. Every feed is its own source.
+Only the headline, a short excerpt and the link are taken over.
 
-Feeds sind standardmäßig ausgeschaltet: Adresse und Nutzungsbedingungen jedes Feeds müssen vor der Freischaltung
-geprüft werden (Plan: 'nicht gescrapt, wenn die Bedingungen es verbieten'). Freischalten per .env:
-RSS_ENABLED_FEEDS=tagesschau,cnbc (oder 'all'); EQS über EQS_RSS_URL. Die Adressen unten sind Vorschläge und
-wurden in dieser Umgebung nicht abgerufen; ein falscher Link zeigt sich als Status 'offline' auf der Seite Quellen."""
+Feeds are off by default: the address and terms of use of each feed must be checked before enabling
+(plan: 'not scraped if the terms forbid it'). Enable via .env:
+RSS_ENABLED_FEEDS=tagesschau,cnbc (or 'all'); EQS via EQS_RSS_URL. The addresses below are suggestions and
+were not retrieved in this environment; a wrong link shows up as status 'offline' on the Sources page."""
 import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -38,20 +38,20 @@ class FeedConfig:
 FEEDS: tuple[FeedConfig, ...] = (
     FeedConfig("tagesschau", "tagesschau.de Wirtschaft", "https://www.tagesschau.de/wirtschaft/index~rss2.xml",
                "https://www.tagesschau.de", "https://www.tagesschau.de/infoservices/rssfeeds", "de",
-               "Wirtschaftsmeldungen der ARD-Tagesschau (allgemeine Marktnachrichten, ohne feste Aktienzuordnung)."),
+               "Business news from ARD Tagesschau (general market news, without a fixed stock assignment)."),
     FeedConfig("cnbc", "CNBC Top News", "https://www.cnbc.com/id/100003114/device/rss/rss.html",
                "https://www.cnbc.com", "https://www.cnbc.com/nbcuniversal-terms-of-service/", "en",
-               "Allgemeine US-Finanz- und Unternehmensnachrichten von CNBC."),
+               "General US financial and company news from CNBC."),
     FeedConfig("marketwatch", "MarketWatch Top Stories", "https://feeds.content.dowjones.io/public/rss/mw_topstories",
                "https://www.marketwatch.com", "https://www.marketwatch.com/site/rss", "en",
-               "Allgemeine US-Marktnachrichten von MarketWatch."),
+               "General US market news from MarketWatch."),
     FeedConfig("handelsblatt", "Handelsblatt Finanzen", "https://www.handelsblatt.com/contentexport/feed/finanzen",
                "https://www.handelsblatt.com", "https://www.handelsblatt.com/hilfe/rss", "de",
-               "Deutsche Finanz- und Unternehmensnachrichten des Handelsblatts."),
+               "German financial and company news from Handelsblatt."),
 )
-EQS = FeedConfig("eqs", "EQS-News (Ad-hoc-Meldungen)", "", "https://www.eqs-news.com",
+EQS = FeedConfig("eqs", "EQS News (ad-hoc announcements)", "", "https://www.eqs-news.com",
                  "https://www.eqs-news.com/terms-of-use/", "de",
-                 "Ad-hoc-Mitteilungen und Pflichtveröffentlichungen deutscher Unternehmen (EQS, früher DGAP).",
+                 "Ad-hoc announcements and mandatory publications of German companies (EQS, formerly DGAP).",
                  poll_seconds=300, is_official=True)
 
 
@@ -64,7 +64,7 @@ def parse_feed(xml: bytes, source_key: str, language: str | None, fetched: datet
     try:
         root = ET.fromstring(xml)
     except ET.ParseError as exc:
-        raise SourceError("Feed ist kein gültiges XML") from exc
+        raise SourceError("Feed is not valid XML") from exc
     atom = "{http://www.w3.org/2005/Atom}"
     out: list[NewsRecord] = []
     if root.tag == f"{atom}feed":
@@ -83,7 +83,7 @@ def parse_feed(xml: bytes, source_key: str, language: str | None, fetched: datet
     for item in root.iter("item"):
         url, title, date = _text(item, "link"), _text(item, "title"), _text(item, "pubDate")
         if not (url and title and date):
-            continue  # ohne Link oder Zeitpunkt nicht belegbar, also verworfen
+            continue  # not verifiable without link or time, therefore discarded
         try:
             ts = parsedate_to_datetime(date)
         except (TypeError, ValueError):
@@ -104,23 +104,23 @@ class RssFeedAdapter(ProbedHealth, NewsAdapter):
         self._url = url or feed.url
         self._enabled = enabled and bool(self._url)
         self.disabled_reason = (
-            "EQS_RSS_URL nicht gesetzt (Feed-Adresse und Nutzungsbedingungen zuerst prüfen)" if feed.id == "eqs"
-            else f"Nicht freigeschaltet (Nutzungsbedingungen prüfen, dann RSS_ENABLED_FEEDS={feed.id} setzen)")
+            "EQS_RSS_URL not set (check feed address and terms of use first)" if feed.id == "eqs"
+            else f"Not enabled (check the terms of use, then set RSS_ENABLED_FEEDS={feed.id})")
         if self._enabled and not is_valid_https_url(self._url):
-            log.warning("%s: Feed-Adresse ist keine gültige https-Adresse; Quelle bleibt deaktiviert",
+            log.warning("%s: feed address is not a valid https address; source stays disabled",
                         "EQS_RSS_URL" if feed.id == "eqs" else f"Feed {feed.id}")
             self._enabled = False
-            self.disabled_reason = ("EQS_RSS_URL ungültig (erwartet: https://adresse); Quelle deaktiviert"
-                                    if feed.id == "eqs" else f"Feed-Adresse von {feed.id} ungültig; Quelle deaktiviert")
-        self.http = ResilientHttp(base_url="", headers={"User-Agent": "Marktmuster-Dashboard (Informationstool)"},
+            self.disabled_reason = ("EQS_RSS_URL invalid (expected: https://address); source disabled"
+                                    if feed.id == "eqs" else f"Feed address of {feed.id} invalid; source disabled")
+        self.http = ResilientHttp(base_url="", headers={"User-Agent": "Marktmuster-Dashboard (information tool)"},
                                   rate_per_min=6, transport=transport, **kw)
 
     def metadata(self) -> AdapterMetadata:
         f = self.feed
         return AdapterMetadata(
             key=self.key, name=f.name, kind="news",
-            description=f"{f.description} Nur Überschrift, kurzer Auszug und Link.", homepage=f.homepage,
-            terms_url=f.terms_url, update_interval=f"alle {f.poll_seconds // 60} Min.", delay_text="Minuten",
+            description=f"{f.description} Only headline, short excerpt and link.", homepage=f.homepage,
+            terms_url=f.terms_url, update_interval=f"every {f.poll_seconds // 60} min.", delay_text="minutes",
             requires_key=False, is_official=f.is_official)
 
     def is_configured(self) -> bool:

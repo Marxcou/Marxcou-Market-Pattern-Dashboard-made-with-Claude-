@@ -1,4 +1,4 @@
-"""Nachrichten-Endpunkte. Der Vertrag steht in docs/api-contract.md (Abschnitt Phase 2)."""
+"""News endpoints. The contract is in docs/api-contract.md (section phase 2)."""
 import base64
 import binascii
 from datetime import UTC, datetime, timedelta
@@ -87,7 +87,7 @@ class SentimentStatusOut(BaseModel):
     spent_usd: float
     month: str
     fallback_reason: str | None
-    claude_mode: str = "batch"  # batch (halber Preis, Ergebnis verzögert) | direct
+    claude_mode: str = "batch"  # batch (half price, delayed result) | direct
     pending_batches: int = 0
 
 
@@ -97,18 +97,18 @@ def _source_ref(s: Source) -> SourceRef:
 
 def _fmt(dt: datetime) -> str:
     tz = ZoneInfo(get_settings().timezone)
-    return dt.replace(tzinfo=dt.tzinfo or UTC).astimezone(tz).strftime("%d.%m.%Y %H:%M")
+    return dt.replace(tzinfo=dt.tzinfo or UTC).astimezone(tz).strftime("%Y-%m-%d %H:%M")
 
 
 def empty_reason(db: Session, filtered: bool) -> str:
     news_sources = db.scalars(select(Source).where(Source.kind == "news")).all()
     if not any(s.status != "disabled" for s in news_sources):
-        return "Keine News-Quelle aktiv. Quellen ohne API-Schlüssel sind deaktiviert, siehe Seite Quellen."
+        return "No news source active. Sources without an API key are disabled, see the Sources page."
     last = max((s.last_success_at for s in news_sources if s.last_success_at), default=None)
-    when = f" Letzter erfolgreicher Abruf einer News-Quelle: {_fmt(last)} Uhr." if last else ""
+    when = f" Last successful retrieval of a news source: {_fmt(last)}." if last else ""
     if db.scalar(select(func.count(NewsCluster.id))) == 0:
-        return "Noch keine Meldungen abgerufen. Neue Meldungen erscheinen nach dem nächsten Abrufzyklus." + when
-    return ("Keine Meldungen für diese Auswahl." if filtered else "Keine Meldungen vorhanden.") + when
+        return "No news retrieved yet. New items appear after the next retrieval cycle." + when
+    return ("No news for this selection." if filtered else "No news available.") + when
 
 
 def _decode_cursor(cursor: str | None) -> int:
@@ -117,7 +117,7 @@ def _decode_cursor(cursor: str | None) -> int:
     try:
         offset = int(base64.urlsafe_b64decode(cursor.encode()).decode().removeprefix("o:"))
     except (ValueError, binascii.Error) as exc:
-        raise HTTPException(400, "Ungültiger Cursor") from exc
+        raise HTTPException(400, "Invalid cursor") from exc
     return max(offset, 0)
 
 
@@ -128,7 +128,7 @@ def _encode_cursor(offset: int) -> str:
 def _list(db: Session, *, instrument_id: int | None, source: str | None, sentiment: str | None,
           since: datetime | None, until: datetime | None, limit: int, cursor: str | None) -> NewsListOut:
     if sentiment is not None and sentiment not in SENTIMENTS:
-        raise HTTPException(422, "sentiment muss positiv, neutral oder negativ sein")
+        raise HTTPException(422, "sentiment must be positiv, neutral or negativ")
     q = select(NewsCluster)
     if instrument_id is not None:
         q = q.where(NewsCluster.id.in_(select(NewsInstrument.cluster_id).where(
@@ -202,6 +202,6 @@ def instrument_news(instrument_id: int, db: DB, _u: CurrentUser, since: datetime
                     until: datetime | None = None, limit: int = Query(DEFAULT_LIMIT, ge=1, le=MAX_LIMIT),
                     cursor: str | None = None) -> NewsListOut:
     if db.get(Instrument, instrument_id) is None:
-        raise HTTPException(404, "Instrument nicht gefunden")
+        raise HTTPException(404, "Instrument not found")
     return _list(db, instrument_id=instrument_id, source=None, sentiment=None, since=since, until=until,
                  limit=limit, cursor=cursor)

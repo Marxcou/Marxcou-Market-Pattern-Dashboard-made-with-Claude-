@@ -22,21 +22,21 @@ def current_user_allow_pw_change(
         raise HTTPException(401, "Sitzung abgelaufen")
     user, sess = loaded
     if request.method not in ("GET", "HEAD", "OPTIONS") and x_csrf_token != sess.csrf_token:
-        raise HTTPException(403, "CSRF-Token fehlt oder ist ungültig")
+        raise HTTPException(403, "CSRF token missing or invalid")
     return user
 
 
 def current_user(user: Annotated[User, Depends(current_user_allow_pw_change)]) -> User:
-    """Wie oben, aber ein Konto mit Einmalpasswort darf nur sein Passwort ändern (und sich abmelden)."""
+    """As above, but an account with a one-time password may only change its password (and log out)."""
     if user.must_change_password:
-        raise HTTPException(403, "Bitte zuerst das Passwort ändern",
+        raise HTTPException(403, "Please change the password first",
                             headers={"X-Error-Code": "password_change_required"})
     return user
 
 
 def admin_user(user: Annotated[User, Depends(current_user)]) -> User:
     if user.role != "admin":
-        raise HTTPException(403, "Nur für Administratoren")
+        raise HTTPException(403, "Administrators only")
     return user
 
 

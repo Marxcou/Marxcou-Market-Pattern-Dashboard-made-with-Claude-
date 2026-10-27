@@ -1,8 +1,8 @@
-"""Unterstützungs- und Widerstandszonen: Häufungen von Wendepunkten auf ähnlichem Kursniveau.
+"""Support and resistance zones: clusters of turning points at a similar price level.
 
-Die Wendepunkte der letzten `rueckblick_kerzen` werden nach Preis sortiert und gierig gruppiert: ein Punkt
-gehört zur Gruppe, solange er höchstens eine Zonenbreite über dem niedrigsten Punkt der Gruppe liegt.
-Zonenbreite = max(toleranz_atr × mittlere ATR, min_toleranz_pct × letzter Schlusskurs)."""
+The turning points of the last `rueckblick_kerzen` are sorted by price and grouped greedily: a point
+belongs to the group as long as it is at most one zone width above the lowest point of the group.
+Zone width = max(toleranz_atr × mean ATR, min_toleranz_pct × last closing price)."""
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -18,8 +18,8 @@ from app.analysis.patterns.common import (
 from app.analysis.pivots import Pivot
 
 WEIGHTS = {"beruehrungen": 0.5, "aktualitaet": 0.3, "zeitspanne": 0.2}
-KIND_LABELS = {"unterstuetzung": "Unterstützungszone", "widerstand": "Widerstandszone",
-               "im_bereich": "Kurs innerhalb der Zone"}
+KIND_LABELS = {"unterstuetzung": "Support zone", "widerstand": "Resistance zone",
+               "im_bereich": "Price inside the zone"}
 
 
 @dataclass
@@ -74,21 +74,22 @@ def _zone(ctx: Context, g: list[Pivot], last_close: float) -> Zone | None:
     span = by_time[-1].idx - by_time[0].idx
     age = n - 1 - by_time[-1].idx
     crit = [
-        crit_ge("beruehrungen", "Anzahl Wendepunkte in der Zone",
-                f"mindestens {int(p['min_beruehrungen'])} Wendepunkte", float(len(g)), p["min_beruehrungen"],
-                p["ideal_beruehrungen"], "Anzahl",
-                f"{len(g)} Wendepunkte ({sum(q.kind == 'H' for q in g)} Hochs, {sum(q.kind == 'L' for q in g)} Tiefs) "
-                f"zwischen {fmt.price(lower)} und {fmt.price(upper)}", WEIGHTS["beruehrungen"]),
-        crit_ge("zeitspanne", "Zeitspanne der Berührungen",
-                f"mindestens {int(p['min_zeitspanne_kerzen'])} Kerzen zwischen erster und letzter Berührung",
-                float(span), p["min_zeitspanne_kerzen"], p["ideal_zeitspanne_kerzen"], "Kerzen",
-                f"erste Berührung {ctx.date(by_time[0].idx)}, letzte {ctx.date(by_time[-1].idx)} ({span} Kerzen)",
+        crit_ge("beruehrungen", "Number of turning points in the zone",
+                f"at least {int(p['min_beruehrungen'])} turning points", float(len(g)), p["min_beruehrungen"],
+                p["ideal_beruehrungen"], "count",
+                f"{len(g)} turning points ({sum(q.kind == 'H' for q in g)} highs, "
+                f"{sum(q.kind == 'L' for q in g)} lows) "
+                f"between {fmt.price(lower)} and {fmt.price(upper)}", WEIGHTS["beruehrungen"]),
+        crit_ge("zeitspanne", "Time span of the touches",
+                f"at least {int(p['min_zeitspanne_kerzen'])} candles between first and last touch",
+                float(span), p["min_zeitspanne_kerzen"], p["ideal_zeitspanne_kerzen"], "candles",
+                f"first touch {ctx.date(by_time[0].idx)}, last {ctx.date(by_time[-1].idx)} ({span} candles)",
                 WEIGHTS["zeitspanne"]),
-        crit_le("aktualitaet", "Aktualität", f"letzte Berührung höchstens {int(p['max_aktualitaet_kerzen'])} Kerzen "
-                "her (Qualitätskriterium)", float(age), p["max_aktualitaet_kerzen"], p["ideal_aktualitaet_kerzen"],
-                "Kerzen", f"letzte Berührung vor {age} Kerzen", WEIGHTS["aktualitaet"], required=False),
+        crit_le("aktualitaet", "Recency", f"last touch at most {int(p['max_aktualitaet_kerzen'])} candles "
+                "ago (quality criterion)", float(age), p["max_aktualitaet_kerzen"], p["ideal_aktualitaet_kerzen"],
+                "candles", f"last touch {age} candles ago", WEIGHTS["aktualitaet"], required=False),
     ]
-    # Mindestanzahl als Teilwert: bei genau der Mindestzahl nicht 0, sondern ab (Mindestzahl − 1) linear
+    # Minimum count as sub-score: at exactly the minimum not 0, but linear from (minimum − 1)
     crit[0].sub_score = round(min(1.0, max(0.0, (len(g) - p["min_beruehrungen"] + 1)
                                            / (p["ideal_beruehrungen"] - p["min_beruehrungen"] + 1))), 4)
     if not all(c.passed for c in crit if c.required):
@@ -106,9 +107,9 @@ def _zone(ctx: Context, g: list[Pivot], last_close: float) -> Zone | None:
         z.breakdown.append({"key": c.key, "name": c.name, "weight": round(w, 4), "sub_score": c.sub_score,
                             "contribution": round(w * c.sub_score, 4)})
     z.confidence = round(sum(float(b["contribution"]) for b in z.breakdown), 4)
-    z.explanation = (f"{z.kind_label} zwischen {fmt.price(lower)} und {fmt.price(upper)}: "
+    z.explanation = (f"{z.kind_label} between {fmt.price(lower)} and {fmt.price(upper)}: "
                      + ". ".join(c.actual_text for c in crit)
-                     + f". Letzter Schlusskurs {fmt.price(last_close)}. Konfidenz {fmt.pct(z.confidence * 100, 0)}.")
+                     + f". Last closing price {fmt.price(last_close)}. Confidence {fmt.pct(z.confidence * 100, 0)}.")
     return z
 
 

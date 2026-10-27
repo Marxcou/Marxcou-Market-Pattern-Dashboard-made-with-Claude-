@@ -134,18 +134,18 @@ def test_summary_says_openly_when_not_better_than_chance():
     s = summarize("doppelboden", [_result(_cases(52, 100), 0.5)])
     assert s.sample_size == 100 and s.hit_rate == 0.52
     assert s.ci_low is not None and s.base_rate is not None and s.ci_low <= s.base_rate
-    assert s.verdict_text is not None and "überdeckt die Basisrate" in s.verdict_text
+    assert s.verdict_text is not None and "covers the base rate" in s.verdict_text
 
     above = summarize("doppelboden", [_result(_cases(80, 100), 0.5)])
-    assert above.ci_low is not None and above.ci_low > 0.5 and "schließt sie aus" in (above.verdict_text or "")
+    assert above.ci_low is not None and above.ci_low > 0.5 and "excludes it" in (above.verdict_text or "")
     below = summarize("doppelboden", [_result(_cases(20, 100), 0.5)])
-    assert "unter der Basisrate" in (below.verdict_text or "")
+    assert "below the base rate" in (below.verdict_text or "")
 
 
 def test_summary_without_cases_estimates_nothing():
     s = summarize("keil_fallend", [_result(_cases(5, 10), 0.5)])
     assert s.sample_size == 0 and s.hit_rate is None and s.ci_low is None and s.base_rate is None
-    assert "keine Trefferquote geschätzt" in s.note
+    assert "No hit rate is estimated" in s.note
 
 
 def test_open_and_excluded_cases_do_not_count():
@@ -211,7 +211,7 @@ def test_job_writes_one_run_per_pattern_with_source_and_api_shows_it(client, tmp
         assert dbl.kind == "pattern" and dbl.timeframe == "1d" and dbl.algo_version == "1.0.0"
         assert dbl.sample_size == 2 and dbl.hit_rate == 0.5
         assert dbl.params["horizon_bars"] == 20 and dbl.params["min_move_pct"] == 5.0
-        assert "Stooq" in dbl.universe and "2 Werte mit Daten, 2 ohne" in dbl.universe
+        assert "Stooq" in dbl.universe and "2 symbols with data, 2 without" in dbl.universe
         assert dbl.metrics["source"]["key"] == "stooq" and dbl.metrics["symbols_missing"]["BAD.XETR"]
         assert dbl.metrics["survivorship_note"] and dbl.metrics["scenarios"]["bestaetigung"]["sample_size"] == 2
         empty = next(r for r in runs if r.subject == "wimpel_abwaerts")
@@ -239,7 +239,7 @@ def test_job_writes_one_run_per_pattern_with_source_and_api_shows_it(client, tmp
 
 def test_job_without_data_stores_nothing(client, tmp_path):
     adapter = FakeStooq({}, fail={"SAP"})
-    with SessionLocal() as db, pytest.raises(ValueError, match="kein Ergebnis gespeichert"):
+    with SessionLocal() as db, pytest.raises(ValueError, match="No result is stored"):
         run_pattern_backtest(db, adapter, [("SAP", "XETR"), ("SIE", "XETR")], "Test", START, CFG, 1, tmp_path,
                              now=NOW)
     with SessionLocal() as db:
@@ -257,7 +257,7 @@ def test_job_refuses_without_any_daily_source(monkeypatch, capsys):
     monkeypatch.setattr("app.backtest_job.YahooAdapter.is_configured", lambda self: False)
     assert job_main(["--dry-run"]) == 2
     err = capsys.readouterr().err
-    assert "STOOQ_API_KEY" in err and "YAHOO_ENABLED=true" in err and "kein Backtest" in err
+    assert "STOOQ_API_KEY" in err and "YAHOO_ENABLED=true" in err and "No backtest" in err
 
 
 def _capture_run(monkeypatch) -> list[str]:
@@ -330,15 +330,15 @@ def test_backtest_with_yahoo_records_yahoo_as_source(client, tmp_path, monkeypat
     with SessionLocal() as db:
         dbl = next(r for r in db.scalars(select(BacktestRun)).all() if r.subject == "doppelboden")
         assert dbl.sample_size == 2 and dbl.hit_rate == 0.5
-        assert dbl.metrics["source"]["key"] == "yahoo" and "inoffiziell" in dbl.metrics["source"]["name"]
-        assert "Yahoo Finance (inoffiziell)" in dbl.universe
+        assert dbl.metrics["source"]["key"] == "yahoo" and "unofficial" in dbl.metrics["source"]["name"]
+        assert "Yahoo Finance (unofficial)" in dbl.universe
     assert (tmp_path / "yahoo" / "SAP.XETR.json").exists()
     iid, _ = seed()
     run_scan(iid)
     login(client)
     det = next(d for d in client.get(f"/api/instruments/{iid}/patterns").json()["detections"]
                if d["pattern_type"] == "doppelboden")
-    assert det["backtest"]["source"]["name"] == "Yahoo Finance (inoffiziell)"
+    assert det["backtest"]["source"]["name"] == "Yahoo Finance (unofficial)"
 
 
 def test_not_better_than_random_also_when_clearly_below_base_rate(client):

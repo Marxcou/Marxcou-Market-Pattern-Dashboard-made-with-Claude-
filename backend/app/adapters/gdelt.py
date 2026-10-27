@@ -1,6 +1,6 @@
-"""GDELT DOC 2.0 (kostenlos, ohne Schlüssel): breite globale Abdeckung, auch deutschsprachige Medien.
-GDELT liefert nur Überschrift, Link und Domain; Meldungen ohne belegte Zuordnung (Ticker oder Firmenname im Titel)
-werden verworfen, weil die Quelle sonst zu verrauscht wäre."""
+"""GDELT DOC 2.0 (free, no key): broad global coverage, including German-language media.
+GDELT delivers only headline, link and domain; news without a proven assignment (ticker or company name in the title)
+is discarded because the source would otherwise be too noisy."""
 from datetime import UTC, datetime
 from typing import Any
 
@@ -26,10 +26,10 @@ class GdeltAdapter(ProbedHealth, NewsAdapter):
     def metadata(self) -> AdapterMetadata:
         return AdapterMetadata(
             key=self.key, name="GDELT", kind="news",
-            description="Weltweite Nachrichtenerfassung (Projekt GDELT). Verrauscht: Meldungen werden nur behalten, "
-            "wenn Firmenname oder Ticker im Titel steht. Nur Überschrift, Link und Domain.",
+            description="Worldwide news collection (GDELT project). Noisy: items are only kept "
+            "if a company name or ticker is in the title. Only headline, link and domain.",
             homepage="https://www.gdeltproject.org", terms_url="https://www.gdeltproject.org/about.html",
-            update_interval="alle 15 Min. (reihum)", delay_text="ca. 15 Min.", requires_key=False,
+            update_interval="every 15 min. (in rotation)", delay_text="approx. 15 min.", requires_key=False,
         )
 
     def _probe(self) -> None:
@@ -37,7 +37,7 @@ class GdeltAdapter(ProbedHealth, NewsAdapter):
                                                               "format": "json", "maxrecords": 1})
 
     def fetch_news(self, symbols: list[str], since: datetime) -> list[NewsRecord]:
-        return []  # GDELT sucht nach Namen, siehe fetch_news_for
+        return []  # GDELT searches by names, see fetch_news_for
 
     def fetch_news_for(self, targets: list[NewsTarget], since: datetime) -> list[NewsRecord]:
         if not targets:

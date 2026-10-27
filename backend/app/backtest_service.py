@@ -1,10 +1,10 @@
-"""Muster-Backtest mit echten Kursdaten (Workstream 3C): Tagesdaten laden, Backtest je Aktie rechnen,
-Ergebnis je Mustertyp in backtest_runs schreiben (kind="pattern", subject=pattern_type).
+"""Pattern backtest with real price data (workstream 3C): load daily data, run the backtest per stock,
+write the result per pattern type to backtest_runs (kind="pattern", subject=pattern_type).
 
-Grundregel 6: Es werden nur Daten verwendet, die eine echte Kursquelle geliefert hat (Stooq oder Yahoo,
-siehe backtest_job).
-Fehlen Daten, fehlt der Wert im Lauf und wird als fehlend aufgeführt; es wird nichts ergänzt oder geschätzt.
-Grundregel 2: Jeder Lauf nennt Quelle, Abrufzeitraum, verwendete und fehlende Werte."""
+Core rule 6: only data that a real price source delivered is used (Stooq or Yahoo,
+see backtest_job).
+If data is missing, the value is missing in the run and listed as missing; nothing is filled in or estimated.
+Core rule 2: every run names the source, retrieval period, used and missing symbols."""
 import json
 import logging
 from collections.abc import Callable, Iterable
@@ -37,17 +37,17 @@ log = logging.getLogger("backtest")
 
 TIMEFRAME: Timeframe = "1d"
 METHOD_TEXT = (
-    "Walk-forward ohne Blick in die Zukunft: Die Mustererkennung läuft schrittweise nur auf den Kerzen bis zum "
-    "jeweiligen Tag. Ein Fall ist ein bestätigtes Muster; Ausgangspunkt ist der Schlusskurs am Tag der "
-    "Bestätigung bzw. am ersten Tag, an dem das Muster sichtbar war (der spätere Tag). Treffer: Ein Schlusskurs "
-    "innerhalb von {h} Kerzen liegt mindestens {x} in Richtung des Musters. Basisrate: derselbe Test für jeden "
-    "Handelstag derselben Aktien im selben Zeitraum, gewichtet wie die Fälle. 95-%-Intervall nach Wilson."
+    "Walk-forward without look-ahead: the pattern detection runs step by step only on the candles up to the "
+    "respective day. A case is a confirmed pattern; the starting point is the closing price on the day of "
+    "confirmation or on the first day the pattern was visible (whichever is later). Hit: a closing price "
+    "within {h} candles is at least {x} in the direction of the pattern. Base rate: the same test for every "
+    "trading day of the same stocks in the same period, weighted like the cases. 95% Wilson interval."
 )
 
 
 @dataclass
 class LoadedSeries:
-    key: str  # SYMBOL.BÖRSE
+    key: str  # SYMBOL.EXCHANGE
     bars: Bars
     fetched_at: datetime
 
@@ -55,10 +55,10 @@ class LoadedSeries:
 @dataclass
 class DataReport:
     series: list[LoadedSeries] = field(default_factory=list)
-    missing: dict[str, str] = field(default_factory=dict)  # SYMBOL.BÖRSE -> Grund
+    missing: dict[str, str] = field(default_factory=dict)  # SYMBOL.EXCHANGE -> reason
 
 
-# ---------- Laden (mit Dateicache, damit ein zweiter Lauf die Quelle nicht erneut belastet) ----------
+# ---------- Loading (with file cache so a second run does not burden the source again) ----------
 
 def _cache_file(cache_dir: Path, source_key: str, symbol: str, exchange: str) -> Path:
     return cache_dir / source_key / f"{symbol}.{exchange}.json"
@@ -86,7 +86,7 @@ def _write_cache(path: Path, recs: list[BarRecord], source_key: str, symbol: str
 
 
 def to_bars(recs: list[BarRecord], today: date) -> Bars:
-    """Nur abgeschlossene Tage (die Kerze von heute kann noch laufen), sortiert, ohne doppelte Tage."""
+    """Completed days only (today's candle may still be running), sorted, without duplicate days."""
     by_day: dict[datetime, BarRecord] = {}
     for r in recs:
         if r.ts_utc.date() < today:
@@ -111,7 +111,7 @@ def load_universe(adapter: PriceAdapter, universe: Iterable[tuple[str, str]], st
                 recs = adapter.fetch_bars(symbol, exchange, TIMEFRAME, start, now)
             except SourceError as exc:
                 report.missing[key] = f"{meta.name}: {exc}"
-                log.warning("%s: keine Daten (%s)", key, exc)
+                log.warning("%s: no data (%s)", key, exc)
                 continue
             fetched = now
             if cache_dir and recs:
@@ -120,14 +120,14 @@ def load_universe(adapter: PriceAdapter, universe: Iterable[tuple[str, str]], st
         recs = [r for r in recs if r.ts_utc >= start and r.source_key == meta.key]
         bars = to_bars(recs, now.date())
         if len(bars) < min_bars:
-            report.missing[key] = f"{meta.name}: nur {len(bars)} Tageskerzen (mindestens {min_bars} nötig)"
+            report.missing[key] = f"{meta.name}: only {len(bars)} daily candles (at least {min_bars} required)"
             continue
         report.series.append(LoadedSeries(key, bars, fetched))
-        log.info("%s: %d Tageskerzen", key, len(bars))
+        log.info("%s: %d daily candles", key, len(bars))
     return report
 
 
-# ---------- Rechnen ----------
+# ---------- Computing ----------
 
 def _run_one(args: tuple[str, Bars, Params, BacktestConfig]) -> InstrumentResult:
     key, bars, params, cfg = args
@@ -153,7 +153,7 @@ def compute(series: list[LoadedSeries], cfg: BacktestConfig, params: Params, wor
         return results
 
 
-# ---------- Schreiben ----------
+# ---------- Writing ----------
 
 def _summary_metrics(s: PatternSummary) -> dict[str, Any]:
     d = asdict(s)
@@ -165,15 +165,15 @@ def _summary_metrics(s: PatternSummary) -> dict[str, Any]:
 def build_runs(summaries: list[PatternSummary], data: DataReport, cfg: BacktestConfig, params: Params,
                source: AdapterMetadata, universe_label: str, now: datetime) -> list[BacktestRun]:
     if not data.series:
-        raise ValueError("Keine Kursdaten geladen: es wird kein Backtest-Ergebnis gespeichert.")
+        raise ValueError("No price data loaded: no backtest result is stored.")
     first = min(s.bars.ts[0] for s in data.series)
     last = max(s.bars.ts[-1] for s in data.series)
     fetched = sorted(s.fetched_at for s in data.series)
-    date_range = f"{fmt.day(first)} bis {fmt.day(last)}"
+    date_range = f"{fmt.day(first)} to {fmt.day(last)}"
     fetched_text = fmt.day(fetched[0]) if fmt.day(fetched[0]) == fmt.day(fetched[-1]) \
-        else f"{fmt.day(fetched[0])} bis {fmt.day(fetched[-1])}"
-    universe = (f"{universe_label}; ausgewertet {len(data.series)} Werte mit Daten, {len(data.missing)} ohne; "
-                f"Tagesdaten von {source.name} ({source.homepage}), abgerufen {fetched_text}")
+        else f"{fmt.day(fetched[0])} to {fmt.day(fetched[-1])}"
+    universe = (f"{universe_label}; evaluated {len(data.series)} symbols with data, {len(data.missing)} without; "
+                f"daily data from {source.name} ({source.homepage}), retrieved {fetched_text}")
     run_params: dict[str, Any] = {**cfg.as_params(), "engine_params_hash": params_hash(params),
                                   "backtest_version": BACKTEST_VERSION}
     common: dict[str, Any] = {
@@ -197,13 +197,13 @@ def run_pattern_backtest(db: Session | None, adapter: PriceAdapter, universe: li
                          universe_label: str, start: datetime, cfg: BacktestConfig, workers: int,
                          cache_dir: Path | None, max_cache_age: timedelta = timedelta(days=7),
                          now: datetime | None = None) -> tuple[list[PatternSummary], DataReport]:
-    """Lädt, rechnet und speichert (ohne `db` nur Ausgabe, nichts gespeichert)."""
+    """Loads, computes and stores (without `db` output only, nothing stored)."""
     now = now or datetime.now(UTC)
     params = default_params()
     data = load_universe(adapter, universe, start, now, cache_dir, max_cache_age, cfg.warmup_bars + cfg.horizon_bars)
     if not data.series:
-        raise ValueError("Für keinen Wert liegen Kursdaten vor (API-Schlüssel und Verbindung prüfen). "
-                         "Es wird kein Ergebnis gespeichert.")
+        raise ValueError("No price data is available for any symbol (check API key and connection). "
+                         "No result is stored.")
     done = [0]
 
     def progress(key: str) -> None:

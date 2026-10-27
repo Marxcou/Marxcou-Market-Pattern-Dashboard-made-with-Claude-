@@ -1,7 +1,8 @@
-"""Meldung einem Instrument zuordnen, mit belegtem Grund (match_method). Reihenfolge der Belege:
-provider_tag (Anbieter nennt das Symbol) > isin (ISIN im Text) > ticker (Cashtag $AAPL oder Tickersymbol in
-Großbuchstaben, mind. 3 Zeichen) > name (Firmenname ohne Rechtsform, mind. 4 Zeichen, als ganzes Wort).
-Bewusst konservativ: lieber keine Zuordnung als eine falsche."""
+"""Assign an item to an instrument, with a proven reason (match_method). Order of the evidence:
+provider_tag (provider names the symbol) > isin (ISIN in the text) > ticker (cashtag $AAPL or ticker symbol in
+capital letters, at least 3 characters) > name (company name without legal form, at least 4 characters, as a
+whole word).
+Deliberately conservative: better no assignment than a wrong one."""
 import re
 from dataclasses import dataclass
 
@@ -56,7 +57,7 @@ class Matcher:
             if pat.search(text):
                 add(iid, "ticker")
         for pat, iid in self._tickers:
-            if pat.search(rec.title):  # Großbuchstaben, nur im Titel (Auszüge sind zu unscharf)
+            if pat.search(rec.title):  # capital letters, title only (excerpts are too fuzzy)
                 add(iid, "ticker")
         for pat, iid in self._names:
             if pat.search(text):

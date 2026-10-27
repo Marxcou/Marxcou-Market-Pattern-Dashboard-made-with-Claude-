@@ -1,5 +1,5 @@
-"""Instrumente und Kursdaten. Der Vertrag steht in docs/api-contract.md.
-Suche: lokal gespeicherte Instrumente plus Anbieter-Suche (OpenFIGI); Treffer werden gespeichert."""
+"""Instruments and price data. The contract is in docs/api-contract.md.
+Search: locally stored instruments plus provider search (OpenFIGI); hits are stored."""
 import logging
 from datetime import datetime
 
@@ -68,7 +68,7 @@ class BarsOut(BaseModel):
     bars: list[BarOut]
     # Explizite Leerstands-Aussage statt Ersatzdaten (Grundregel 6):
     empty_reason: str | None = None
-    # Kurse werden gerade erstmals abgerufen (Instrument wurde eben auf eine Watchlist gesetzt):
+    # Prices are being retrieved for the first time (the instrument was just put on a watchlist):
     pending: bool = False
 
 
@@ -99,7 +99,7 @@ def search(db: DB, _u: CurrentUser, q: str = Query(min_length=1, max_length=100)
         or_(Instrument.symbol.ilike(like), Instrument.name.ilike(like), Instrument.isin.ilike(like))
     ).order_by(Instrument.symbol).limit(25)
     results: dict[int, Instrument] = {i.id: i for i in db.scalars(stmt)}
-    # Anbieter-Suche ergänzt lokale Treffer (ISIN, Name, Ticker); ein Ausfall lässt die lokale Suche bestehen.
+    # Provider search supplements local hits (ISIN, name, ticker); an outage leaves the local search in place.
     for adapter in price_adapters():
         if not adapter.is_configured():
             continue
@@ -118,7 +118,7 @@ def search(db: DB, _u: CurrentUser, q: str = Query(min_length=1, max_length=100)
 def get_instrument(instrument_id: int, db: DB, _u: CurrentUser) -> InstrumentWithQuote:
     inst = db.get(Instrument, instrument_id)
     if inst is None:
-        raise HTTPException(404, "Instrument nicht gefunden")
+        raise HTTPException(404, "Instrument not found")
     base = InstrumentOut.model_validate(inst, from_attributes=True)
     return InstrumentWithQuote(**base.model_dump(), quote=latest_quote(db, inst.id))
 
@@ -129,10 +129,10 @@ def get_bars(
     start: datetime | None = None, end: datetime | None = None, limit: int = Query(2000, le=10000),
 ) -> BarsOut:
     if timeframe not in TIMEFRAMES:
-        raise HTTPException(422, f"timeframe muss einer von {TIMEFRAMES} sein")
+        raise HTTPException(422, f"timeframe must be one of {TIMEFRAMES}")
     inst = db.get(Instrument, instrument_id)
     if inst is None:
-        raise HTTPException(404, "Instrument nicht gefunden")
+        raise HTTPException(404, "Instrument not found")
     chosen = load_bars(db, instrument_id, timeframe, start, end, limit)
     bars = [
         BarOut(ts_utc=b.ts_utc, open=b.open, high=b.high, low=b.low, close=b.close, volume=b.volume,
@@ -144,9 +144,9 @@ def get_bars(
     elif timeframe != "1d" and not has_intraday(inst.exchange):
         reason = NO_INTRADAY_REASON
     else:
-        reason = "Keine Kursdaten für diesen Zeitraum gespeichert (noch keine Quelle hat sie geliefert)."
+        reason = "No price data stored for this period (no source has delivered it yet)."
     pending = bool(reason) and reason != NO_INTRADAY_REASON and is_pending(db, instrument_id)
     if pending:
-        reason = "Kursdaten werden gerade abgerufen. Die Ansicht aktualisiert sich automatisch."
+        reason = "Price data is being retrieved. The view updates automatically."
     return BarsOut(instrument=InstrumentOut.model_validate(inst, from_attributes=True),
                    timeframe=timeframe, bars=bars, empty_reason=reason, pending=pending)

@@ -1,9 +1,9 @@
-"""Prognosen und Prognose-Backtest für Watchlist-Instrumente berechnen und speichern (Worker-Job).
+"""Compute and store forecasts and forecast backtests for watchlist instruments (worker job).
 
-Nur abgeschlossene Tageskerzen. Je Instrument und Methode gibt es eine Zeile in `forecasts` (wird ersetzt). Der
-Backtest schreibt `backtest_runs` (kind='forecast', subject=Methode) und läuft neu, wenn neue Kerzen da sind und
-der letzte Lauf älter als BACKTEST_MAX_AGE ist. Fehlermaße entstehen nur aus gespeicherten Kerzen; Demodaten
-werden als solche markiert (Grundregel 6)."""
+Completed daily candles only. There is one row per instrument and method in `forecasts` (replaced). The
+backtest writes `backtest_runs` (kind='forecast', subject=method) and runs again when new candles are available and
+the last run is older than BACKTEST_MAX_AGE. Error measures come only from stored candles; demo data
+is marked as such (core rule 6)."""
 import hashlib
 import json
 import logging
@@ -27,21 +27,21 @@ TIMEFRAME = "1d"
 BAR_LIMIT = 2500
 BACKTEST_MAX_AGE = timedelta(hours=20)
 METHODS = (fc.PRIMARY, fc.COMPARISON)
-# Erhöhen, wenn neue gespeicherte Felder dazukommen (ohne Algorithmus-Änderung), damit bestehende Zeilen neu entstehen.
-OUTPUT_VERSION = 2
+# Increase when new stored fields or texts are added (without an algorithm change) so existing rows are rebuilt.
+OUTPUT_VERSION = 3
 
-NO_BARS_REASON = "Noch keine Kursdaten gespeichert."
-NOT_RUN_REASON = "Die Prognose wurde für dieses Instrument noch nicht berechnet."
+NO_BARS_REASON = "No price data stored yet."
+NOT_RUN_REASON = "The forecast has not been calculated for this instrument yet."
 METHOD_NOTE = (
-    "Rollierender Ursprung: an vergangenen Tagen wurde nur mit den bis dahin bekannten Kerzen prognostiziert und "
-    "mit dem später eingetretenen Schlusskurs verglichen. Die naive Referenz \"Kurs bleibt gleich\" hat keine "
-    "Bandbreite; ein niedrigerer Pinball-Verlust zeigt nur, dass die Bänder Information über die Schwankungsbreite "
-    "tragen, nicht, dass die Richtung vorhergesagt wird."
+    "Rolling origin: on past days the forecast used only the candles known up to then and was compared "
+    "with the closing price that occurred later. The naive reference \"price stays the same\" has no "
+    "range; a lower pinball loss only shows that the bands carry information about the range of fluctuation, "
+    "not that the direction is predicted."
 )
 
 
 def too_few_reason(n: int) -> str:
-    return f"Zu wenige Kerzen für eine Prognose (mindestens {fc.MIN_BARS}, vorhanden {n})."
+    return f"Too few candles for a forecast (at least {fc.MIN_BARS}, available {n})."
 
 
 def params_hash(method: str) -> str:
@@ -51,7 +51,7 @@ def params_hash(method: str) -> str:
 
 
 def universe_text(inst: Instrument) -> str:
-    return f"{inst.symbol} ({inst.exchange}), eigene Historie"
+    return f"{inst.symbol} ({inst.exchange}), own history"
 
 
 # --- Backtest -------------------------------------------------------------------------------------------------
@@ -62,18 +62,28 @@ def _pct_text(x: float) -> str:
 
 
 def verdict_text(h: fc.HorizonResult) -> str:
-    cov80 = h.coverage.get(0.8)
-    cov = (f" Das 80-%-Band enthielt den tatsächlichen Kurs in {_pct_text(cov80)} der Fälle."
+    return verdict_from_values(h.sample_size, h.coverage.get(0.8), h.better_than_naive, h.mae_model, h.mae_naive,
+                               h.dm_p_value)
+
+
+def verdict_from_values(sample_size: int, cov80: float | None, better: bool | None, mae_model: float,
+                        mae_naive: float, dm_p_value: float | None) -> str:
+    """Also used to render stored runs in the current language from their numbers."""
+    cov = (f" The 80% band contained the actual price in {_pct_text(cov80)} of cases."
            if cov80 is not None else "")
-    if h.better_than_naive is None:
-        return (f"Zu wenige Prüfzeitpunkte ({h.sample_size}) für einen Vergleich mit der naiven Referenz "
-                f"\"Kurs bleibt gleich\".{cov}")
-    errs = f"Fehler {fmt.pct(h.mae_model)} statt {fmt.pct(h.mae_naive)}"
-    p = f", p = {fmt.num(h.dm_p_value, 2)}" if h.dm_p_value is not None else ""
-    if h.better_than_naive:
-        return (f"Beim Median genauer als die naive Referenz \"Kurs bleibt gleich\" ({errs}{p}).{cov}")
-    return (f"Beim Median nicht nachweisbar genauer als die naive Referenz \"Kurs bleibt gleich\" "
+    if better is None:
+        return (f"Too few check points ({sample_size}) for a comparison with the naive reference "
+                f"\"price stays the same\".{cov}")
+    errs = f"error {fmt.pct(mae_model)} instead of {fmt.pct(mae_naive)}"
+    p = f", p = {fmt.num(dm_p_value, 2)}" if dm_p_value is not None else ""
+    if better:
+        return f"At the median more accurate than the naive reference \"price stays the same\" ({errs}{p}).{cov}"
+    return (f"At the median not demonstrably more accurate than the naive reference \"price stays the same\" "
             f"({errs}{p}).{cov}")
+
+
+METRIC_NAMES = {"median_abs_error": "Mean absolute error of the median",
+                "pinball_loss": "Pinball loss (mean over all quantiles)"}
 
 
 def _horizon_json(h: fc.HorizonResult) -> dict[str, Any]:
@@ -81,9 +91,9 @@ def _horizon_json(h: fc.HorizonResult) -> dict[str, Any]:
         "horizon_bars": h.horizon_bars, "sample_size": h.sample_size,
         "coverage": [{"nominal": lvl, "observed": round(v, 4)} for lvl, v in sorted(h.coverage.items())],
         "metrics": [
-            {"key": "median_abs_error", "name": "Mittlerer absoluter Fehler des Medians",
+            {"key": "median_abs_error", "name": METRIC_NAMES["median_abs_error"],
              "model": round(h.mae_model, 4), "naive": round(h.mae_naive, 4), "unit": "%"},
-            {"key": "pinball_loss", "name": "Pinball-Verlust (Mittel über alle Quantile)",
+            {"key": "pinball_loss", "name": METRIC_NAMES["pinball_loss"],
              "model": round(h.pinball_model, 4), "naive": round(h.pinball_naive, 4), "unit": "%"},
         ],
         "skill": None if h.skill is None else round(h.skill, 4),
@@ -137,7 +147,7 @@ def _needs_backtest(run: BacktestRun | None, data_until: datetime, now: datetime
     return now - aware(run.created_at) >= BACKTEST_MAX_AGE
 
 
-# --- Muster-Niveaus ---------------------------------------------------------------------------------------------
+# --- Pattern levels ---------------------------------------------------------------------------------------------
 
 
 def pattern_levels(db: Session, inst_id: int, paths: np.ndarray) -> list[dict[str, Any]]:
@@ -164,7 +174,7 @@ def _detections_signature(db: Session, inst_id: int) -> str:
     return json.dumps([[i, [s.get("trigger_level") for s in sc]] for i, sc in rows])
 
 
-# --- Prognose ---------------------------------------------------------------------------------------------------
+# --- Forecast ---------------------------------------------------------------------------------------------------
 
 
 def _row(db: Session, inst_id: int, method: str) -> Forecast:
@@ -226,8 +236,8 @@ def forecast_instrument(db: Session, inst: Instrument, now: datetime | None = No
         row.inputs_hash = inputs
         row.backtest_run_id = run.id if run else None
         row.backtest_reason = None if run else (
-            "Zu wenige Kerzen für einen Backtest (mindestens "
-            f"{fc.BACKTEST_PARAMS['min_train_bars'] + max(fc.BACKTEST_PARAMS['horizons'])}, vorhanden {n}).")
+            "Too few candles for a backtest (at least "
+            f"{fc.BACKTEST_PARAMS['min_train_bars'] + max(fc.BACKTEST_PARAMS['horizons'])}, available {n}).")
         row.pattern_levels = pattern_levels(db, inst.id, f.paths) if f.paths is not None else []
         row.example_paths = fc.example_path_rows(f.paths, future) if f.paths is not None else []
         row.bars_from, row.bar_count, row.source_ids, row.fetched_at = ts[0], n, source_ids, fetched
@@ -238,12 +248,12 @@ def forecast_instrument(db: Session, inst: Instrument, now: datetime | None = No
 
 
 def forecast_job() -> None:
-    """Für alle Watchlist-Instrumente (alle Nutzer); ein Fehler betrifft nur dieses Instrument."""
+    """For all watchlist instruments (all users); an error affects only that instrument."""
     with SessionLocal() as db:
         for inst in watched_instruments(db):
             try:
                 stats = forecast_instrument(db, inst)
-            except Exception:  # noqa: BLE001 - ein Instrument darf die anderen nicht stoppen
+            except Exception:  # noqa: BLE001 - one instrument must not stop the others
                 db.rollback()
                 log.exception("Prognose %s fehlgeschlagen", inst.symbol)
                 continue
