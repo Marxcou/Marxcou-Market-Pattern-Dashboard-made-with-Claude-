@@ -1,3 +1,5 @@
+import { getLang } from "./i18n";
+
 // Dünne API-Schicht. Der Vertrag steht in docs/api-contract.md, die Typen hier spiegeln ihn.
 // Abfrageabstand, solange das Backend eine Erstberechnung meldet ("pending").
 export const PENDING_POLL_MS = 4_000;
@@ -147,6 +149,7 @@ export class ApiError extends Error {
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   if (init.body) headers.set("Content-Type", "application/json");
+  headers.set("Accept-Language", getLang());
   if (init.method && init.method !== "GET") headers.set("X-CSRF-Token", csrfToken);
   const res = await fetch(`/api${path}`, { ...init, headers, credentials: "same-origin" });
   if (!res.ok) {

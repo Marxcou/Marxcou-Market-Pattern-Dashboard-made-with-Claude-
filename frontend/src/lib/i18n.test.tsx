@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { DICTS, LanguageProvider, LanguageSwitch, useI18n } from "./i18n";
 
@@ -13,10 +14,21 @@ describe("i18n", () => {
   });
   it("wechselt die Sprache und merkt sie sich", () => {
     localStorage.clear();
-    render(<LanguageProvider><LanguageSwitch /><Probe /></LanguageProvider>);
-    fireEvent.click(screen.getByRole("button", { name: "EN" }));
+    render(<QueryClientProvider client={new QueryClient()}><LanguageProvider><LanguageSwitch /><Probe /></LanguageProvider></QueryClientProvider>);
     expect(screen.getByText("News")).toBeTruthy();
-    expect(localStorage.getItem("lang")).toBe("en");
-    expect(document.documentElement.lang).toBe("en");
+    fireEvent.click(screen.getByRole("button", { name: "DE" }));
+    expect(screen.getByText("Nachrichten")).toBeTruthy();
+    expect(localStorage.getItem("lang")).toBe("de");
+    expect(document.documentElement.lang).toBe("de");
+  });
+});
+
+describe("englische Texte", () => {
+  it("lässt keinen Eintrag leer und behält die Platzhalter beider Sprachen", () => {
+    for (const [k, v] of Object.entries(DICTS.en)) {
+      expect(v.trim(), k).not.toBe("");
+      const ph = (s: string) => (s.match(/\{\w+\}/g) ?? []).sort().join();
+      expect(ph(v), k).toBe(ph(DICTS.de[k]));
+    }
   });
 });

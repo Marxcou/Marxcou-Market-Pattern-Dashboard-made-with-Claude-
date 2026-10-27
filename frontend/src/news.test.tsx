@@ -1,5 +1,5 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { renderApp, mockApi, ME, SOURCE, INSTRUMENT } from "./testUtils";
+import { screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, renderApp, mockApi, ME, SOURCE, INSTRUMENT } from "./testUtils";
 import { NewsClusterCard } from "./components/NewsClusterCard";
 import type { NewsCluster } from "./lib/api";
 

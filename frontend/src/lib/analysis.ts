@@ -1,16 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
+import { tr, type MessageKey } from "./i18n";
 import {
   api, PENDING_POLL_MS, type IndicatorEventsResponse, type IndicatorEventType, type IndicatorsResponse, type MoveLinksResponse, type PatternCounts, type PatternsResponse,
 } from "./api";
 
-export const ANALYSIS_MISSING = "Die Analyse-Schnittstelle des Backends ist noch nicht verfügbar. Es werden keine Daten angezeigt.";
 
 // 404 heißt: Endpunkt noch nicht vorhanden. Das ist ein Leerzustand mit Grund, kein Fehler und kein Platzhalter (Grundregel 6).
 async function orMissing<T extends { empty_reason: string | null }>(path: string, empty: T): Promise<T> {
   try {
     return await api<T>(path);
   } catch (e) {
-    if (e instanceof Error && e.message === "HTTP 404") return { ...empty, empty_reason: ANALYSIS_MISSING };
+    if (e instanceof Error && e.message === "HTTP 404") return { ...empty, empty_reason: tr("analysis.missing") };
     throw e;
   }
 }
@@ -18,13 +18,13 @@ async function orMissing<T extends { empty_reason: string | null }>(path: string
 // Die Mustererkennung arbeitet nur auf Tages- und Stundenkerzen (Vertrag 3B).
 export const patternTimeframe = (tfm: string) => (tfm === "1d" || tfm === "1h" ? tfm : null);
 
-export interface IndicatorToggle { key: string; label: string; param: string; panel: "price" | "own"; seriesKey: string }
+export interface IndicatorToggle { key: string; label: string; labelKey?: MessageKey; param: string; panel: "price" | "own"; seriesKey: string }
 export const INDICATOR_TOGGLES: IndicatorToggle[] = [
   { key: "sma20", label: "SMA 20", param: "sma=20", panel: "price", seriesKey: "sma_20" },
   { key: "sma50", label: "SMA 50", param: "sma=50", panel: "price", seriesKey: "sma_50" },
   { key: "ema20", label: "EMA 20", param: "ema=20", panel: "price", seriesKey: "ema_20" },
   { key: "ema50", label: "EMA 50", param: "ema=50", panel: "price", seriesKey: "ema_50" },
-  { key: "bb", label: "Bollinger-Bänder (20, 2)", param: "bb=20,2", panel: "price", seriesKey: "bb_20_2" },
+  { key: "bb", label: "Bollinger Bands (20, 2)", labelKey: "ind.bb", param: "bb=20,2", panel: "price", seriesKey: "bb_20_2" },
   { key: "rsi", label: "RSI (14)", param: "rsi=14", panel: "own", seriesKey: "rsi_14" },
   { key: "macd", label: "MACD (12, 26, 9)", param: "macd=12,26,9", panel: "own", seriesKey: "macd_12_26_9" },
 ];
@@ -62,7 +62,7 @@ export const useMoveLinks = (id: string | undefined, timeframe: string, since: s
   useQuery({
     queryKey: ["move-links", id, timeframe, since], enabled: !!id,
     queryFn: () => orMissing<MoveLinksResponse>(`/instruments/${id}/move-links?timeframe=${timeframe}${since ? `&since=${encodeURIComponent(since)}` : ""}`,
-      { moves: [], note: "Zeitlich zusammenfallend, keine Aussage über Ursache.", empty_reason: null }),
+      { moves: [], note: tr("move.defaultNote"), empty_reason: null }),
     refetchInterval: 60_000,
   });
 
@@ -84,17 +84,22 @@ export const usePatternCounts = () =>
 export const EVENT_SHORT: Record<IndicatorEventType, string> = {
   golden_cross: "GC", death_cross: "DC", rsi_divergence: "RSI", bb_breakout: "BB", volume_spike: "Vol",
 };
-export const EVENT_NAME: Record<IndicatorEventType, string> = {
-  golden_cross: "Golden Cross", death_cross: "Death Cross", rsi_divergence: "RSI-Divergenz", bb_breakout: "Bollinger-Ausbruch", volume_spike: "Volumenspitze",
+const EVENT_KEY: Record<IndicatorEventType, MessageKey> = {
+  golden_cross: "event.goldenCross", death_cross: "event.deathCross", rsi_divergence: "event.rsiDivergence", bb_breakout: "event.bbBreakout", volume_spike: "event.volumeSpike",
 };
-export const DIRECTION_TEXT = { up: "Werte oberhalb bzw. steigend", down: "Werte unterhalb bzw. fallend" } as const;
+export const eventName = (t: IndicatorEventType) => tr(EVENT_KEY[t]);
 
-export const STATUS_TEXT: Record<string, string> = { in_bildung: "In Bildung", bestaetigt: "Bestätigt", ungueltig: "Ungültig" };
+// Status-Schlüssel kommen vom Backend ("in_bildung", "bestaetigt", "ungueltig"); unbekannte fallen auf status_label zurück.
+export const statusText = (status: string, fallback: string) => {
+  const key = `pattern.status.${status}` as MessageKey;
+  const s = tr(key);
+  return s === key ? fallback : s;
+};
 
 // Beim symmetrischen Dreieck (Richtung "offen") sind beide Niveaus Ausbruchsniveaus: ein Schlusskurs außerhalb einer der
 // Linien löst das Muster auf. Ungültig wird es erst, wenn die Spitze ohne Ausbruch erreicht wird oder die Frist abläuft.
 export function levelLabels(direction: string): { confirmation: string; invalidation: string } {
   return direction === "offen"
-    ? { confirmation: "Ausbruchsniveau oben", invalidation: "Ausbruchsniveau unten" }
-    : { confirmation: "Bestätigungsniveau", invalidation: "Ungültigkeitsniveau" };
+    ? { confirmation: tr("pattern.levels.breakoutUp"), invalidation: tr("pattern.levels.breakoutDown") }
+    : { confirmation: tr("pattern.levels.confirm"), invalidation: tr("pattern.levels.invalid") };
 }

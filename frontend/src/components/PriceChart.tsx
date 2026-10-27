@@ -5,13 +5,14 @@ import { BAND_FILL, BANDS, bandSeries, EXAMPLE_COLOR, MEDIAN_COLOR, medianSeries
 import { EVENT_SHORT, levelLabels } from "../lib/analysis";
 import { type AlignedPoint, ascendingUnique, priceOnLine, snapTime, toTime } from "../lib/chartData";
 import type { ChartGroup } from "../lib/chartSync";
+import { getLocale, useI18n } from "../lib/i18n";
 
 export interface NewsMarker { clusterId: number; ts: string; title: string }
 export interface PriceOverlay { id: string; color: string; dashed?: boolean; data: AlignedPoint[] }
 
 export type ChartKind = "candles" | "line";
 
-const berlin = (opts: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat("de-DE", { timeZone: "Europe/Berlin", ...opts });
+const berlin = (opts: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat(getLocale(), { timeZone: "Europe/Berlin", ...opts });
 const PATTERN_COLOR = "#a78bfa";
 const EVENT_COLOR = "#22d3ee";
 const BG = "#0f172a";
@@ -30,9 +31,9 @@ export function baseChartOptions(intraday: boolean, height: number) {
       tickMarkFormatter: (t: number) => (intraday ? berlin({ hour: "2-digit", minute: "2-digit" }) : berlin({ day: "2-digit", month: "2-digit" })).format(new Date(t * 1000)),
     },
     localization: {
-      locale: "de-DE",
+      locale: getLocale(),
       timeFormatter: (t: number) => berlin({ dateStyle: "medium", ...(intraday ? { timeStyle: "short" } : {}) }).format(new Date(t * 1000)),
-      priceFormatter: (p: number) => new Intl.NumberFormat("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(p),
+      priceFormatter: (p: number) => new Intl.NumberFormat(getLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(p),
     },
   };
 }
@@ -43,6 +44,7 @@ export function PriceChart({ bars, kind, intraday, markers = [], onMarkerClick, 
   selectedPatternId?: number | null; onPatternClick?: (id: number) => void; group?: ChartGroup;
   forecast?: ForecastStep[]; scenarioLevels?: ScenarioLevel[]; medianLine?: boolean; examplePaths?: ForecastExamplePath[];
 }) {
+  const { t: tt, lang } = useI18n();
   const clickRef = useRef(onMarkerClick);
   clickRef.current = onMarkerClick;
   const patternClickRef = useRef(onPatternClick);
@@ -155,7 +157,7 @@ export function PriceChart({ bars, kind, intraday, markers = [], onMarkerClick, 
     }
     for (const p of patterns) {
       const t = snapTime(barTimes, p.start_ts);
-      if (t != null) all.push({ time: t as UTCTimestamp, position: "belowBar", shape: "square", color: PATTERN_COLOR, text: p.id === selectedPatternId ? p.name : "M" });
+      if (t != null) all.push({ time: t as UTCTimestamp, position: "belowBar", shape: "square", color: PATTERN_COLOR, text: p.id === selectedPatternId ? p.name : tt("chart.patternMarker") });
     }
     all.sort((a, b) => (a.time as number) - (b.time as number));
     main.setMarkers(all);
@@ -188,7 +190,7 @@ export function PriceChart({ bars, kind, intraday, markers = [], onMarkerClick, 
       chart.remove();
       chartRef.current = null;
     };
-  }, [bars, kind, intraday, markers, overlays, patterns, zones, events, selectedPatternId, group, forecast, scenarioLevels, medianLine, examplePaths]);
+  }, [bars, kind, intraday, markers, overlays, patterns, zones, events, selectedPatternId, group, forecast, scenarioLevels, medianLine, examplePaths, lang]);
 
-  return <div ref={ref} data-testid="price-chart" className="w-full" role="img" aria-label="Kursdiagramm" />;
+  return <div ref={ref} data-testid="price-chart" className="w-full" role="img" aria-label={tt("chart.priceChart")} />;
 }

@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { Skeleton } from "./components/Skeleton";
 import { Layout } from "./components/Layout";
 import { useAuth } from "./lib/auth";
+import { useI18n } from "./lib/i18n";
 import { ChartPage } from "./pages/ChartPage";
 import { News } from "./pages/News";
 import { Account } from "./pages/Account";
@@ -13,7 +14,8 @@ import { Watchlist } from "./pages/Watchlist";
 
 function RequireAuth({ children }: { children: JSX.Element }) {
   const { me, loading } = useAuth();
-  if (loading) return <div role="status" aria-label="Lade …" className="space-y-3"><Skeleton className="h-7 w-1/3" /><Skeleton className="h-24 w-full" /></div>;
+  const { t } = useI18n();
+  if (loading) return <div role="status" aria-label={t("common.loading")} className="space-y-3"><Skeleton className="h-7 w-1/3" /><Skeleton className="h-24 w-full" /></div>;
   if (!me) return <Navigate to="/login" replace />;
   // Einmalpasswort: bis zum Passwortwechsel ist nur die Kontoseite erreichbar.
   if (me.user.must_change_password) return <Account forced />;
@@ -22,11 +24,13 @@ function RequireAuth({ children }: { children: JSX.Element }) {
 
 function RequireAdmin({ children }: { children: JSX.Element }) {
   const { me } = useAuth();
-  if (me && me.user.role !== "admin") return <Placeholder title="Kein Zugriff" note="Diese Seite ist nur für Administratoren." />;
+  const { t } = useI18n();
+  if (me && me.user.role !== "admin") return <Placeholder title={t("route.noAccess")} note={t("route.adminOnly")} />;
   return children;
 }
 
 export function App() {
+  const { t } = useI18n();
   return (
     <Routes>
       <Route element={<Layout />}>
@@ -37,7 +41,7 @@ export function App() {
         <Route path="quellen" element={<RequireAuth><Sources /></RequireAuth>} />
         <Route path="konto" element={<RequireAuth><Account /></RequireAuth>} />
         <Route path="admin/benutzer" element={<RequireAuth><RequireAdmin><AdminUsers /></RequireAdmin></RequireAuth>} />
-        <Route path="*" element={<Placeholder title="Seite nicht gefunden" note="Diese Seite existiert nicht." />} />
+        <Route path="*" element={<Placeholder title={t("route.notFound")} note={t("route.notFoundNote")} />} />
       </Route>
     </Routes>
   );
